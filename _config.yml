@@ -7,13 +7,13 @@
 
 # Site Settings
 locale                   : "en-US"
-title                    : "Sangbum Daniel Choi / One"
+title                    : "Sangbum Daniel Choi"
 title_separator          : "-"
 name                     : &name "Sangbum Daniel Choi"
 description              : &description "personal description"
-url                      : https://sangbumdanielchoi.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
+url                      : https://sangbumchoi.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
-repository               : "SangbumChoi/sangbumdanielchoi.github.io"
+repository               : "sangbumchoi.github.io"
 teaser                   :  # filename of teaser fallback teaser image placed in /images/, .e.g. "500x300.png"
 breadcrumbs              : false # true, false (default)
 words_per_minute         : 160
@@ -80,10 +80,10 @@ analytics:
 
 # Site Author
 author:
-  name             : "Your Sidebar Name"
-  avatar           : "profile.png"
-  bio              : "Your biography for the left-hand sidebar"
-  location         : "Location"
+  name             : "What to say"
+  avatar           : 
+  bio              : "CTO of Team Island"
+  location         : "Seoul, South Korea"
   employer         :
   pubmed           :
   googlescholar    :
