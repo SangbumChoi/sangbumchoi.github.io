@@ -17,26 +17,34 @@ Education
 
 Work experience
 ======
-* Summer 2015: Research Assistant
-  * Github University
-  * Duties included: Tagging issues
-  * Supervisor: Professor Git
+* Fall 2018: Undergraduate Researcher
+  * Improved DOA estimation of MUSIC algorithm based on irregular microphone array
+  * Generating binaural sounds using software application
+  * Supervisor: Professor <a href="https://synrg.csl.illinois.edu/">Romit Roy Choudhury</a>
 
-* Summer 2016: AResearch Intern
+* Summer 2018: Machine Learning Engineer
+  * Seerslab Intern
+  * Face landmark detection by using Haar-cascade, HOG, and Machine Learning
+  * Making user GUI to easily pointing x,y coordinate in face figure
+  * Development of login CMS using JWT token
+
+* Spring 2017: Undergraduate Researcher
+  * POSTECH Undergraduate Research Program
+  * Development of non-invasive heart rate measurement device
+  * Co-work with graduate student to solve national task, making smart-watch FPGA module
+  * Supervisor: Professor <a href="https://postechimslab.wixsite.com/citeimslab">Park Sung Min</a>
+
+* Summer 2016: Research Intern
   * ASAN Medical Center
-  * Duties included: 
-  ∙ Designing simulation of electrical surgical unit with computer tools (computer tool was related with calculating electromagnetic field around the vector space)
-  ∙ Developing submachine aid for knee-injured people, assistant for experiment
+  * Designing simulation of electrical surgical unit with computer tools (computer tool was related with calculating electromagnetic field around the vector space)
+  * Developing submachine aid for knee-injured people, assistant for experiment
   * Supervisor: Professor Choi Jae Soon
   
 Skills
 ======
-* Skill 1
-* Skill 2
-  * Sub-skill 2.1
-  * Sub-skill 2.2
-  * Sub-skill 2.3
-* Skill 3
+* Skill Python(including PyQt5)
+* Skill FPGA Language - Xilinx
+* Skill Git
 
 Publications
 ======
@@ -58,4 +66,4 @@ Teaching
   
 Service and leadership
 ======
-* Currently signed in to 43 different slack teams
+* Currently signed in to CTO of Team Island
