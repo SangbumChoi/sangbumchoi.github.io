@@ -11,9 +11,9 @@ redirect_from:
 
 Education
 ======
-* B.S. in GitHub, GitHub University, 2012
-* M.S. in Jekyll, GitHub University, 2014
-* Ph.D in Version Control Theory, GitHub University, 2018 (expected)
+* M.S. in Electrical Engineering and Enterpership, Korea Advanced Institute of Science and Technology, KAIST, 2020.03-
+* B.S. in Electrical Engineering, Pohang University of Science and Technology, POSTECH, 2015.03-2020.02
+* B.S. in Electrical and Computer Engineering, University of Illinois, Urbana and Champaign, UIUC, 2018.01-2018.12
 
 Work experience
 ======
@@ -22,10 +22,12 @@ Work experience
   * Duties included: Tagging issues
   * Supervisor: Professor Git
 
-* Fall 2015: Research Assistant
-  * Github University
-  * Duties included: Merging pull requests
-  * Supervisor: Professor Hub
+* Summer 2016: AResearch Intern
+  * ASAN Medical Center
+  * Duties included: 
+  ∙ Designing simulation of electrical surgical unit with computer tools (computer tool was related with calculating electromagnetic field around the vector space)
+  ∙ Developing submachine aid for knee-injured people, assistant for experiment
+  * Supervisor: Professor Choi Jae Soon
   
 Skills
 ======
