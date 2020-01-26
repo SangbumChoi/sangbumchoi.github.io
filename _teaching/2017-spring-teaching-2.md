@@ -1,5 +1,5 @@
 ---
-title: "Teaching experience 2"
+title: "Linear Algebra"
 collection: teaching
 type: "Workshop"
 permalink: /teaching/2017-spring-teaching-2
