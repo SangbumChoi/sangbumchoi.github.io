@@ -8,4 +8,5 @@ date: 2017-09-01
 location: "Pohang, South Korea"
 ---
 
-Teaching assistant of linear algebra
+Teaching assistant of linear algebra class in POSTECH
+
