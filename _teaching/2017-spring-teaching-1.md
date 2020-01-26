@@ -1,5 +1,5 @@
 ---
-title: "Teaching experience 1"
+title: "Electric Circuit"
 collection: teaching
 type: "Undergraduate course"
 permalink: /teaching/2017-spring-teaching-1
