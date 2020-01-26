@@ -1,7 +1,7 @@
 ---
 title: 'PoseFlow: Efficient Online Pose Tracking'
 date: 2020-01-09
-permalink: /posts/2020/01/PoseFlow: Efficient Online Pose Tracking/
+permalink: /posts/2020/01/PoseFlow Efficient Online Pose Tracking/
 tags:
   - cool posts
   - category1
