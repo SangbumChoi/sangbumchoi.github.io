@@ -2,7 +2,7 @@
 title: "Terahertz Signal Analysis in Tissue of Gastroesophageal Reflux Disease"
 collection: publications
 permalink: /publication/2013-12-31-Terahertz Signal Analysis in Tissue of Gastroesophageal Reflux Disease
-excerpt: 'This paper is about the number 1. The number 2 is left for future work.'
+excerpt: ''
 date: 2013-12-31
 venue: 'OPTICAL SOCIETY OF KOREA'
 paperurl: 'http://sangbumchoi.github.io/files/sciencehs_physics_35.pdf'
