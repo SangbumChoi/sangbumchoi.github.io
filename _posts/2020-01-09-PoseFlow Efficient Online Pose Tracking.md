@@ -3,9 +3,8 @@ title: 'PoseFlow: Efficient Online Pose Tracking'
 date: 2020-01-09
 permalink: /posts/2020/01/PoseFlow Efficient Online Pose Tracking/
 tags:
-  - cool posts
-  - category1
-  - category2
+  - Computer Vision
+  - Object Tracking
 ---
 
 Basically estimation and tracking is easy terminology by understanding definition of respective keywords. Additionally, in a viewpoint of each results, both may same exactly although have different meaning. There are two methods of tracking human pose, one is top-down, the other is bottom-up. In my comprehension estimation is usually used in an image and tracking is used in a video.
