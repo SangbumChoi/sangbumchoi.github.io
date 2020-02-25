@@ -3,9 +3,8 @@ title: 'What is json file'
 date: 2020-01-21
 permalink: /posts/2020/01/What is json file/
 tags:
-  - cool posts
-  - category1
-  - category2
+  - Json
+  - Study
 ---
 
 If we see some file related with dataset or other files, .json files seem very familiar with us. JSON file is an abstract of javascript
