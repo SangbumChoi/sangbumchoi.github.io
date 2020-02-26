@@ -36,11 +36,19 @@ What is develop?
   
 Develop process
  
-Waterfall
+* Waterfall
  
 Various Input -> Operation -> Design -> Development(Server) -> Development(Client) -> Check -> Develop -> Release
 
-Agile
+* Agile
 
 Cycle of waterfall is very short compare to agile. Basic terminology is same as waterfall, however it has minimal requirements to pass
 each steps.
+
+What is DevOps?
+
+DevOps is mixed words of development and operation. It emphasize that automatic control managemnet theory in software development.
+Development and operation should be interactive.
+
+For the tool-chains it uses Jira, Jira confluence, Bitbucket, Jenkins and for the cloud Cloud sercers such as EC2, S3, RDS and Docker.
+
