@@ -15,10 +15,21 @@ What is develop?
   2. Client developer
   Role: It is about making GUI(Graphic User Interface)
   
-  *Android
-  *IOS
-  *Web
-  *All together (Using React Native, Ionic)
+  * Android
+  Kotlin - Replacement of Java which is newest langague, used in Google
+  
+  Java - Most of the code is written in Java, such as comments or other examples. Probably developers need to know how to read Java
+  statement to understand the code.
+  
+  Without crashing with same file, Java and Kotlin can be swtiched automatically and also compatible
+<p align="center">
+  <img src='../images/Kotlin_Process.PNG' width="80%">.
+</p>
+  We can find various reasons to use Kotlin instead of Java, because of effeciency on the code 
+ 
+  * IOS
+  * Web
+  * All together (Using React Native, Ionic)
   
   3. Machine learning developer
   
