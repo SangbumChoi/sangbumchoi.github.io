@@ -1,7 +1,7 @@
 ---
 title: 'Developer'
 date: 2020-02-26
-permalink: /posts/2020/02/Developer
+permalink: /posts/2020/02/Developer/
 tags:
   - Study
   - Developer
