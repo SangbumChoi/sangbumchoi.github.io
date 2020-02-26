@@ -8,6 +8,7 @@ tags:
 ---
 
 What is develop?
+
   1. server developer
   Role: interaction between users. For example saving play time of video play bar and show same time at another device with same acount.
   Also saving various data in to the artifitial cloud system
