@@ -24,7 +24,7 @@ What is develop?
   
   Without crashing with same file, Java and Kotlin can be swtiched automatically and also compatible
 <p align="center">
-  <img src='../images/Kotlin_Process.PNG' width="80%">.
+  <img src='../images/Kotlin_Process.PNG/' width="80%">.
 </p>
   We can find various reasons to use Kotlin instead of Java, because of effeciency on the code 
  
