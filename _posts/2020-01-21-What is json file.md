@@ -3,7 +3,6 @@ title: 'What is json file'
 date: 2020-01-21
 permalink: /posts/2020/01/What is json file/
 tags:
-  - Json
   - Study
 ---
 

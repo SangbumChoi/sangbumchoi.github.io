@@ -3,9 +3,9 @@ title: 'Review of MobileNet'
 date: 2020-02-28
 permalink: /posts/2020/02/MobileNet/
 tags:
+  - Paper
   - Computer Vision
-  - Machine Learning
-  - CNN
+  - MobileNet
 ---
 
 Study of MobileNet and basic information and coding of Cov2d, Forward propagation, BN, Quantized, etc...

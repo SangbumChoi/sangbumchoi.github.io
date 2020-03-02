@@ -1,10 +1,9 @@
 ---
-title: 'All about mobile machine learning'
+title: 'All About Mobile Machine Learning'
 date: 2020-02-28
 permalink: /posts/2020/02/All about mobile machine learning/
 tags:
-  - Computer Vision
-  - Machine Learning
+  - Study
   - Mobile Application
   - TF Lite
 ---

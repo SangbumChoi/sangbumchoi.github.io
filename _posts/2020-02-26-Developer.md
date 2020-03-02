@@ -4,7 +4,6 @@ date: 2020-02-26
 permalink: /posts/2020/02/Developer/
 tags:
   - Study
-  - Developer
 ---
 
 What is develop?
