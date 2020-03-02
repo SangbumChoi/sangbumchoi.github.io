@@ -63,4 +63,4 @@ Reference
 
 Github
 
-![ARFaceDetection](https://github.com/Cleveroad/ARFaceDetection)
+[ARFaceDetection](https://github.com/Cleveroad/ARFaceDetection)
