@@ -11,7 +11,7 @@ redirect_from:
 
 Education
 ======
-* M.S. in Electrical Engineering and Enterpership, Korea Advanced Institute of Science and Technology, KAIST, 2020.03-
+* M.S. in Electrical Engineering and Entrepreneurship, Korea Advanced Institute of Science and Technology, KAIST, 2020.03-2021.02
 * B.S. in Electrical Engineering, Pohang University of Science and Technology, POSTECH, 2015.03-2020.02
 * B.S. in Electrical and Computer Engineering, University of Illinois, Urbana and Champaign, UIUC, 2018.01-2018.12
 

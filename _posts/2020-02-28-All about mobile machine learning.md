@@ -60,6 +60,8 @@ Firebase
 
 Reference
 
+[TensorflowLite with mobile application](https://soundlly.github.io/2017/11/20/tensorflowlite-moblienet-demo/)
+
 Github
 
 [ARFaceDetection](https://github.com/Cleveroad/ARFaceDetection)

@@ -16,7 +16,29 @@ Study of MobileNet and basic information and coding of Cov2d, Forward propagatio
 MobileNet if from Google, which was aimed for using mobile or cpu based computer machine learning in realtime.
 Key idea of this paper is reducing convolution layer by detphwise seperable convolution. This is not first offered in this paper. Originally it was from Google's Xception
 
-## Basic Code of Back propogation including concepts of Pooling
+![3D MobileNet](/images/MobileNet_3D.png)
+
+MobileNet used only one pooling and one stride for convolutional neural network.
+Now we can evaluate the process cost by counting how many calculation need per one convolution repective to standard convolution and depthwise convolution.
+
+![MobileNet](/images/MobileNet_DepthWise_CNN.PNG)
+
+Basic iteration formula will be 
+$$ 
+G_{k,l,n} = \sum_{i,j,m} K_{} \dot F_{k+i-1,l+j-1,m}
+$$
+
+
+For each process of convoultion + ReLu and Max pooling of original image.
+The result of data gets more sharper than original data.
+
+![Pre-Trained CNN](/images/Pre_Trained_CNN_MobileNet.jpg)
+
+Question: does MobileNet also applies for both training and testing process?
+
+## Basic Code of Back Propogation Including Concepts of Pooling
+
+![Output Channel Description](/images/3D_CNN_Figure.png)
 
 ```groovy
 import numpy as np, sys

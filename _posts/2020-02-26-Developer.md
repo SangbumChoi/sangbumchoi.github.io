@@ -18,8 +18,7 @@ What is develop?
   * Android
   Kotlin - Replacement of Java which is newest langague, used in Google
   
-  Java - Most of the code is written in Java, such as comments or other examples. Probably developers need to know how to read Java
-  statement to understand the code.
+  Java - Most of the code is written in Java, such as comments or other examples. Probably developers need to know how to read Java statement to understand the code.
   
   Without crashing with same file, Java and Kotlin can be swtiched automatically and also compatible
 <p align="center">
