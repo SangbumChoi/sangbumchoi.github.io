@@ -21,13 +21,31 @@ Key idea of this paper is reducing convolution layer by detphwise seperable conv
 MobileNet used only one pooling and one stride for convolutional neural network.
 Now we can evaluate the process cost by counting how many calculation need per one convolution repective to standard convolution and depthwise convolution.
 
-![MobileNet](/images/MobileNet_DepthWise_CNN.PNG)
-
 Basic iteration formula will be 
 $$ 
-G_{k,l,n} = \sum_{i,j,m} K_{} \dot F_{k+i-1,l+j-1,m}
+G_{k,l,n} = \sum_{i,j,m} K_{} \cdot F_{k+i-1,l+j-1,m}
 $$
 
+![MobileNet](/images/MobileNet_DepthWise_CNN.PNG)
+
+For the standard cost of convolutions will be 
+$$
+D_{K} \cdot D_{K} \cdot M \cdot N \cdot D_{F} \cdot D_{F}
+$$
+
+Which $$D_{K}$$, $$D_{F}$$, $$M$$, $$N$$ represent kernel, feature map size, input channel depth and kernel channel depth, and kernel outputnumber which is feature output number
+
+However depthwise convolution cost will be 
+
+$$
+(D_{K} \cdot D_{K} \cdot M + M \cdot N) \cdot D_{F} \cdot D_{F}
+$$
+
+$$
+\frac{New Cost}{Original Cost} = \frac{(D_{K} \cdot D_{K} \cdot M + M \cdot N) \cdot D_{F} \cdot D_{F}}{D_{K} \cdot D_{K} \cdot M \cdot N \cdot D_{F} \cdot D_{F}} = \frac{1}{D^2_{k}} + \frac{1}{N}
+$$
+
+Most of the kernel size is 3 by 3 therefore it lessen 1/9 times of parameters
 
 For each process of convoultion + ReLu and Max pooling of original image.
 The result of data gets more sharper than original data.
