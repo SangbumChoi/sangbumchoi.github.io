@@ -23,7 +23,7 @@ Now we can evaluate the process cost by counting how many calculation need per o
 
 Basic iteration formula will be 
 $$ 
-G_{k,l,n} = \sum_{i,j,m} K_{} \cdot F_{k+i-1,l+j-1,m}
+G_{k,l,n} = \sum_{i,j,m} K_{i,j,m,n} \cdot F_{k+i-1,l+j-1,m}
 $$
 
 ![MobileNet](/images/MobileNet_DepthWise_CNN.PNG)
