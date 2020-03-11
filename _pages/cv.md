@@ -17,6 +17,10 @@ Education
 
 Work experience
 ======
+* Spring 2019 to Now: CTO
+  * <span style="font-weight:bold">Team Island</span>
+  * Lightweight CNN implementation for mobile application
+
 * Fall 2018: Undergraduate Researcher
   * <span style="font-weight:bold">UIUC Undergraduate Research Program</span>
   * Improved DOA estimation of MUSIC algorithm based on irregular microphone array
@@ -43,9 +47,10 @@ Work experience
   
 Skills
 ======
-* Skill Python(including PyQt5)
-* Skill FPGA Language - Xilinx
-* Skill Git
+* Python(including PyQt5)
+* FPGA Language - Xilinx
+* Git
+* Kotlin
 
 Publications
 ======
