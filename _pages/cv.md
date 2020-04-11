@@ -17,29 +17,29 @@ Education
 
 Work experience
 ======
-* Spring 2019 to Now: CTO
+* 2019/02-2020/06: Co. Team Island CTO
   * <span style="font-weight:bold">Team Island</span>
   * Lightweight CNN implementation for mobile application
 
-* Fall 2018: Undergraduate Researcher
+* 2018/08-12: Undergraduate Researcher
   * <span style="font-weight:bold">UIUC Undergraduate Research Program</span>
   * Improved DOA estimation of MUSIC algorithm based on irregular microphone array
   * Generating binaural sounds using software application
   * Supervisor: Professor <a href="https://synrg.csl.illinois.edu/">Romit Roy Choudhury</a>
 
-* Summer 2018: Machine Learning Engineer
+* 2018/06-08: Machine Learning Engineer
   * <span style="font-weight:bold">Seerslab Intern</span>
   * Face landmark detection by using Haar-cascade, HOG, and Machine Learning
   * Making user GUI to easily pointing x,y coordinate in face figure
   * Development of login CMS using JWT token
 
-* Spring 2017: Undergraduate Researcher
+* 2017/03-06: Undergraduate Researcher
   * <span style="font-weight:bold">POSTECH Undergraduate Research Program</span>
   * Development of non-invasive heart rate measurement device
   * Co-work with graduate student to solve national task, making smart-watch FPGA module
   * Supervisor: Professor <a href="https://postechimslab.wixsite.com/citeimslab">Park Sung Min</a>
 
-* Summer 2016: Research Intern
+* 2016/06-08: Research Intern
   * <span style="font-weight:bold">ASAN Medical Center</span>
   * Designing simulation of electrical surgical unit with computer tools (computer tool was related with calculating electromagnetic field around the vector space)
   * Developing submachine aid for knee-injured people, assistant for experiment
