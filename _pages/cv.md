@@ -35,9 +35,11 @@ Education
 
 Work experience
 ======
-* 2026/01-Present: Software Engineer
+* 2026/01-Present: Data Scientist
   * <span style="font-weight:bold">Toss Bank (토스뱅크)</span>
-  * Applied AI/ML and software engineering in a fintech product environment.
+  * Building an on-premise opencode agent system for internal AI-assisted development workflows.
+  * Developing AI-based authentication systems for face and ID card verification.
+  * Developing document information extraction systems for banking workflows.
 
 * 2021/09-2026/01: Machine Learning Engineer
   * <span style="font-weight:bold">SuperbAI</span>
