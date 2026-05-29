@@ -11,4 +11,4 @@ citation: 'Sangbum Choi. (2018). &quot;On Joint Transfer of Energy and Informati
 
 This was the paper that three two graduate and one undergraduate students participated.
 
-[Download paper here](http://sangbumchoi.github.io/files/final-jkim-stk-choi.pdf.pdf)
+[Download paper here](http://sangbumchoi.github.io/files/final-jkim-stk-choi.pdf)

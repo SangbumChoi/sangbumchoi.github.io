@@ -9,4 +9,4 @@ paperurl: ''
 citation: 'Sangbum Choi. (2018). &quot;Improved DOA estimation of MUSIC algorithm based on irregular microphone array.&quot; <i>None</i>. .'
 ---
 
-[Download paper here](http://academicpages.github.io/files/paper3.pdf)
+Undergraduate research project on direction-of-arrival estimation with irregular microphone arrays.
