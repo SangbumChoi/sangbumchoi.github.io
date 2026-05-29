@@ -1,0 +1,176 @@
+%-------------------------
+% Resume in Latex
+% Author : Sourabh Bajaj
+% Website: https://github.com/sb2nov/resume
+% License : MIT
+%------------------------
+
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true,
+            linkcolor=blue,
+            urlcolor=blue,
+            citecolor=blue,
+            anchorcolor=blue]{hyperref}
+
+\newcommand{\MYhref}[3][blue]{\href{#2}{\color{#1}{#3}}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\addtolength{\oddsidemargin}{-0.375in}
+\addtolength{\evensidemargin}{-0.375in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.5in}
+\addtolength{\textheight}{1.0in}
+
+\urlstyle{same}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+\titleformat{\section}{
+  \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+\newcommand{\resumeItem}[2]{
+  \item\small{
+    \textbf{#1}{: #2 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-1pt}\item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-5pt}
+}
+
+\newcommand{\resumeSubItem}[2]{\resumeItem{#1}{#2}\vspace{-4pt}}
+
+\renewcommand{\labelitemii}{$\circ$}
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=*]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+\begin{document}
+
+%----------HEADING-----------------
+\begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
+  \textbf{\Large Sangbum Daniel Choi} & Email : \href{mailto:danielsejong55@gmail.com}{danielsejong55@gmail.com}\\
+  \href{https://www.linkedin.com/in/daniel-choi-86648216b/}{linkedin.com/in/daniel-choi-86648216b} & Mobile : +82-010-5913-2857 \\
+  \href{https://github.com/SangbumChoi}{github.com/SangbumChoi} &
+  {Updated: 2026/05/29}\\
+\end{tabular*}
+
+%-----------EXPERIENCE-----------------
+\section{Experience}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {Toss Bank}{Seoul, South Korea}
+      {Software Engineer}{2026 - Present}
+      \resumeItemListStart
+        \resumeItem{AI/ML Engineering}
+          {Building applied AI and software systems in a fintech product environment.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {SuperbAI}{Seoul, South Korea}
+      {Machine Learning Engineer}{Sep 2021 - 2026}
+      \resumeItemListStart
+        \resumeItem{[Lead] Vision Foundation Model}
+          {Led development of a multi-modal vision foundation model for text/semantic-prompted object detection and segmentation; prepared a 1.1M-image in-house dataset and drove planning through API deployment and AWS Marketplace release.}
+        \resumeItem{CVPR 2025 Competitions}
+          {Won 2nd place in IOD and 4th place in FSOD challenges, validating the model on open evaluation benchmarks.}
+        \resumeItem{[Lead] ML Training \& Serving Platform}
+          {Built AWS Batch based training infrastructure and optimized inference with TensorRT and Triton, improving throughput by 5x versus pure PyTorch serving; generated approximately 1,100 models and 60 endpoints in one year.}
+        \resumeItem{Efficient Training}
+          {Applied parameter- and memory-efficient techniques, reducing GPU memory usage by 65.6\% and training time by 44.3\% while preserving model performance.}
+        \resumeItem{Interactive Segmentation}
+          {Built browser, hybrid, and cloud-based segmentation tools using RepViT-SAM, FocalClick, SAM, and SAM2, increasing segmentation labeling speed by 25x.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Kakao Enterprise}{Pangyo, South Korea}
+      {Machine Learning Engineer Intern}{Feb 2021 - Aug 2021}
+      \resumeItemListStart
+        \resumeItem{AutoML}
+          {Fixed AutoGluon NeuralNetFastAI scaling issue and developed a Flask-based training/inference AutoML framework with a simple front-end.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Team ISLAND}{Seoul, South Korea}
+      {Chief Technology Officer}{Mar 2019 - Oct 2020}
+      \resumeItemListStart
+        \resumeItem{Startup}
+          {Raised approximately \$290K through government subsidies and seed funding; managed five developers across Android, Unity, and deep learning workstreams.}
+        \resumeItem{Mobile ML}
+          {Developed a lightweight 3D human pose estimation model for mobile devices and converted PyTorch models to TensorFlow Lite.}
+      \resumeItemListEnd
+  \resumeSubHeadingListEnd
+
+%-----------OPEN SOURCE-----------------
+\section{Open Source}
+  \resumeSubHeadingListStart
+    \resumeSubItem{\MYhref{https://github.com/huggingface/transformers/pull/32317}{Hugging Face Transformers - SAM2}}
+      {Led the addition of Segment Anything 2 support to Transformers, including model integration, image/video processors, conversion flow, documentation, and tests; credited in the official \MYhref{https://huggingface.co/docs/transformers/model_doc/sam2}{SAM2 docs}.}
+    \resumeSubItem{Hugging Face Contributions}
+      {Implemented or improved RT-DETR, ViTPose, DETA training loss, and distributed training utilities in \MYhref{https://github.com/huggingface/transformers/pulls?q=sangbumchoi}{Transformers}.}
+  \resumeSubHeadingListEnd
+
+%-----------PAPERS----------------
+\section{\MYhref{https://scholar.google.co.kr/citations?user=4klHsscAAAAJ&hl=ko}{Papers}}
+  \resumeSubHeadingListStart
+    \resumeSubItem{ZERO: Multi-modal Prompt-based Visual Grounding}
+      {arXiv - Jul 6, 2025}
+    \resumeSubItem{MobileHumanPose: Toward real-time 3D human pose estimation in mobile devices}
+      {IEEE/CVF CVPR Workshop - Jun 19, 2021}
+  \resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------------
+\section{Projects}
+  \resumeSubHeadingListStart
+    \resumeSubItem{Stable Diffusion}
+      {Generated personalized portraits and custom styles by fine-tuning diffusion weights with LoRA.}
+    \resumeSubItem{\MYhref{https://github.com/SangbumChoi/SuperbMobile}{iOS Inspection App}}
+      {Built an in-house iOS data inspection tool for project managers and distributed it through TestFlight.}
+  \resumeSubHeadingListEnd
+
+%-----------EDUCATION-----------------
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {KAIST (Korea Advanced Institute of Science and Technology)}{Daejeon, South Korea}
+      {Professional Master in Electrical Engineering; GPA: 3.55/4.3}{Feb. 2020 -- Aug. 2021}
+    \resumeSubheading
+      {POSTECH (Pohang University of Science and Technology)}{Pohang, South Korea}
+      {Bachelor in Electrical Engineering; GPA: 3.4/4.3}{Mar. 2015 -- Feb. 2020}
+    \resumeSubheading
+      {UIUC (University of Illinois Urbana-Champaign)}{Illinois, United States}
+      {Exchange Student; GPA: 3.6/4.0}{Jan. 2018 -- Dec. 2018}
+  \resumeSubHeadingListEnd
+
+%--------PROGRAMMING SKILLS------------
+\section{Programming Skills}
+ \resumeSubHeadingListStart
+   \item{
+     \textbf{Professional}{: Python, PyTorch, AWS, Transformers}
+     \hfill
+     \textbf{Experienced}{: TensorFlow, Swift, LangChain, Langfuse}
+   }
+ \resumeSubHeadingListEnd
+
+\end{document}

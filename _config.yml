@@ -80,9 +80,9 @@ analytics:
 
 # Site Author
 author:
-  name             : "What to say"
+  name             : "Sangbum Daniel Choi"
   avatar           : "B612_20181023_232153_816.jpg"
-  bio              : "CTO of Team Island"
+  bio              : "AI/ML engineer focused on computer vision and open source"
   location         : "Seoul, South Korea"
   employer         :
   pubmed           :
@@ -102,7 +102,7 @@ author:
   instagram        :
   impactstory      : #"https://profiles.impactstory.org/u/xxxx-xxxx-xxxx-xxxx"
   lastfm           :
-  linkedin         :
+  linkedin         : "daniel-choi-86648216b"
   orcid            :
   pinterest        :
   soundcloud       :

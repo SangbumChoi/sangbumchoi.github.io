@@ -9,6 +9,23 @@ redirect_from:
 
 {% include base_path %}
 
+Summary
+======
+AI/ML engineer focused on computer vision, efficient model deployment, and practical product engineering. Experience spans open-source model integration, mobile inference, 3D human pose estimation, image/video segmentation, and research-to-product prototyping.
+
+Resume downloads
+======
+* [Machine Learning Engineer Resume - Clean Version (PDF)](/files/resume/daniel_choi_resume_clean.pdf)
+* [Software Engineer Resume - Long Version (PDF)](/files/resume/daniel_choi_resume_long.pdf)
+* [Clean LaTeX source](/files/resume/daniel_choi_resume_clean_tex.zip) / [Long LaTeX source](/files/resume/daniel_choi_resume_long_tex.zip)
+
+Open source
+======
+* Hugging Face Transformers contributor: led the addition of Segment Anything 2 (SAM2) support to `huggingface/transformers`.
+  * Implemented and refined image/video segmentation model support, processors, documentation, conversion flow, and integration tests through a long-running community review cycle.
+  * PR: <a href="https://github.com/huggingface/transformers/pull/32317">Add Segment Anything 2 (SAM2)</a>; merged 2025-08-13.
+  * Documentation: <a href="https://huggingface.co/docs/transformers/model_doc/sam2">SAM2 model docs</a>, credited as a model contributor.
+
 Education
 ======
 * M.S. in Electrical Engineering and Entrepreneurship, Korea Advanced Institute of Science and Technology, KAIST, 2020.03-2021.02
@@ -17,40 +34,56 @@ Education
 
 Work experience
 ======
+* Current: Toss Bank (토스뱅크)
+  * Applied AI/ML and software engineering in a fintech product environment.
+
+* 2021/09-2026: Machine Learning Engineer
+  * <span style="font-weight:bold">SuperbAI</span>
+  * Led development of a multi-modal vision foundation model for text/semantic-prompted object detection and segmentation.
+  * Built ML training and serving infrastructure with AWS Batch, TensorRT, and Triton Inference Server, improving inference throughput by 5x over pure PyTorch serving.
+  * Built interactive segmentation tools using RepViT-SAM, FocalClick, SAM, and SAM2, increasing segmentation labeling speed by 25x.
+  * Applied parameter- and memory-efficient training methods, reducing GPU memory usage by 65.6% and training time by 44.3%.
+  * Won 2nd place in IOD and 4th place in FSOD challenges at CVPR 2025.
+
+* 2021/02-2021/08: Machine Learning Engineer Intern
+  * <span style="font-weight:bold">Kakao Enterprise</span>
+  * Fixed AutoGluon NeuralNetFastAI scaling issue.
+  * Developed a Flask-based training and inference AutoML framework with a simple front-end.
+
 * 2019/02-2020/06: Co. Team Island CTO
   * <span style="font-weight:bold">Team Island</span>
-  * Lightweight CNN implementation for mobile application
+  * Built lightweight CNN models for mobile applications and on-device inference.
 
 * 2018/08-12: Undergraduate Researcher
   * <span style="font-weight:bold">UIUC Undergraduate Research Program</span>
-  * Improved DOA estimation of MUSIC algorithm based on irregular microphone array
-  * Generating binaural sounds using software application
+  * Improved direction-of-arrival estimation with the MUSIC algorithm using irregular microphone arrays.
+  * Generated binaural sounds through a software-based audio pipeline.
   * Supervisor: Professor <a href="https://synrg.csl.illinois.edu/">Romit Roy Choudhury</a>
 
 * 2018/06-08: Machine Learning Engineer
   * <span style="font-weight:bold">Seerslab Intern</span>
-  * Face landmark detection by using Haar-cascade, HOG, and Machine Learning
-  * Making user GUI to easily pointing x,y coordinate in face figure
-  * Development of login CMS using JWT token
+  * Developed face landmark detection using Haar cascades, HOG features, and machine learning methods.
+  * Built a GUI tool for annotating face coordinates.
+  * Developed CMS login functionality with JWT-based authentication.
 
 * 2017/03-06: Undergraduate Researcher
   * <span style="font-weight:bold">POSTECH Undergraduate Research Program</span>
-  * Development of non-invasive heart rate measurement device
-  * Co-work with graduate student to solve national task, making smart-watch FPGA module
+  * Developed a non-invasive heart-rate measurement device.
+  * Collaborated on a smart-watch FPGA module for a national research project.
   * Supervisor: Professor <a href="https://postechimslab.wixsite.com/citeimslab">Park Sung Min</a>
 
 * 2016/06-08: Research Intern
   * <span style="font-weight:bold">ASAN Medical Center</span>
-  * Designing simulation of electrical surgical unit with computer tools (computer tool was related with calculating electromagnetic field around the vector space)
-  * Developing submachine aid for knee-injured people, assistant for experiment
+  * Designed simulations for an electrical surgical unit using electromagnetic field analysis tools.
+  * Supported development and experiments for an assistive device for knee-injured patients.
   * Supervisor: Professor Choi Jae Soon
   
 Skills
 ======
-* Python(including PyQt5)
-* FPGA Language - Xilinx
-* Git
-* Kotlin
+* Machine learning: PyTorch, Hugging Face Transformers, computer vision, image/video segmentation, pose estimation, model conversion
+* Programming: Python, Kotlin, Git
+* Deployment: mobile ML, lightweight CNNs, on-device inference, TensorFlow Lite
+* Hardware and tools: FPGA development with Xilinx, PyQt5
 
 Publications
 ======
@@ -72,4 +105,5 @@ Teaching
   
 Service and leadership
 ======
-* Currently signed in to CTO of Team Island
+* CTO, Team Island, 2019/02-2020/06
+* Open-source contributor to Hugging Face Transformers
