@@ -25,6 +25,7 @@ Open source
   * Implemented and refined image/video segmentation model support, processors, documentation, conversion flow, and integration tests through a long-running community review cycle.
   * PR: <a href="https://github.com/huggingface/transformers/pull/32317">Add Segment Anything 2 (SAM2)</a>; merged 2025-08-13.
   * Documentation: <a href="https://huggingface.co/docs/transformers/model_doc/sam2">SAM2 model docs</a>, credited as a model contributor.
+* Hugging Face Transformers contributor: opened <a href="https://github.com/huggingface/transformers/pull/43451">Add Molmo2</a> and published <a href="https://huggingface.co/danelcsb/Molmo2-4B">danelcsb/Molmo2-4B</a> on the Hugging Face Hub.
 
 Education
 ======
@@ -34,10 +35,11 @@ Education
 
 Work experience
 ======
-* Current: Toss Bank (토스뱅크)
+* 2026/01-Present: Software Engineer
+  * <span style="font-weight:bold">Toss Bank (토스뱅크)</span>
   * Applied AI/ML and software engineering in a fintech product environment.
 
-* 2021/09-2026: Machine Learning Engineer
+* 2021/09-2026/01: Machine Learning Engineer
   * <span style="font-weight:bold">SuperbAI</span>
   * Led development of a multi-modal vision foundation model for text/semantic-prompted object detection and segmentation.
   * Built ML training and serving infrastructure with AWS Batch, TensorRT, and Triton Inference Server, improving inference throughput by 5x over pure PyTorch serving.

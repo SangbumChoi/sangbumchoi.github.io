@@ -1,6 +1,6 @@
 ---
 permalink: /
-title: "Who shot ya"
+title: "Sangbum Daniel Choi"
 excerpt: "About me"
 author_profile: true
 redirect_from: 
