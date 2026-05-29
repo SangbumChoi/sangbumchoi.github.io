@@ -11,7 +11,7 @@ redirect_from:
 
 Summary
 ======
-AI/ML engineer focused on computer vision, efficient model deployment, and practical product engineering. Experience spans open-source model integration, mobile inference, 3D human pose estimation, image/video segmentation, and research-to-product prototyping.
+AI systems engineer with 4+ years of experience building multimodal vision models, production ML training/serving infrastructure, and open-source model integrations in Hugging Face Transformers. Experienced in inference optimization with TensorRT/Triton, large-scale model deployment, model conversion, efficient training, and performance-oriented ML systems.
 
 Resume downloads
 ======
@@ -21,6 +21,7 @@ Resume downloads
 
 Open source
 ======
+* Hugging Face Transformers contributor with 40+ pull requests across multimodal, vision, and object-detection models, including SAM2, Molmo2, RT-DETR, ViTPose, DINOv3 utilities, zero-shot examples, and training/inference fixes.
 * Hugging Face Transformers contributor: led the addition of Segment Anything 2 (SAM2) support to `huggingface/transformers`.
   * Implemented and refined image/video segmentation model support, processors, documentation, conversion flow, and integration tests through a long-running community review cycle.
   * PR: <a href="https://github.com/huggingface/transformers/pull/32317">Add Segment Anything 2 (SAM2)</a>; merged 2025-08-13.
@@ -37,16 +38,16 @@ Work experience
 ======
 * 2026/01-Present: Data Scientist
   * <span style="font-weight:bold">Toss Bank (토스뱅크)</span>
-  * Building an on-premise opencode agent system for internal AI-assisted development workflows.
+  * Building an on-premise opencode agent system for secure internal AI-assisted development workflows.
   * Developing AI-based authentication systems for face and ID card verification.
-  * Developing document information extraction systems for banking workflows.
+  * Developing document information extraction systems for banking workflows and identity AI pipelines.
 
 * 2021/09-2026/01: Machine Learning Engineer
   * <span style="font-weight:bold">SuperbAI</span>
   * Led development of a multi-modal vision foundation model for text/semantic-prompted object detection and segmentation.
   * Built ML training and serving infrastructure with AWS Batch, TensorRT, and Triton Inference Server, improving inference throughput by 5x over pure PyTorch serving.
   * Built interactive segmentation tools using RepViT-SAM, FocalClick, SAM, and SAM2, increasing segmentation labeling speed by 25x.
-  * Applied parameter- and memory-efficient training methods, reducing GPU memory usage by 65.6% and training time by 44.3%.
+  * Reduced GPU memory usage by 65.6% and training time by 44.3% using parameter- and memory-efficient training methods.
   * Won 2nd place in IOD and 4th place in FSOD challenges at CVPR 2025.
 
 * 2021/02-2021/08: Machine Learning Engineer Intern
@@ -84,7 +85,8 @@ Work experience
   
 Skills
 ======
-* Machine learning: PyTorch, Hugging Face Transformers, computer vision, image/video segmentation, pose estimation, model conversion
+* AI systems: PyTorch, Hugging Face Transformers, TensorRT, Triton Inference Server, AWS Batch, model conversion
+* Machine learning: computer vision, multimodal vision models, object detection, image/video segmentation, pose estimation, efficient training
 * Programming: Python, Kotlin, Git
 * Deployment: mobile ML, lightweight CNNs, on-device inference, TensorFlow Lite
 * Hardware and tools: FPGA development with Xilinx, PyQt5
