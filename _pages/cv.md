@@ -85,10 +85,11 @@ Work experience
   
 Skills
 ======
-* AI systems: PyTorch, Hugging Face Transformers, TensorRT, Triton Inference Server, AWS Batch, model conversion
+* AI systems: PyTorch, Hugging Face Transformers, TensorRT, Triton Inference Server, AWS Batch, MLflow, model conversion
 * Machine learning: computer vision, multimodal vision models, object detection, image/video segmentation, pose estimation, efficient training
 * Programming: Python, Kotlin, Git
 * Deployment: mobile ML, lightweight CNNs, on-device inference, TensorFlow Lite
+* AI developer tools: Claude Code, Codex, opencode, LangChain, Langfuse
 * Hardware and tools: FPGA development with Xilinx, PyQt5
 
 Publications
