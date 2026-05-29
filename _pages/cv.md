@@ -110,7 +110,7 @@ Teaching
     {% include archive-single-cv.html %}
   {% endfor %}</ul>
   
-Service and leadership
+Athlete Service and Leadership
 ======
 * CTO, Team Island, 2019/02-2020/06
 * Open-source contributor to Hugging Face Transformers
