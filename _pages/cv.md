@@ -40,7 +40,7 @@ Work experience
   * <span style="font-weight:bold">Toss Bank (토스뱅크)</span>
   * Building an on-premise opencode agent system for secure internal AI-assisted development workflows.
   * Developing AI-based authentication systems for face and ID card verification.
-  * Developing document information extraction systems for banking workflows and identity AI pipelines.
+  * Developing end-to-end document information extraction systems using vision-language models for banking workflows and identity AI pipelines.
 
 * 2021/09-2026/01: Machine Learning Engineer
   * <span style="font-weight:bold">SuperbAI</span>
