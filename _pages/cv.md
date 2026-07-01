@@ -11,7 +11,7 @@ redirect_from:
 
 Summary
 ======
-AI systems engineer with 6+ years of experience building multimodal vision models, production ML training/serving infrastructure, and open-source model integrations in Hugging Face Transformers. Experienced in inference optimization with TensorRT/Triton, large-scale model deployment, model conversion, efficient training, and performance-oriented ML systems.
+AI research and systems engineer with 6+ years of experience in multimodal pre-training and post-training, data curation, evaluation, open-source model integration, and production deployment. Built PyTorch training/serving systems and contributed 40+ pull requests to Hugging Face Transformers.
 
 Resume downloads
 ======
@@ -21,7 +21,7 @@ Resume downloads
 
 Open source
 ======
-* Hugging Face Transformers contributor with 40+ pull requests across multimodal, vision, and object-detection models, including SAM2, Molmo2, RT-DETR, ViTPose, DINOv3 utilities, zero-shot examples, and training/inference fixes.
+* Hugging Face Transformers contributor with 40+ pull requests to a large production codebase, including model architectures, processors, conversion scripts, distributed training fixes, tests, and documentation.
 * Hugging Face Transformers contributor: led the addition of Segment Anything 2 (SAM2) support to `huggingface/transformers`.
   * Implemented and refined image/video segmentation model support, processors, documentation, conversion flow, and integration tests through a long-running community review cycle.
   * PR: <a href="https://github.com/huggingface/transformers/pull/32317">Add Segment Anything 2 (SAM2)</a>; merged 2025-08-13.
@@ -38,14 +38,15 @@ Work experience
 ======
 * 2026/01-Present: Data Scientist
   * <span style="font-weight:bold">Toss Bank (토스뱅크)</span>
-  * Building an on-premise opencode agent system for secure internal AI-assisted development workflows.
+  * Building an on-premise agent system with internally deployed LLMs for secure AI-assisted development workflows.
   * Developing AI-based authentication systems for face and ID card verification.
-  * Developing end-to-end document information extraction systems using vision-language models for banking workflows and identity AI pipelines.
+  * Post-trained and evaluated an approximately 1B-parameter vision-language model in an end-to-end document extraction pipeline, reaching 61% exact-match accuracy for automation-ready outputs.
 
 * 2021/09-2026/01: Machine Learning Engineer
   * <span style="font-weight:bold">SuperbAI</span>
-  * Led development of a multi-modal vision foundation model for text/semantic-prompted object detection and segmentation.
-  * Built ML training and serving infrastructure with AWS Batch, TensorRT, and Triton Inference Server, improving inference throughput by 5x over pure PyTorch serving.
+  * Led multimodal pre-training and staged text/image alignment for a visual-grounding model using a curated 1.1M-image dataset.
+  * Built distributed, multi-GPU training and serving infrastructure with AWS Batch, TensorRT, and Triton Inference Server, improving inference throughput by 5x over pure PyTorch serving.
+  * Built LoRA, Adapter, and LST post-training pipelines and delivered 1,100+ models and 60+ customer endpoints in one year.
   * Built interactive segmentation tools using RepViT-SAM, FocalClick, SAM, and SAM2, increasing segmentation labeling speed by 25x.
   * Reduced GPU memory usage by 65.6% and training time by 44.3% using parameter- and memory-efficient training methods.
   * Won 2nd place in IOD and 4th place in FSOD challenges at CVPR 2025.
@@ -85,12 +86,13 @@ Work experience
   
 Skills
 ======
-* AI systems: PyTorch, Hugging Face Transformers, TensorRT, Triton Inference Server, AWS Batch, MLflow, model conversion
-* Machine learning: computer vision, multimodal vision models, object detection, image/video segmentation, pose estimation, efficient training
-* Programming: Python, Kotlin, Git
+* Research: PyTorch, Hugging Face Transformers, multimodal pre-training and post-training, LoRA, contrastive alignment, evaluation
+* AI systems: AWS Batch, distributed multi-GPU training, TensorRT, Triton Inference Server, MLflow, model conversion
+* Programming: Python, Kotlin, Git; large open-source codebase development, testing, and documentation
 * Deployment: mobile ML, lightweight CNNs, on-device inference, TensorFlow Lite
 * AI developer tools: Claude Code, Codex, opencode, LangChain, Langfuse
 * Hardware and tools: FPGA development with Xilinx, PyQt5
+* Languages: Korean (native), English (professional)
 
 Publications
 ======
