@@ -1,0 +1,75 @@
+{
+  "identity": {
+    "name": "Sangbum Daniel Choi",
+    "location": "Seoul, South Korea",
+    "role": "AI research and systems engineer",
+    "summary": "Six-plus years across multimodal model training, data curation, evaluation, open-source integration, edge deployment, and production ML infrastructure."
+  },
+  "current_work": {
+    "company": "Toss Bank",
+    "title": "Data Scientist",
+    "dates": "January 2026 to present",
+    "projects": [
+      "An on-premise AI agent system using internally deployed LLMs for secure development workflows.",
+      "AI authentication for face and ID card verification.",
+      "An end-to-end document extraction pipeline using an approximately 1B-parameter vision-language model, including document classification, orientation, layout, OCR and table understanding, and key-value extraction.",
+      "Designed stage-level evaluation and reached a 61 percent exact-match baseline for automation-ready outputs."
+    ]
+  },
+  "previous_work": {
+    "company": "SuperbAI",
+    "title": "Machine Learning Engineer",
+    "dates": "September 2021 to January 2026",
+    "highlights": [
+      "Led two ML engineers through multimodal pre-training and staged text-image alignment for a visual-grounding model.",
+      "Curated a 1.1-million-image dataset with captions, noun phrases, bounding boxes, and segmentation masks.",
+      "Placed second in the CVPR 2025 Incremental Object Detection challenge and fourth in the Few-Shot Object Detection challenge.",
+      "Built AWS Batch multi-GPU training and TensorRT/Triton serving infrastructure, improving throughput fivefold over pure PyTorch serving.",
+      "Delivered more than 1,100 models and 60 customer endpoints in one year.",
+      "Used LoRA, Adapter, and LST methods and reduced GPU memory use by 65.6 percent and training time by 44.3 percent while preserving performance.",
+      "Built interactive segmentation systems with RepViT-SAM, FocalClick, SAM, and SAM2, increasing labeling speed by 25 times."
+    ]
+  },
+  "other_experience": [
+    "Machine Learning Engineer Intern at Kakao Enterprise, where he fixed an AutoGluon scaling issue and built a Flask AutoML framework.",
+    "Co-founder and CTO of Team ISLAND, where he led five developers, raised approximately 290 thousand US dollars, and deployed a lightweight 3D pose model to mobile devices.",
+    "Software Engineer Intern at Seerslab, where he built a facial-landmark annotation tool."
+  ],
+  "open_source": {
+    "philosophy": "Open source expands the shared technical foundation. Making advanced models easier to inspect, reproduce, and use lets other engineers learn, improve the work, and create outcomes the original contributor could not anticipate.",
+    "contributions": [
+      "More than 40 pull requests to Hugging Face Transformers across model architectures, processors, conversion scripts, distributed training fixes, tests, examples, and documentation.",
+      "Led the integration of Segment Anything 2 into Transformers, including image and video processing, conversion, documentation, and integration tests.",
+      "Opened Molmo2 support and published danelcsb/Molmo2-4B on the Hugging Face Hub.",
+      "Implemented or improved RT-DETR, ViTPose, DETA training, DINOv3 utilities, and distributed training behavior."
+    ]
+  },
+  "research": [
+    {
+      "title": "ZERO: Multi-modal Prompt-based Visual Grounding",
+      "year": 2025,
+      "venue": "arXiv",
+      "url": "https://arxiv.org/abs/2507.04270"
+    },
+    {
+      "title": "MobileHumanPose: Toward Real-Time 3D Human Pose Estimation in Mobile Devices",
+      "year": 2021,
+      "venue": "IEEE/CVF CVPR Workshops",
+      "url": "https://openaccess.thecvf.com/content/CVPR2021W/MAI/html/Choi_MobileHumanPose_Toward_Real-Time_3D_Human_Pose_Estimation_in_Mobile_Devices_CVPRW_2021_paper.html"
+    }
+  ],
+  "education": [
+    "Professional Master in Electrical Engineering at KAIST.",
+    "Bachelor in Electrical Engineering at POSTECH.",
+    "Exchange student at the University of Illinois Urbana-Champaign."
+  ],
+  "links": {
+    "resume": "/files/resume/daniel_choi_resume_clean.pdf",
+    "cv": "/cv/",
+    "publications": "/publications/",
+    "github": "https://github.com/SangbumChoi",
+    "linkedin": "https://www.linkedin.com/in/daniel-choi-86648216b/",
+    "scholar": "https://scholar.google.co.kr/citations?user=4klHsscAAAAJ&hl=ko",
+    "email": "mailto:danielsejong55@gmail.com"
+  }
+}

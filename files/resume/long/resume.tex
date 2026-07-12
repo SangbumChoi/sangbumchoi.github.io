@@ -73,12 +73,12 @@
   \textbf{\Large Sangbum Daniel Choi} & Email : \href{mailto:danielsejong55@gmail.com}{danielsejong55@gmail.com}\\
   \href{https://www.linkedin.com/in/daniel-choi-86648216b/}{linkedin.com/in/daniel-choi-86648216b} & Mobile : +82-010-5913-2857 \\
   \href{https://github.com/SangbumChoi}{github.com/SangbumChoi} &
-  {Updated: 2026/07/01}\\
+  {Updated: 2026/07/12}\\
 \end{tabular*}
 
 %-----------SUMMARY-----------------
 \section{Summary}
-AI research and systems engineer with 6+ years of experience in multimodal pre-training and post-training, data curation, evaluation, open-source model integration, and production deployment. Built PyTorch training/serving systems and contributed 40+ pull requests to Hugging Face Transformers.
+Applied scientist and research engineer with 6+ years of experience taking multimodal models from data design and pre/post-training through rigorous evaluation and production deployment. Led end-to-end VLM and visual-grounding projects, built scalable PyTorch training/serving systems, and contributed 40+ pull requests to Hugging Face Transformers.
 
 %-----------EXPERIENCE-----------------
 \section{Experience}
@@ -91,20 +91,20 @@ AI research and systems engineer with 6+ years of experience in multimodal pre-t
           {Building an on-premise agent system with internally deployed LLMs for secure AI-assisted development workflows in a banking environment.}
         \resumeItem{AI-based Authentication}
           {Developing AI-based authentication models and pipelines for face verification and ID card verification.}
-        \resumeItem{Document Information Extraction}
-          {Post-trained and evaluated an approximately 1B-parameter vision-language model in an end-to-end document extraction pipeline spanning classification, orientation, layout, OCR/table understanding, and key-value extraction; reached 61\% exact-match accuracy for automation-ready outputs.}
+        \resumeItem{[Lead] End-to-End Document Information Extraction}
+          {Led the full research and production pipeline for an approximately 1B-parameter vision-language model spanning multi-page classification, orientation, layout detection, OCR/table understanding, and LLM-based key-value extraction; post-trained the model, designed stage-level diagnostics, and reached 61\% exact-match accuracy for automation-ready outputs.}
       \resumeItemListEnd
 
     \resumeSubheading
       {SuperbAI}{Seoul, South Korea}
       {Machine Learning Engineer}{Sep 2021 - Jan 2026}
       \resumeItemListStart
-        \resumeItem{[Lead] Vision Foundation Model}
+        \resumeItem{[Lead] Multimodal Foundation Model}
           {Led two ML engineers through multimodal pre-training and staged text/image alignment for a visual-grounding model, from planning and dataset construction to evaluation, API deployment, and AWS Marketplace release.}
-        \resumeItem{Dataset and Evaluation}
-          {Prepared a 1.1M-image in-house dataset and used automated model-assisted verification to improve labeling efficiency; won 2nd place in IOD and 4th place in FSOD at CVPR 2025 challenges.}
+        \resumeItem{Data Design and Evaluation}
+          {Designed a unified 1.1M-image dataset with captions, boxes, and masks and used automated model-assisted verification to improve labeling efficiency; won 2nd place in IOD and 4th place in FSOD at CVPR 2025 challenges.}
         \resumeItem{[Lead] ML Training \& Serving Platform}
-          {Designed distributed, multi-GPU training infrastructure with AWS Batch and optimized production inference with TensorRT and Triton, improving throughput by 5x over pure PyTorch serving.}
+          {Designed reusable distributed multi-GPU training, evaluation, and deployment infrastructure with PyTorch and AWS Batch; optimized production inference with TensorRT and Triton, improving throughput by 5x over pure PyTorch serving.}
         \resumeItem{Customer Delivery at Scale}
           {Generated 1,100+ models and delivered 60+ production endpoints across customer tenants in one year.}
         \resumeItem{Post-training and Efficiency}
@@ -150,7 +150,7 @@ AI research and systems engineer with 6+ years of experience in multimodal pre-t
 \section{Open Source}
   \resumeSubHeadingListStart
     \resumeSubItem{\MYhref{https://github.com/huggingface/transformers/pulls?q=is\%3Apr+SangbumChoi}{Hugging Face Transformers}}
-      {Contributed 40+ pull requests to a large production codebase across multimodal and vision models, including model architectures, processors, conversion scripts, distributed training fixes, tests, and documentation.}
+      {Contributed 40+ pull requests to a large production codebase across multimodal and vision models, independently shipping model architectures, processors, conversion scripts, distributed training fixes, tests, and documentation.}
     \resumeSubItem{\MYhref{https://github.com/huggingface/transformers/pull/32317}{Hugging Face Transformers - Segment Anything 2}}
       {Led the integration of SAM2 into Transformers across model architecture, image/video processing, conversion scripts, documentation, and integration tests. The PR was merged on 2025-08-13 after a long community review cycle and is credited in the official \MYhref{https://huggingface.co/docs/transformers/model_doc/sam2}{SAM2 documentation}.}
     \resumeSubItem{\MYhref{https://github.com/huggingface/transformers/pull/43451}{Hugging Face Transformers - Molmo2}}
@@ -208,9 +208,9 @@ AI research and systems engineer with 6+ years of experience in multimodal pre-t
 \section{Programming Skills}
  \resumeSubHeadingListStart
    \item{
-     \textbf{Research}{: Python, PyTorch, Transformers, multimodal pre/post-training, LoRA, contrastive alignment}
+     \textbf{Research}{: Python, PyTorch, Transformers, multimodal pre/post-training, LoRA, contrastive alignment, evaluation}
      \hfill
-     \textbf{Systems}{: AWS Batch, multi-GPU training, MLflow, TensorRT, Triton, Git}
+     \textbf{Systems}{: Linux, AWS Batch, multi-GPU training, MLflow, TensorRT, Triton, ONNX, TensorFlow Lite, Git}
      \\
      \textbf{Agents}{: LangChain, Langfuse, Claude Code, Codex, opencode}
      \hfill

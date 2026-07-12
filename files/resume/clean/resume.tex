@@ -73,12 +73,12 @@
   \textbf{\Large Sangbum Daniel Choi} & Email : \href{mailto:danielsejong55@gmail.com}{danielsejong55@gmail.com}\\
   \href{https://www.linkedin.com/in/daniel-choi-86648216b/}{linkedin.com/in/daniel-choi-86648216b} & Mobile : +82-010-5913-2857 \\
   \href{https://github.com/SangbumChoi}{github.com/SangbumChoi} &
-  {Updated: 2026/07/01}\\
+  {Updated: 2026/07/12}\\
 \end{tabular*}
 
 %-----------SUMMARY-----------------
 \section{Summary}
-AI research and systems engineer with 6+ years of experience in multimodal pre-training and post-training, data curation, evaluation, open-source model integration, and production deployment. Built PyTorch training/serving systems and contributed 40+ pull requests to Hugging Face Transformers.
+Applied scientist and research engineer with 6+ years of experience taking multimodal models from data design and pre/post-training through rigorous evaluation and production deployment. Led end-to-end VLM and visual-grounding projects, built scalable PyTorch training/serving systems, and contributed 40+ pull requests to Hugging Face Transformers.
 
 %-----------EXPERIENCE-----------------
 \section{Experience}
@@ -91,20 +91,20 @@ AI research and systems engineer with 6+ years of experience in multimodal pre-t
           {Building an on-premise agent system with internally deployed LLMs for secure AI-assisted development workflows.}
         \resumeItem{AI Authentication}
           {Developing AI-based authentication systems for face and ID card verification.}
-        \resumeItem{Document AI}
-          {Post-trained and evaluated an approximately 1B-parameter vision-language model in an end-to-end document extraction pipeline; designed stage-level diagnostics and reached 61\% exact-match accuracy for automation-ready outputs.}
+        \resumeItem{[Lead] End-to-End Document AI}
+          {Led the full research and production pipeline for an approximately 1B-parameter vision-language model, spanning multi-page classification, orientation, layout detection, OCR/table understanding, and LLM-based key-value extraction; post-trained the model, designed stage-level diagnostics, and reached 61\% exact-match accuracy for automation-ready outputs.}
       \resumeItemListEnd
 
     \resumeSubheading
       {SuperbAI}{Seoul, South Korea}
       {Machine Learning Engineer}{Sep 2021 - Jan 2026}
       \resumeItemListStart
-        \resumeItem{[Lead] Vision Foundation Model}
-          {Led multimodal pre-training and staged text/image alignment for a visual-grounding model; curated 1.1M images with captions, boxes, and masks, then drove evaluation, API deployment, and AWS Marketplace release.}
+        \resumeItem{[Lead] Multimodal Foundation Model}
+          {Led multimodal pre-training and staged text/image alignment for a visual-grounding model; designed and curated 1.1M images with captions, boxes, and masks, then drove benchmark evaluation, API deployment, and AWS Marketplace release.}
         \resumeItem{CVPR 2025 Competitions}
           {Won 2nd place in IOD and 4th place in FSOD challenges, validating the model on open evaluation benchmarks.}
         \resumeItem{[Lead] ML Training \& Serving Platform}
-          {Built distributed, multi-GPU training infrastructure with AWS Batch and production serving with TensorRT/Triton; improved throughput by 5x and delivered 1,100+ models and 60+ customer endpoints in one year.}
+          {Built reusable distributed multi-GPU training, evaluation, and deployment infrastructure with PyTorch and AWS Batch; optimized production serving with TensorRT/Triton, improving throughput by 5x and delivering 1,100+ models and 60+ customer endpoints in one year.}
         \resumeItem{Post-training and Efficiency}
           {Applied LoRA, Adapter, and LST methods and memory-efficient training, reducing GPU memory by 65.6\% and training time by 44.3\% while preserving model performance.}
         \resumeItem{Interactive Segmentation}
@@ -134,7 +134,7 @@ AI research and systems engineer with 6+ years of experience in multimodal pre-t
 \section{Open Source}
   \resumeSubHeadingListStart
     \resumeSubItem{\MYhref{https://github.com/huggingface/transformers/pulls?q=is\%3Apr+SangbumChoi}{Hugging Face Transformers}}
-      {Contributed 40+ pull requests to a large production codebase across multimodal and vision models, including model architectures, processors, conversion scripts, distributed training fixes, tests, and documentation.}
+      {Contributed 40+ pull requests to a large production codebase across multimodal and vision models, independently shipping model architectures, processors, conversion scripts, distributed training fixes, tests, and documentation.}
     \resumeSubItem{\MYhref{https://github.com/huggingface/transformers/pull/32317}{Hugging Face Transformers - SAM2}}
       {Led the addition of Segment Anything 2 support to Transformers, including model integration, image/video processors, conversion flow, documentation, and tests; credited in the official \MYhref{https://huggingface.co/docs/transformers/model_doc/sam2}{SAM2 docs}.}
     \resumeSubItem{\MYhref{https://github.com/huggingface/transformers/pull/43451}{Hugging Face Transformers - Molmo2}}
@@ -174,9 +174,9 @@ AI research and systems engineer with 6+ years of experience in multimodal pre-t
 \section{Programming Skills}
  \resumeSubHeadingListStart
    \item{
-     \textbf{Research}{: Python, PyTorch, Transformers, multimodal pre/post-training, LoRA, contrastive alignment}
+     \textbf{Research}{: Python, PyTorch, Transformers, multimodal pre/post-training, LoRA, contrastive alignment, evaluation}
      \hfill
-     \textbf{Systems}{: AWS Batch, multi-GPU training, MLflow, TensorRT, Triton, Git}
+     \textbf{Systems}{: Linux, AWS Batch, multi-GPU training, MLflow, TensorRT, Triton, ONNX, TensorFlow Lite, Git}
      \\
      \textbf{Agents}{: LangChain, Langfuse, Claude Code, Codex, opencode}
      \hfill

@@ -1,0 +1,161 @@
+---
+layout: compress
+---
+{% include base_path %}
+<!doctype html>
+<html lang="{{ site.locale | slice: 0,2 }}" class="jarvis-js">
+  <head>
+    <meta charset="utf-8">
+    {% include seo.html %}
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0b0d0f">
+    <meta name="description" content="Talk with Sangbum Daniel Choi's private, browser-native AI portfolio.">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://huggingface.co" crossorigin>
+    <link rel="stylesheet" href="{{ base_path }}/assets/css/jarvis.css">
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+    <script type="module" src="{{ base_path }}/assets/js/jarvis.js"></script>
+  </head>
+  <body class="jarvis-page">
+    <a class="skip-link" href="#conversation">Skip to conversation</a>
+
+    <header class="jarvis-header">
+      <a class="wordmark" href="{{ base_path }}/" aria-label="Daniel OS home">
+        <span class="wordmark__mark" aria-hidden="true">D</span>
+        <span>DANIEL.OS</span>
+      </a>
+      <div class="runtime-pill" id="runtime-pill" aria-live="polite">
+        <span class="runtime-pill__light" aria-hidden="true"></span>
+        <span id="runtime-label">Detecting runtime</span>
+      </div>
+      <nav class="jarvis-nav" aria-label="Primary navigation">
+        <a href="{{ base_path }}/cv/">CV</a>
+        <a href="{{ base_path }}/publications/">Research</a>
+        <a href="https://github.com/SangbumChoi" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="jarvis-shell">
+      <section class="identity-panel" aria-labelledby="identity-title">
+        <div class="identity-panel__topline">
+          <span>PERSONAL AI / SEOUL</span>
+          <span id="local-time">--:-- KST</span>
+        </div>
+
+        <figure class="portrait" id="portrait" data-state="idle">
+          <div class="portrait__media">
+            <img
+              src="https://avatars.githubusercontent.com/u/34004152?v=4"
+              alt="Illustrated portrait of Sangbum Daniel Choi"
+              width="460"
+              height="460"
+              fetchpriority="high"
+            >
+            <div class="portrait__scan" aria-hidden="true"></div>
+            <div class="portrait__focus portrait__focus--top" aria-hidden="true"></div>
+            <div class="portrait__focus portrait__focus--bottom" aria-hidden="true"></div>
+          </div>
+          <canvas id="voice-wave" class="portrait__wave" width="640" height="72" aria-hidden="true"></canvas>
+          <figcaption>
+            <span class="portrait__state" id="portrait-state">STANDING BY</span>
+            <span>Voice-reactive avatar / local session</span>
+          </figcaption>
+        </figure>
+
+        <div class="identity-copy">
+          <p class="eyebrow">AI RESEARCH &amp; SYSTEMS ENGINEER</p>
+          <h1 id="identity-title">Sangbum<br>Daniel Choi</h1>
+          <p class="identity-copy__intro">
+            I build multimodal models, production AI systems, and open-source tools.
+            Ask the local model about my work, research, or the decisions behind it.
+          </p>
+        </div>
+
+        <dl class="signal-grid" aria-label="Profile highlights">
+          <div><dt>OPEN SOURCE</dt><dd>40+ HF PRs</dd></div>
+          <div><dt>MODEL DELIVERY</dt><dd>1,100+</dd></div>
+          <div><dt>CVPR 2025</dt><dd>2nd / 4th</dd></div>
+        </dl>
+      </section>
+
+      <section class="console-panel" id="conversation" aria-labelledby="console-title">
+        <div class="console-heading">
+          <div>
+            <p class="eyebrow">LOCAL INFERENCE CONSOLE</p>
+            <h2 id="console-title">Ask Daniel</h2>
+          </div>
+          <button class="icon-button" id="clear-chat" type="button" title="Clear conversation" aria-label="Clear conversation">
+            <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="model-loader" id="model-loader">
+          <div class="model-loader__row">
+            <div>
+              <strong id="model-status">LFM2-350M is preparing</strong>
+              <span id="model-detail">adaptive 4-bit weights · private browser cache</span>
+            </div>
+            <button class="load-button" id="load-model" type="button">
+              <i data-lucide="cpu" aria-hidden="true"></i>
+              <span>Initialize</span>
+            </button>
+          </div>
+          <div class="progress-track" role="progressbar" aria-label="Model download progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <span id="model-progress"></span>
+          </div>
+        </div>
+
+        <div class="chat-log" id="chat-log" aria-live="polite" aria-relevant="additions text">
+          <article class="message message--assistant">
+            <div class="message__meta"><span>DANIEL AI</span><time>NOW</time></div>
+            <div class="message__body">
+              Hi, I am Daniel's browser-native AI. The model runs on your device. Ask me about his work at Toss Bank, multimodal research, Hugging Face contributions, or open a profile link.
+            </div>
+          </article>
+        </div>
+
+        <div class="prompt-shelf" aria-label="Suggested questions">
+          <button type="button" data-prompt="What are Daniel's strongest open-source contributions?">Open source</button>
+          <button type="button" data-prompt="Explain Daniel's multimodal and document AI experience.">Multimodal work</button>
+          <button type="button" data-prompt="Why does Daniel contribute to open source?">Philosophy</button>
+          <button type="button" data-prompt="What links can I open?">Links</button>
+        </div>
+
+        <form class="composer" id="prompt-form">
+          <label class="sr-only" for="prompt-input">Ask Daniel a question</label>
+          <textarea id="prompt-input" rows="1" maxlength="1000" placeholder="Ask about Daniel's work, research, or open source…"></textarea>
+          <div class="composer__actions">
+            <button class="icon-button icon-button--mic" id="mic-button" type="button" title="Speak a question" aria-label="Speak a question">
+              <i data-lucide="mic" aria-hidden="true"></i>
+            </button>
+            <button class="icon-button icon-button--send" id="send-button" type="submit" title="Send question" aria-label="Send question">
+              <i data-lucide="arrow-up" aria-hidden="true"></i>
+            </button>
+          </div>
+        </form>
+
+        <div class="console-footer">
+          <label class="voice-toggle" for="voice-output">
+            <input id="voice-output" type="checkbox" checked>
+            <span aria-hidden="true"></span>
+            Read replies aloud
+          </label>
+          <span id="latency-label">No data leaves this page</span>
+        </div>
+      </section>
+    </main>
+
+    <footer class="jarvis-footer">
+      <span>Daniel OS / v0.1</span>
+      <div class="jarvis-footer__links">
+        <a href="{{ base_path }}/files/resume/daniel_choi_resume_clean.pdf">Resume PDF</a>
+        <a href="{{ base_path }}/publications/">Publications</a>
+        <a href="https://www.linkedin.com/in/daniel-choi-86648216b/" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="mailto:danielsejong55@gmail.com">Email</a>
+      </div>
+      <a href="https://huggingface.co/onnx-community/LFM2-350M-ONNX" target="_blank" rel="noopener">Powered by LFM2</a>
+    </footer>
+
+    <noscript>This interactive portfolio requires JavaScript. You can still view the <a href="{{ base_path }}/cv/">standard CV</a>.</noscript>
+  </body>
+</html>
