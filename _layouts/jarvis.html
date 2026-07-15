@@ -12,9 +12,9 @@ layout: compress
     <meta name="description" content="Talk with Sangbum Daniel Choi's private, browser-native AI portfolio.">
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://huggingface.co" crossorigin>
-    <link rel="stylesheet" href="{{ base_path }}/assets/css/jarvis.css">
+    <link rel="stylesheet" href="{{ base_path }}/assets/css/jarvis.css?v={{ site.jarvis_asset_version }}">
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
-    <script type="module" src="{{ base_path }}/assets/js/jarvis.js"></script>
+    <script type="module" src="{{ base_path }}/assets/js/jarvis.js?v={{ site.jarvis_asset_version }}"></script>
   </head>
   <body class="jarvis-page">
     <a class="skip-link" href="#conversation">Skip to conversation</a>
@@ -67,7 +67,7 @@ layout: compress
           <h1 id="identity-title">Sangbum<br>Daniel Choi</h1>
           <p class="identity-copy__intro">
             I build multimodal models, production AI systems, and open-source tools.
-            Ask the local model about my work, research, or the decisions behind it.
+            Ask this private profile assistant about my work, research, or the decisions behind it.
           </p>
         </div>
 
@@ -109,7 +109,7 @@ layout: compress
           <article class="message message--assistant">
             <div class="message__meta"><span>DANIEL AI</span><time>NOW</time></div>
             <div class="message__body">
-              Hi, I am Daniel's browser-native AI. The model runs on your device. Ask me about his work at Toss Bank, multimodal research, Hugging Face contributions, or open a profile link.
+              Hi, I am Daniel's browser-native portfolio assistant. Profile answers stay on this page, and local LFM2 inference is available on demand. Ask me about his work at Toss Bank, multimodal research, Hugging Face contributions, or open a profile link.
             </div>
           </article>
         </div>

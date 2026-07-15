@@ -311,9 +311,10 @@ button { color: inherit; }
   background: var(--panel);
 }
 .model-loader__row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.model-loader__row strong, .model-loader__row span { display: block; }
-.model-loader__row strong { font: 500 11px/1.4 var(--mono); }
-.model-loader__row span { margin-top: 3px; color: var(--muted); font: 400 8px/1.3 var(--mono); }
+.model-loader__row > div { min-width: 0; }
+.model-loader__row > div > strong, .model-loader__row > div > span { display: block; }
+.model-loader__row > div > strong { font: 500 11px/1.4 var(--mono); }
+.model-loader__row > div > span { margin-top: 3px; color: var(--muted); font: 400 8px/1.3 var(--mono); }
 
 .load-button {
   min-height: 34px;
@@ -326,8 +327,10 @@ button { color: inherit; }
   background: var(--signal-dark);
   color: var(--signal);
   font: 500 9px/1 var(--mono);
+  white-space: nowrap;
   cursor: pointer;
 }
+.load-button span { margin: 0; color: inherit; font: inherit; white-space: nowrap; }
 .load-button svg { width: 14px; height: 14px; }
 .load-button:disabled { opacity: 0.55; cursor: progress; }
 
