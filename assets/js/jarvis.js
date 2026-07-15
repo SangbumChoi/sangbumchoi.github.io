@@ -153,23 +153,6 @@ function routeCommand(prompt) {
   return true;
 }
 
-function fallbackAnswer(prompt) {
-  const grounded = groundedAnswer(prompt);
-  if (grounded) return grounded;
-  const query = prompt.toLowerCase();
-  const links = state.profile?.links || {};
-  if (/link|링크|resume|cv|github|linkedin|paper|논문/.test(query)) {
-    return `You can open Daniel's [resume](${links.resume}), [CV](${links.cv}), [publications](${links.publications}), [GitHub](${links.github}), or [LinkedIn](${links.linkedin}). You can also type /resume, /papers, or /github.`;
-  }
-  if (/open.?source|hugging|오픈.?소스/.test(query)) {
-    return "Daniel has contributed 40+ pull requests to Hugging Face Transformers, including SAM2, Molmo2, RT-DETR, ViTPose, distributed training fixes, tests, and documentation. The full local model is still loading; ask again when the status turns ready for a synthesized answer.";
-  }
-  if (/toss|document|bank|문서|토스/.test(query)) {
-    return "At Toss Bank, Daniel works on an on-premise LLM agent, AI authentication, and an end-to-end VLM document extraction pipeline with stage-level diagnostics and a 61% exact-match baseline. The full local model is still loading.";
-  }
-  return "The personal LFM2 model is still loading into your browser. I queued your question and will answer it as soon as the local runtime is ready.";
-}
-
 function groundedAnswer(prompt) {
   if (!state.profile) return null;
   const query = prompt.toLowerCase();
@@ -318,11 +301,7 @@ function handleModelError(message) {
 
 function generateAnswer(prompt) {
   if (!state.modelReady) {
-    state.pendingPrompt = prompt;
-    if (!state.modelLoading) initWorker();
-    const fallback = fallbackAnswer(prompt);
-    const notice = createMessage("assistant", fallback);
-    notice.dataset.loadingNotice = "true";
+    deliverGroundedAnswer(mockSynthesisAnswer(prompt));
     return;
   }
 
@@ -343,6 +322,13 @@ function generateAnswer(prompt) {
       ...recent,
     ],
   });
+}
+
+function mockSynthesisAnswer(prompt) {
+  const korean = /[가-힣]/.test(prompt);
+  return korean
+    ? "현재는 Daniel의 검증된 프로필 정보를 기반으로 즉시 답하는 가벼운 데모 모드입니다. 이 질문에 대한 구체적인 정보는 프로필에 아직 없습니다. 실제 LFM2 로컬 추론은 위의 'Enable local AI' 버튼을 눌러 선택적으로 실행할 수 있습니다."
+    : "This is the lightweight demo mode, answering instantly from Daniel's verified profile. The portfolio does not yet contain a specific answer to that question. You can optionally run local LFM2 inference by selecting Enable local AI above.";
 }
 
 function completeGeneration(data) {
@@ -505,16 +491,17 @@ async function boot() {
   bindEvents();
 
   state.backend = "gpu" in navigator ? "webgpu" : "wasm";
-  setRuntime(`${state.backend} / pending`);
-  els.modelDetail.textContent = state.backend === "webgpu" ? "q4 · WebGPU available" : "q4 · WASM fallback";
+  setRuntime("demo / private", true);
+  els.modelStatus.textContent = "Profile demo ready";
+  els.modelDetail.textContent = state.backend === "webgpu"
+    ? "instant grounded answers · WebGPU available on demand"
+    : "instant grounded answers · WASM available on demand";
 
   try {
     await loadProfile();
   } catch (error) {
     els.modelDetail.textContent = error.message;
   }
-
-  window.setTimeout(initWorker, 800);
 }
 
 boot();
