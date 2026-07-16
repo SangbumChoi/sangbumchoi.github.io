@@ -9,6 +9,15 @@ WebGPU.
 
 ## Train and evaluate
 
+The supervised dataset separates three behaviors: answers grounded in selected
+profile sections, explicit statements that a Daniel-related fact is absent,
+and refusals for requests outside the portfolio scope. Validate the source data
+before starting a job:
+
+```sh
+python3 scripts/validate_daniel_lfm2_data.py
+```
+
 ```sh
 uv run --python 3.12 \
   --with 'torch>=2.6' \
@@ -37,12 +46,31 @@ both paths. It writes both the adapter
 and a merged Transformers checkpoint. Generated artifacts are intentionally
 excluded from Git.
 
-## Export for the browser without using local memory
+## Train and publish without using local memory
+
+Push changes to the dataset, profile, trainer, validator, exporter, or
+`.github/workflows/train-publish-daniel-lfm2.yml` on `master`. The workflow:
+
+1. validates every training and held-out record against the profile schema;
+2. trains and merges LFM2-350M on a GitHub-hosted runner;
+3. requires separate pass thresholds for verified answers, missing facts, and
+   out-of-scope refusals;
+4. publishes the evaluated FP16 checkpoint under the
+   `daniel-lfm2-source-v2` GitHub release;
+5. exports and smoke-tests symmetric Q4 ONNX before updating the
+   `model-assets` branch and `daniel-lfm2-onnx-v1` release.
+
+This keeps model training and export isolated from the 32 GB development Mac.
+The website's immutable model revision is updated only after the remote job
+passes.
+
+## Export only
 
 The export script pins Liquid AI's official LiquidONNX revision, creates a
-WebGPU-compatible symmetric Q4 graph, runs a CPU smoke test, and uploads the
-complete Transformers.js model directory. Run it on Hugging Face Jobs so the
-local machine only submits and monitors the task:
+WebGPU-compatible symmetric Q4 graph, runs a CPU smoke test, and prepares the
+complete Transformers.js model directory. To re-export the current source
+model without retraining, run it on Hugging Face Jobs so the local machine only
+submits and monitors the task:
 
 ```sh
 hf jobs uv run \
@@ -68,6 +96,25 @@ and the browser cache is tied to the exact export revision.
 The deterministic profile index must remain in front of generation. A small
 model checkpoint is useful for tone and narrow profile synthesis, but it is not
 a substitute for grounding when exact dates, metrics, and links matter.
+
+As an alternative to GitHub Actions, submit the single-file trainer to Hugging
+Face Jobs with the dataset, held-out evaluation cases, and profile pinned to
+the same Git revision. The trainer evaluates factual answers, missing facts,
+and unrelated request refusals before it uploads the merged model:
+
+```sh
+hf jobs uv run \
+  --flavor a10g-small \
+  --timeout 2h \
+  --secrets HF_TOKEN \
+  --detach \
+  scripts/train_daniel_lfm2.py \
+  --dataset-url https://raw.githubusercontent.com/SangbumChoi/sangbumchoi.github.io/<revision>/assets/data/daniel-lfm2-sft.jsonl \
+  --profile-url https://raw.githubusercontent.com/SangbumChoi/sangbumchoi.github.io/<revision>/assets/data/daniel-profile.json \
+  --eval-url https://raw.githubusercontent.com/SangbumChoi/sangbumchoi.github.io/<revision>/assets/data/daniel-lfm2-eval.jsonl \
+  --training-revision <revision> \
+  --push-to-hub
+```
 
 ## Remote browser verification
 

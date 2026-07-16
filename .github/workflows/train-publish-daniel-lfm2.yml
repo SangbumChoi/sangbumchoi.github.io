@@ -1,0 +1,145 @@
+name: Train and publish Daniel LFM2
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/workflows/train-publish-daniel-lfm2.yml
+      - assets/data/daniel-lfm2-sft.jsonl
+      - assets/data/daniel-lfm2-eval.jsonl
+      - assets/data/daniel-profile.json
+      - scripts/train_daniel_lfm2.py
+      - scripts/validate_daniel_lfm2_data.py
+      - scripts/export_daniel_lfm2_onnx.py
+  workflow_dispatch:
+
+concurrency:
+  group: daniel-lfm2-training
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  train-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_TAG: daniel-lfm2-source-v2
+      WEB_TAG: daniel-lfm2-onnx-v1
+
+    steps:
+      - name: Check out portfolio
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Validate grounded training data
+        run: python3 scripts/validate_daniel_lfm2_data.py
+
+      - name: Train, merge, and evaluate LFM2
+        run: |
+          uv run scripts/train_daniel_lfm2.py \
+            --output "$RUNNER_TEMP/daniel-lfm2" \
+            --epochs 3 \
+            --training-revision "$GITHUB_SHA"
+
+      - name: Publish evaluated merged checkpoint
+        run: |
+          set -euo pipefail
+          merged="$RUNNER_TEMP/daniel-lfm2/merged"
+          assets="$RUNNER_TEMP/source-release"
+          mkdir -p "$assets"
+          tar -C "$merged" -czf "$assets/daniel-lfm2-350m-fp16.tar.gz" .
+          cp "$merged/evaluation.json" "$assets/daniel-lfm2-evaluation.json"
+          cp "$merged/README.md" "$assets/daniel-lfm2-model-card.md"
+          notes="Evaluated Daniel OS LFM2-350M checkpoint trained from portfolio revision $GITHUB_SHA. Includes verified-profile answers, missing-fact boundaries, and out-of-scope refusals."
+          if gh release view "$SOURCE_TAG" >/dev/null 2>&1; then
+            gh release upload "$SOURCE_TAG" "$assets"/* --clobber
+            gh release edit "$SOURCE_TAG" --notes "$notes" --title "Daniel OS LFM2 source v2"
+          else
+            gh release create "$SOURCE_TAG" "$assets"/* \
+              --title "Daniel OS LFM2 source v2" \
+              --notes "$notes"
+          fi
+
+      - name: Export and CPU-smoke-test Q4 ONNX
+        run: |
+          uv run scripts/export_daniel_lfm2_onnx.py \
+            --source "$RUNNER_TEMP/daniel-lfm2/merged" \
+            --output-dir "$RUNNER_TEMP/daniel-export"
+
+      - name: Prepare browser release assets
+        run: |
+          set -euo pipefail
+          export_dir="$RUNNER_TEMP/daniel-export/exports/daniel-lfm2-350m-ONNX"
+          asset_dir="$RUNNER_TEMP/browser-release"
+          mkdir -p "$asset_dir"
+          for file in config.json generation_config.json tokenizer.json tokenizer_config.json chat_template.jinja README.md; do
+            cp "$export_dir/$file" "$asset_dir/$file"
+          done
+          if [[ -f "$export_dir/special_tokens_map.json" ]]; then
+            cp "$export_dir/special_tokens_map.json" "$asset_dir/special_tokens_map.json"
+          fi
+          cp "$export_dir/onnx/model_q4.onnx" "$asset_dir/model_q4.onnx"
+          cp "$export_dir/onnx/model_q4.onnx_data" "$asset_dir/model_q4.onnx_data"
+          jq -n \
+            --arg source_release "$SOURCE_TAG" \
+            --arg training_revision "$GITHUB_SHA" \
+            --arg exporter_revision "9a23ddd23035165f7414a5de3220a51e85780f64" \
+            '{source_release:$source_release, training_revision:$training_revision, exporter_revision:$exporter_revision, precision:"q4", webgpu:true}' \
+            > "$asset_dir/manifest.json"
+
+      - name: Publish CORS-enabled model branch
+        run: |
+          set -euo pipefail
+          export_dir="$RUNNER_TEMP/daniel-export/exports/daniel-lfm2-350m-ONNX"
+          model_root="models/daniel-lfm2-350m-ONNX"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin model-assets
+          git switch -C model-assets origin/model-assets
+          git lfs install --local
+          git lfs track "$model_root/**"
+          rm -rf "$model_root"
+          mkdir -p "$model_root/onnx"
+          for file in config.json generation_config.json tokenizer.json tokenizer_config.json chat_template.jinja README.md; do
+            cp "$export_dir/$file" "$model_root/$file"
+          done
+          if [[ -f "$export_dir/special_tokens_map.json" ]]; then
+            cp "$export_dir/special_tokens_map.json" "$model_root/special_tokens_map.json"
+          fi
+          cp "$export_dir/onnx/model_q4.onnx" "$model_root/onnx/model_q4.onnx"
+          cp "$export_dir/onnx/model_q4.onnx_data" "$model_root/onnx/model_q4.onnx_data"
+          cp "$RUNNER_TEMP/browser-release/manifest.json" "$model_root/manifest.json"
+          git add .gitattributes "$model_root"
+          git commit -m "Publish scope-trained Daniel LFM2 WebGPU assets"
+          git push origin HEAD:model-assets
+          echo "MODEL_ASSET_REVISION=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Publish browser model release
+        run: |
+          set -euo pipefail
+          asset_dir="$RUNNER_TEMP/browser-release"
+          notes="Scope-trained symmetric-Q4 Daniel OS LFM2. Training revision: $GITHUB_SHA. Model asset revision: $MODEL_ASSET_REVISION."
+          if gh release view "$WEB_TAG" >/dev/null 2>&1; then
+            gh release upload "$WEB_TAG" "$asset_dir"/* --clobber
+            gh release edit "$WEB_TAG" --notes "$notes" --title "Daniel OS LFM2 WebGPU v2"
+          else
+            gh release create "$WEB_TAG" "$asset_dir"/* \
+              --title "Daniel OS LFM2 WebGPU v2" \
+              --notes "$notes"
+          fi
+
+      - name: Summarize model revisions
+        run: |
+          echo "### Daniel LFM2 published" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Training revision: \`$GITHUB_SHA\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Model asset revision: \`$MODEL_ASSET_REVISION\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Source release: \`$SOURCE_TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Browser release: \`$WEB_TAG\`" >> "$GITHUB_STEP_SUMMARY"

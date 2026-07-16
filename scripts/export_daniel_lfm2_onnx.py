@@ -28,13 +28,23 @@ def run(*command: str, cwd: Path | None = None) -> None:
 
 
 def write_model_card(export_dir: Path, source: str) -> None:
+    source_reference = (
+        source
+        if not Path(source).exists()
+        else "SangbumChoi/sangbumchoi.github.io release daniel-lfm2-source-v2"
+    )
+    source_link = (
+        f"[{source}](https://huggingface.co/{source})"
+        if not Path(source).exists()
+        else "the Daniel OS merged source checkpoint published on GitHub"
+    )
     (export_dir / "README.md").write_text(
         f"""---
 library_name: transformers.js
 pipeline_tag: text-generation
 base_model:
 - LiquidAI/LFM2-350M
-- {source}
+- {source_reference}
 tags:
 - transformers.js
 - onnx
@@ -46,7 +56,7 @@ license: lfm1.0
 
 # Daniel OS LFM2-350M ONNX
 
-Browser-ready Q4 ONNX export of [{source}](https://huggingface.co/{source}),
+Browser-ready Q4 ONNX export of {source_link},
 the personalized language model used by Sangbum Daniel Choi's portfolio.
 
 The model was exported with Liquid AI's official
