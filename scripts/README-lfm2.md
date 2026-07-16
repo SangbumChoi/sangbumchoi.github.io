@@ -57,9 +57,10 @@ GitHub-hosted runner and publishes the flattened model files under the
 structure to the Git LFS-backed `model-assets` branch so the browser worker can
 load the files through GitHub's CORS-enabled media host.
 
-After the job succeeds, update `MODEL_ID` and `MODEL_REVISION` in
-`assets/js/lfm-worker.js` and verify both WebGPU loading and generation in a
-Chromium browser.
+After the job succeeds, pin the `model-assets` branch commit in
+`MODEL_REVISION` inside `assets/js/lfm-worker.js`. The worker uses an immutable
+`media.githubusercontent.com` URL template so all model files are CORS-enabled
+and the browser cache is tied to the exact export revision.
 
 The deterministic profile index must remain in front of generation. A small
 model checkpoint is useful for tone and narrow profile synthesis, but it is not

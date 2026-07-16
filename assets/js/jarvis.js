@@ -1,5 +1,5 @@
-const MODEL_ID = "onnx-community/LFM2-350M-ONNX";
 const PROFILE_URL = "/assets/data/daniel-profile.json";
+const ASSET_VERSION = "3";
 
 const els = {
   runtimePill: document.querySelector("#runtime-pill"),
@@ -239,11 +239,11 @@ async function initWorker() {
     // Persistent storage is an optimization; inference still works without it.
   }
   els.loadButton.disabled = true;
-  els.modelStatus.textContent = "Loading LFM2-350M";
-  els.modelDetail.textContent = state.backend === "webgpu" ? "q4f16 · WebGPU · first load is cached" : "q4 · WASM fallback · first load is cached";
+  els.modelStatus.textContent = "Loading personalized LFM2";
+  els.modelDetail.textContent = state.backend === "webgpu" ? "q4 · WebGPU · ~294 MB · cached" : "q4 · WASM fallback · ~294 MB · cached";
   setRuntime(`${state.backend} / loading`);
 
-  state.worker = new Worker("/assets/js/lfm-worker.js", { type: "module" });
+  state.worker = new Worker(`/assets/js/lfm-worker.js?v=${ASSET_VERSION}`, { type: "module" });
   state.worker.addEventListener("message", handleWorkerMessage);
   state.worker.addEventListener("error", (event) => handleModelError(event.message));
   state.worker.postMessage({ type: "load", device: state.backend });
@@ -262,9 +262,8 @@ function handleWorkerMessage(event) {
     state.backend = data.runtime;
     els.modelProgress.style.width = "100%";
     els.progressTrack.setAttribute("aria-valuenow", "100");
-    els.modelStatus.textContent = "LFM2-350M ready";
-    const dtype = data.runtime === "webgpu" ? "q4f16" : "q4";
-    els.modelDetail.textContent = `${dtype} · ${data.runtime.toUpperCase()} · runs locally`;
+    els.modelStatus.textContent = "Personalized LFM2 ready";
+    els.modelDetail.textContent = `q4 · ${data.runtime.toUpperCase()} · runs locally`;
     els.loadButton.innerHTML = '<i data-lucide="check" aria-hidden="true"></i><span>Ready</span>';
     setRuntime(`${data.runtime} / private`, true);
     setPortraitState("idle", "LOCAL MODEL READY");
@@ -494,8 +493,8 @@ async function boot() {
   setRuntime("demo / private", true);
   els.modelStatus.textContent = "Profile demo ready";
   els.modelDetail.textContent = state.backend === "webgpu"
-    ? "instant grounded answers · WebGPU available on demand"
-    : "instant grounded answers · WASM available on demand";
+    ? "instant grounded answers · personalized WebGPU model on demand"
+    : "instant grounded answers · personalized WASM model on demand";
 
   try {
     await loadProfile();

@@ -1,15 +1,21 @@
-import { pipeline, TextStreamer } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1";
+import { env, pipeline, TextStreamer } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1";
 
-const MODEL_ID = "onnx-community/LFM2-350M-ONNX";
-const MODEL_REVISION = "5bc4b3e8cfd21660c0b1b9faa447ffbd9926b829";
+const MODEL_ID = "SangbumChoi/sangbumchoi.github.io";
+const MODEL_REVISION = "7792cb8a5dbde55140a40658e7d9d6605d2c63d9";
+const MODEL_PATH = "models/daniel-lfm2-350m-ONNX";
+
+env.allowLocalModels = false;
+env.allowRemoteModels = true;
+env.remoteHost = "https://media.githubusercontent.com/media/";
+env.remotePathTemplate = `{model}/{revision}/${MODEL_PATH}/{file}`;
+
 let generator = null;
 let runtime = null;
 let loadingPromise = null;
 
 async function createGenerator(preferredDevice = "webgpu") {
-  const preferredDtype = preferredDevice === "webgpu" ? "q4f16" : "q4";
   const options = {
-    dtype: preferredDtype,
+    dtype: "q4",
     device: preferredDevice,
     revision: MODEL_REVISION,
     progress_callback: (payload) => self.postMessage({ type: "progress", payload }),
