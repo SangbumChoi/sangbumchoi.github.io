@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import os
 import random
@@ -95,21 +96,27 @@ def load_training_records(path: Path, profile: dict, seed: int) -> tuple[Dataset
         behavior = record["behavior"]
         counts[behavior] += 1
         normalized = {
-            "messages": [
+            "prompt": [
                 {"role": "system", "content": system_prompt(profile, record["context_keys"])},
-                *record["messages"],
-            ]
+                record["messages"][0],
+            ],
+            "completion": [record["messages"][1]],
         }
         grouped.setdefault(behavior, []).append(normalized)
 
     rng = random.Random(seed)
-    train_records: list[dict] = []
+    training_groups: list[list[dict]] = []
     eval_records: list[dict] = []
     for records in grouped.values():
         rng.shuffle(records)
         holdout = min(2, max(1, len(records) // 8))
         eval_records.extend(records[:holdout])
-        train_records.extend(records[holdout:])
+        training_groups.append(records[holdout:])
+
+    target_size = max(len(records) for records in training_groups)
+    train_records: list[dict] = []
+    for records in training_groups:
+        train_records.extend(itertools.islice(itertools.cycle(records), target_size))
     rng.shuffle(train_records)
     rng.shuffle(eval_records)
     return Dataset.from_list(train_records), Dataset.from_list(eval_records), counts
@@ -185,6 +192,10 @@ def evaluate_behavior(
                 "expected_pass": expected_pass,
                 "forbidden_pass": forbidden_pass,
             }
+        )
+        print(
+            f"[{case['id']}] {'PASS' if passed else 'FAIL'} | {answer}",
+            flush=True,
         )
 
     scores = {
@@ -305,6 +316,7 @@ def main() -> None:
             save_strategy="epoch",
             save_total_limit=2,
             max_length=768,
+            completion_only_loss=True,
             bf16=False,
             fp16=torch.cuda.is_available(),
             report_to="none",
