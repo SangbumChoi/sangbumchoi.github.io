@@ -1,0 +1,7 @@
+{
+  "source_model": "danelcsb/daniel-lfm2-350m",
+  "exporter_revision": "9a23ddd23035165f7414a5de3220a51e85780f64",
+  "portfolio_commit": "5f5305a44bb2adf79360f0681729b3edf19446d3",
+  "precision": "q4",
+  "webgpu": true
+}
