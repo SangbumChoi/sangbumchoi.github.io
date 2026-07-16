@@ -53,7 +53,9 @@ hf jobs uv run \
 When Hugging Face CLI credentials are unavailable, dispatch
 `.github/workflows/export-daniel-lfm2.yml`. It performs the same export on a
 GitHub-hosted runner and publishes the flattened model files under the
-`daniel-lfm2-onnx-v1` release tag for the browser worker.
+`daniel-lfm2-onnx-v1` release tag. It also publishes the original directory
+structure to the Git LFS-backed `model-assets` branch so the browser worker can
+load the files through GitHub's CORS-enabled media host.
 
 After the job succeeds, update `MODEL_ID` and `MODEL_REVISION` in
 `assets/js/lfm-worker.js` and verify both WebGPU loading and generation in a

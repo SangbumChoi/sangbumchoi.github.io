@@ -62,6 +62,41 @@ jobs:
             '{source_model:$source, exporter_revision:$exporter_revision, portfolio_commit:$commit, precision:"q4", webgpu:true}' \
             > "$asset_dir/manifest.json"
 
+      - name: Publish CORS-enabled model branch
+        run: |
+          set -euo pipefail
+          export_dir="$RUNNER_TEMP/daniel-export/exports/daniel-lfm2-350m-ONNX"
+          model_root="models/daniel-lfm2-350m-ONNX"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code origin refs/heads/model-assets >/dev/null 2>&1; then
+            git fetch origin model-assets
+            git switch -C model-assets origin/model-assets
+          else
+            git switch --orphan model-assets
+            git rm -rf .
+          fi
+
+          git lfs install --local
+          git lfs track "*.onnx" "*.onnx_data"
+          rm -rf "$model_root"
+          mkdir -p "$model_root/onnx"
+
+          for file in config.json generation_config.json tokenizer.json tokenizer_config.json chat_template.jinja README.md; do
+            cp "$export_dir/$file" "$model_root/$file"
+          done
+          if [[ -f "$export_dir/special_tokens_map.json" ]]; then
+            cp "$export_dir/special_tokens_map.json" "$model_root/special_tokens_map.json"
+          fi
+          cp "$export_dir/onnx/model_q4.onnx" "$model_root/onnx/model_q4.onnx"
+          cp "$export_dir/onnx/model_q4.onnx_data" "$model_root/onnx/model_q4.onnx_data"
+          cp "$RUNNER_TEMP/release-assets/manifest.json" "$model_root/manifest.json"
+
+          git add .gitattributes "$model_root"
+          git commit -m "Publish personalized LFM2 WebGPU assets"
+          git push origin HEAD:model-assets
+
       - name: Publish browser model release
         run: |
           set -euo pipefail
