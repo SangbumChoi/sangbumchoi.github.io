@@ -75,7 +75,7 @@ jobs:
             git switch -C model-assets origin/model-assets
           else
             git switch --orphan model-assets
-            git rm -rf .
+            git rm -rf . || true
           fi
 
           git lfs install --local
