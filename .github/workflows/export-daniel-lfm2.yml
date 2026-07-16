@@ -1,0 +1,77 @@
+name: Export personalized LFM2 for WebGPU
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_model:
+        description: Public Hugging Face checkpoint to export
+        required: true
+        default: danelcsb/daniel-lfm2-350m
+      release_tag:
+        description: GitHub release tag used by the browser runtime
+        required: true
+        default: daniel-lfm2-onnx-v1
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      SOURCE_MODEL: ${{ inputs.source_model }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Check out portfolio
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Export and verify personalized Q4 model
+        run: |
+          uv run scripts/export_daniel_lfm2_onnx.py \
+            --source "$SOURCE_MODEL" \
+            --output-dir "$RUNNER_TEMP/daniel-export"
+
+      - name: Prepare browser release assets
+        run: |
+          set -euo pipefail
+          export_dir="$RUNNER_TEMP/daniel-export/exports/daniel-lfm2-350m-ONNX"
+          asset_dir="$RUNNER_TEMP/release-assets"
+          mkdir -p "$asset_dir"
+
+          for file in config.json generation_config.json tokenizer.json tokenizer_config.json chat_template.jinja README.md; do
+            cp "$export_dir/$file" "$asset_dir/$file"
+          done
+          if [[ -f "$export_dir/special_tokens_map.json" ]]; then
+            cp "$export_dir/special_tokens_map.json" "$asset_dir/special_tokens_map.json"
+          fi
+          cp "$export_dir/onnx/model_q4.onnx" "$asset_dir/model_q4.onnx"
+          cp "$export_dir/onnx/model_q4.onnx_data" "$asset_dir/model_q4.onnx_data"
+
+          jq -n \
+            --arg source "$SOURCE_MODEL" \
+            --arg exporter_revision "9a23ddd23035165f7414a5de3220a51e85780f64" \
+            --arg commit "$GITHUB_SHA" \
+            '{source_model:$source, exporter_revision:$exporter_revision, portfolio_commit:$commit, precision:"q4", webgpu:true}' \
+            > "$asset_dir/manifest.json"
+
+      - name: Publish browser model release
+        run: |
+          set -euo pipefail
+          asset_dir="$RUNNER_TEMP/release-assets"
+          notes="Personalized symmetric-Q4 LFM2 export for Daniel OS. Built from $SOURCE_MODEL at portfolio commit $GITHUB_SHA."
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "$asset_dir"/* --clobber
+            gh release edit "$RELEASE_TAG" --notes "$notes" --title "Daniel OS LFM2 WebGPU v1"
+          else
+            gh release create "$RELEASE_TAG" "$asset_dir"/* \
+              --title "Daniel OS LFM2 WebGPU v1" \
+              --notes "$notes"
+          fi
