@@ -51,8 +51,7 @@ the personalized language model used by Sangbum Daniel Choi's portfolio.
 
 The model was exported with Liquid AI's official
 [LiquidONNX](https://github.com/Liquid4All/onnx-export) tooling at revision
-`{EXPORTER_REVISION}`. Q4 uses symmetric quantization for WebGPU and includes
-the language-model head to reduce browser memory and download size.
+`{EXPORTER_REVISION}`. Q4 uses symmetric quantization for WebGPU compatibility.
 
 The portfolio keeps a deterministic verified-profile index in front of model
 generation. This checkpoint supplies conversational synthesis and tone; it is
@@ -104,7 +103,6 @@ def main() -> None:
             "daniel-lfm2-350m-ONNX",
             "--precision",
             "q4",
-            "--no-exclude-lm-head",
         )
 
         export_dir = output_root / "exports" / "daniel-lfm2-350m-ONNX"
