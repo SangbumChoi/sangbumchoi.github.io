@@ -113,9 +113,10 @@ def load_training_records(path: Path, profile: dict, seed: int) -> tuple[Dataset
         eval_records.extend(records[:holdout])
         training_groups.append(records[holdout:])
 
-    target_size = max(len(records) for records in training_groups)
+    largest_group = max(len(records) for records in training_groups)
     train_records: list[dict] = []
     for records in training_groups:
+        target_size = min(largest_group, max(24, len(records)))
         train_records.extend(itertools.islice(itertools.cycle(records), target_size))
     rng.shuffle(train_records)
     rng.shuffle(eval_records)

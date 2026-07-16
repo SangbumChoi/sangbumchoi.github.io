@@ -27,6 +27,7 @@ jobs:
     timeout-minutes: 360
     env:
       GH_TOKEN: ${{ github.token }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
       SOURCE_TAG: daniel-lfm2-source-v2
       WEB_TAG: daniel-lfm2-onnx-v1
 
@@ -46,8 +47,9 @@ jobs:
         run: |
           uv run scripts/train_daniel_lfm2.py \
             --output "$RUNNER_TEMP/daniel-lfm2" \
-            --epochs 2 \
-            --training-revision "$GITHUB_SHA"
+            --epochs 3 \
+            --training-revision "$GITHUB_SHA" \
+            --push-to-hub
 
       - name: Preserve behavioral evaluation
         if: ${{ always() }}

@@ -74,7 +74,7 @@ def validate_training(records: list[dict], profile: dict) -> Counter:
     return counts
 
 
-def validate_eval(records: list[dict], profile: dict) -> Counter:
+def validate_eval(records: list[dict], profile: dict, training_prompts: set[str]) -> Counter:
     ids: set[str] = set()
     counts: Counter = Counter()
     for record in records:
@@ -90,6 +90,13 @@ def validate_eval(records: list[dict], profile: dict) -> Counter:
             raise ValueError(f"{record_id}: invalid context key")
         if not record.get("prompt") or not record.get("expected_groups"):
             raise ValueError(f"{record_id}: prompt and expected groups are required")
+        if record["prompt"].strip().lower() in training_prompts:
+            raise ValueError(f"{record_id}: evaluation prompt is present in training data")
+        if behavior == "answer":
+            context = flatten({key: profile[key] for key in record["context_keys"]}).lower()
+            for group in record["expected_groups"]:
+                if not any(term.lower() in context for term in group):
+                    raise ValueError(f"{record_id}: expected group is absent from context: {group}")
     return counts
 
 
@@ -102,11 +109,14 @@ def main() -> None:
     profile = json.loads(args.profile.read_text(encoding="utf-8"))
     training = load_jsonl(args.dataset)
     evaluation = load_jsonl(args.eval)
+    training_prompts = {
+        record["messages"][0]["content"].strip().lower() for record in training
+    }
     summary = {
         "training_records": len(training),
         "training_behaviors": dict(validate_training(training, profile)),
         "evaluation_records": len(evaluation),
-        "evaluation_behaviors": dict(validate_eval(evaluation, profile)),
+        "evaluation_behaviors": dict(validate_eval(evaluation, profile, training_prompts)),
     }
     print(json.dumps(summary, indent=2, sort_keys=True))
 

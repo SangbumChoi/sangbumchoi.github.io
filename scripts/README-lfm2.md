@@ -57,8 +57,8 @@ Push changes to the dataset, profile, trainer, validator, exporter, or
 2. trains and merges LFM2-350M on a GitHub-hosted runner;
 3. requires separate pass thresholds for verified answers, missing facts, and
    out-of-scope refusals;
-4. publishes the evaluated FP16 checkpoint under the
-   `daniel-lfm2-source-v2` GitHub release;
+4. publishes the evaluated FP16 checkpoint to `danelcsb/daniel-lfm2-350m`
+   and under the `daniel-lfm2-source-v2` GitHub release;
 5. exports and smoke-tests symmetric Q4 ONNX before updating the
    `model-assets` branch and `daniel-lfm2-onnx-v1` release.
 
