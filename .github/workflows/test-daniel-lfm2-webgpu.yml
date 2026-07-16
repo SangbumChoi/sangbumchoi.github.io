@@ -39,4 +39,4 @@ jobs:
       - name: Run personalized WebGPU generation
         run: |
           cd "$RUNNER_TEMP/daniel-webgpu-test"
-          node test.mjs
+          timeout --signal=TERM --kill-after=30s 20m node test.mjs
