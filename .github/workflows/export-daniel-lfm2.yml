@@ -79,7 +79,7 @@ jobs:
           fi
 
           git lfs install --local
-          git lfs track "*.onnx" "*.onnx_data"
+          git lfs track "$model_root/**"
           rm -rf "$model_root"
           mkdir -p "$model_root/onnx"
 
