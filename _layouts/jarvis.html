@@ -16,24 +16,9 @@ layout: compress
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
     <script type="module" src="{{ base_path }}/assets/js/jarvis.js?v={{ site.jarvis_asset_version }}"></script>
   </head>
-  <body class="jarvis-page">
+  <body class="jarvis-page jarvis-home" data-auto-load-model="{{ site.jarvis_auto_load_model }}">
     <a class="skip-link" href="#conversation">Skip to conversation</a>
-
-    <header class="jarvis-header">
-      <a class="wordmark" href="{{ base_path }}/" aria-label="Daniel OS home">
-        <span class="wordmark__mark" aria-hidden="true">D</span>
-        <span>DANIEL.OS</span>
-      </a>
-      <div class="runtime-pill" id="runtime-pill" aria-live="polite">
-        <span class="runtime-pill__light" aria-hidden="true"></span>
-        <span id="runtime-label">Detecting runtime</span>
-      </div>
-      <nav class="jarvis-nav" aria-label="Primary navigation">
-        <a href="{{ base_path }}/cv/">CV</a>
-        <a href="{{ base_path }}/publications/">Research</a>
-        <a href="https://github.com/SangbumChoi" target="_blank" rel="noopener">GitHub</a>
-      </nav>
-    </header>
+    {% include jarvis-header.html interactive=true %}
 
     <main class="jarvis-shell">
       <section class="identity-panel" aria-labelledby="identity-title">
@@ -64,7 +49,7 @@ layout: compress
 
         <div class="identity-copy">
           <p class="eyebrow">AI RESEARCH &amp; SYSTEMS ENGINEER</p>
-          <h1 id="identity-title">Sangbum<br>Daniel Choi</h1>
+          <h1 id="identity-title">Sangbum <span>Daniel Choi</span></h1>
           <p class="identity-copy__intro">
             I build multimodal models, production AI systems, and open-source tools.
             Ask this private profile assistant about my work, research, or the decisions behind it.
@@ -72,7 +57,7 @@ layout: compress
         </div>
 
         <dl class="signal-grid" aria-label="Profile highlights">
-          <div><dt>OPEN SOURCE</dt><dd>40+ HF PRs</dd></div>
+          <div><dt>OPEN SOURCE</dt><dd>40+ HF contrib.</dd></div>
           <div><dt>MODEL DELIVERY</dt><dd>1,100+</dd></div>
           <div><dt>CVPR 2025</dt><dd>2nd / 4th</dd></div>
         </dl>
@@ -92,12 +77,12 @@ layout: compress
         <div class="model-loader" id="model-loader">
           <div class="model-loader__row">
             <div>
-              <strong id="model-status">Profile demo ready</strong>
-              <span id="model-detail">instant grounded answers · personalized model on demand</span>
+              <strong id="model-status">Preparing personalized LFM2</strong>
+              <span id="model-detail">q4 model downloads once, then stays in browser cache</span>
             </div>
             <button class="load-button" id="load-model" type="button">
-              <i data-lucide="cpu" aria-hidden="true"></i>
-              <span>Enable local AI</span>
+              <i data-lucide="loader-circle" aria-hidden="true"></i>
+              <span>Starting</span>
             </button>
           </div>
           <div class="progress-track" role="progressbar" aria-label="Model download progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
@@ -109,7 +94,7 @@ layout: compress
           <article class="message message--assistant">
             <div class="message__meta"><span>DANIEL AI</span><time>NOW</time></div>
             <div class="message__body">
-              Hi, I am Daniel's browser-native portfolio assistant. Profile answers stay on this page, and local LFM2 inference is available on demand. Ask me about his work at Toss Bank, multimodal research, Hugging Face contributions, or open a profile link.
+              Hi, I am Daniel's browser-native portfolio assistant. Ask about Toss Bank, multimodal research, Hugging Face contributions, or profile links. Personalized LFM2 is loading locally in the background.
             </div>
           </article>
         </div>
@@ -145,16 +130,7 @@ layout: compress
       </section>
     </main>
 
-    <footer class="jarvis-footer">
-      <span>Daniel OS / v0.1</span>
-      <div class="jarvis-footer__links">
-        <a href="{{ base_path }}/files/resume/daniel_choi_resume_clean.pdf">Resume PDF</a>
-        <a href="{{ base_path }}/publications/">Publications</a>
-        <a href="https://www.linkedin.com/in/daniel-choi-86648216b/" target="_blank" rel="noopener">LinkedIn</a>
-        <a href="mailto:danielsejong55@gmail.com">Email</a>
-      </div>
-      <a href="https://github.com/SangbumChoi/sangbumchoi.github.io/releases/tag/daniel-lfm2-onnx-v1" target="_blank" rel="noopener">Daniel LFM2 Q4</a>
-    </footer>
+    {% include jarvis-footer.html %}
 
     <noscript>This interactive portfolio requires JavaScript. You can still view the <a href="{{ base_path }}/cv/">standard CV</a>.</noscript>
   </body>

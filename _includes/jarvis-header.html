@@ -1,0 +1,23 @@
+{% include base_path %}
+<header class="jarvis-header">
+  <a class="wordmark" href="{{ base_path }}/" aria-label="Daniel OS home">
+    <span class="wordmark__mark" aria-hidden="true">D</span>
+    <span class="wordmark__text">DANIEL.OS</span>
+  </a>
+  {% if include.interactive %}
+    <div class="runtime-pill" id="runtime-pill" aria-live="polite">
+      <span class="runtime-pill__light" aria-hidden="true"></span>
+      <span id="runtime-label">Starting local runtime</span>
+    </div>
+  {% else %}
+    <div class="runtime-pill is-ready">
+      <span class="runtime-pill__light" aria-hidden="true"></span>
+      <span>PROFILE / ONLINE</span>
+    </div>
+  {% endif %}
+  <nav class="jarvis-nav" aria-label="Primary navigation">
+    <a href="{{ base_path }}/cv/"{% if page.url == '/cv/' %} aria-current="page"{% endif %}>CV</a>
+    <a href="{{ base_path }}/publications/"{% if page.url == '/publications/' or page.collection == 'publications' %} aria-current="page"{% endif %}>Research</a>
+    <a href="{{ base_path }}/github/"{% if page.url == '/github/' %} aria-current="page"{% endif %}>GitHub</a>
+  </nav>
+</header>

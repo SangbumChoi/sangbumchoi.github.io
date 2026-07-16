@@ -1,7 +1,7 @@
 ---
 title: "Terahertz Signal Analysis in Tissue of Gastroesophageal Reflux Disease"
 collection: publications
-permalink: /publication/2013-12-31-Terahertz Signal Analysis in Tissue of Gastroesophageal Reflux Disease
+permalink: /publication/2013-12-31-Terahertz-Signal-Analysis-in-Tissue-of-Gastroesophageal-Reflux-Disease/
 excerpt: ''
 date: 2013-12-31
 venue: 'OPTICAL SOCIETY OF KOREA'

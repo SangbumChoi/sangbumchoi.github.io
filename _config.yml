@@ -18,7 +18,8 @@ teaser                   :  # filename of teaser fallback teaser image placed in
 breadcrumbs              : false # true, false (default)
 words_per_minute         : 160
 future                   : true
-jarvis_asset_version     : 3
+jarvis_asset_version     : 6
+jarvis_auto_load_model   : true
 read_more                : "disabled" # if enabled, adds "Read more" links to excerpts
 talkmap_link             : false #change to true to add link to talkmap on talks page
 comments:
@@ -195,8 +196,8 @@ defaults:
       path: ""
       type: posts
     values:
-      layout: single
-      author_profile: true
+      layout: jarvis-content
+      author_profile: false
       read_time: true
       comments: true
       share: true
@@ -222,8 +223,8 @@ defaults:
       path: ""
       type: publications
     values:
-      layout: single
-      author_profile: true
+      layout: jarvis-content
+      author_profile: false
       share: true
       comments: true
   # _talks

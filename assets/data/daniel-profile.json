@@ -38,7 +38,7 @@
   "open_source": {
     "philosophy": "Open source expands the shared technical foundation. Making advanced models easier to inspect, reproduce, and use lets other engineers learn, improve the work, and create outcomes the original contributor could not anticipate.",
     "contributions": [
-      "More than 40 pull requests to Hugging Face Transformers across model architectures, processors, conversion scripts, distributed training fixes, tests, examples, and documentation.",
+      "More than 40 contributions across the Hugging Face ecosystem, including 28 public pull requests authored in Transformers across model architectures, processors, conversion scripts, distributed training fixes, tests, examples, and documentation.",
       "Led the integration of Segment Anything 2 into Transformers, including image and video processing, conversion, documentation, and integration tests.",
       "Opened Molmo2 support and published danelcsb/Molmo2-4B on the Hugging Face Hub.",
       "Implemented or improved RT-DETR, ViTPose, DETA training, DINOv3 utilities, and distributed training behavior."

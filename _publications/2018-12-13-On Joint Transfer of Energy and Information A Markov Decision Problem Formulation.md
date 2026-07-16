@@ -1,7 +1,7 @@
 ---
 title: "On Joint Transfer of Energy and Information: A Markov Decision Problem Formulation"
 collection: publications
-permalink: /publication/2018-12-13-On Joint Transfer of Energy and Information A Markov Decision Problem Formulation
+permalink: /publication/2018-12-13-On-Joint-Transfer-of-Energy-and-Information-A-Markov-Decision-Problem-Formulation/
 excerpt: ''
 date: 2018-12-13
 venue: 'None'

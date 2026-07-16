@@ -1,5 +1,5 @@
 const PROFILE_URL = "/assets/data/daniel-profile.json";
-const ASSET_VERSION = "3";
+const ASSET_VERSION = "6";
 
 const els = {
   runtimePill: document.querySelector("#runtime-pill"),
@@ -30,6 +30,7 @@ const state = {
   systemPrompt: "",
   modelReady: false,
   modelLoading: false,
+  modelFailed: false,
   generating: false,
   pendingPrompt: null,
   assistantNode: null,
@@ -145,7 +146,7 @@ function routeCommand(prompt) {
     "/resume": "/files/resume/daniel_choi_resume_clean.pdf",
     "/cv": "/cv/",
     "/papers": "/publications/",
-    "/github": "https://github.com/SangbumChoi",
+    "/github": "/github/",
     "/linkedin": "https://www.linkedin.com/in/daniel-choi-86648216b/",
   };
   if (!routes[command]) return false;
@@ -179,8 +180,8 @@ function groundedAnswer(prompt) {
 
   if (/open.?source|hugging|sam2|molmo|transformers|오픈.?소스/.test(query)) {
     return korean
-      ? "Daniel은 Hugging Face Transformers에 40개 이상의 PR을 기여했습니다. SAM2 통합을 주도했고, Molmo2 지원을 열어 Molmo2-4B 체크포인트를 공개했으며, RT-DETR·ViTPose·DETA 학습·DINOv3 유틸리티·분산 학습 수정·테스트·문서화에도 기여했습니다."
-      : "Daniel has contributed 40+ pull requests to Hugging Face Transformers. He led the SAM2 integration, opened Molmo2 support and published a Molmo2-4B checkpoint, and contributed to RT-DETR, ViTPose, DETA training, DINOv3 utilities, distributed training fixes, tests, and documentation.";
+      ? "Daniel은 Hugging Face 생태계에 40건 이상 기여했으며, 그중 Hugging Face Transformers에 작성한 공개 PR은 현재 28건입니다. SAM2 통합을 주도했고, Molmo2 지원을 열어 Molmo2-4B 체크포인트를 공개했으며, RT-DETR·ViTPose·DETA 학습·DINOv3 유틸리티·분산 학습 수정·테스트·문서화에도 기여했습니다."
+      : "Daniel has made 40+ contributions across the Hugging Face ecosystem, including 28 public pull requests authored in Transformers. He led the SAM2 integration, opened Molmo2 support and published a Molmo2-4B checkpoint, and contributed to RT-DETR, ViTPose, DETA training, DINOv3 utilities, distributed training fixes, tests, and documentation.";
   }
 
   if (/toss|bank|document|authentication|agent|토스|은행|문서|인증|에이전트/.test(query)) {
@@ -230,8 +231,9 @@ function updateProgress(payload = {}) {
 }
 
 async function initWorker() {
-  if (state.worker || state.modelLoading) return;
+  if (state.modelReady || state.modelLoading) return;
   state.modelLoading = true;
+  state.modelFailed = false;
   state.backend = "gpu" in navigator ? "webgpu" : "wasm";
   try {
     await navigator.storage?.persist?.();
@@ -239,6 +241,7 @@ async function initWorker() {
     // Persistent storage is an optimization; inference still works without it.
   }
   els.loadButton.disabled = true;
+  els.loadButton.innerHTML = '<i data-lucide="loader-circle" aria-hidden="true"></i><span>Loading</span>';
   els.modelStatus.textContent = "Loading personalized LFM2";
   els.modelDetail.textContent = state.backend === "webgpu" ? "q4 · WebGPU · ~294 MB · cached" : "q4 · WASM fallback · ~294 MB · cached";
   setRuntime(`${state.backend} / loading`);
@@ -259,12 +262,14 @@ function handleWorkerMessage(event) {
   if (data.type === "ready") {
     state.modelReady = true;
     state.modelLoading = false;
+    state.modelFailed = false;
     state.backend = data.runtime;
     els.modelProgress.style.width = "100%";
     els.progressTrack.setAttribute("aria-valuenow", "100");
     els.modelStatus.textContent = "Personalized LFM2 ready";
     els.modelDetail.textContent = `q4 · ${data.runtime.toUpperCase()} · runs locally`;
     els.loadButton.innerHTML = '<i data-lucide="check" aria-hidden="true"></i><span>Ready</span>';
+    els.loadButton.disabled = true;
     setRuntime(`${data.runtime} / private`, true);
     setPortraitState("idle", "LOCAL MODEL READY");
     initializeIcons();
@@ -286,12 +291,25 @@ function handleWorkerMessage(event) {
 function handleModelError(message) {
   state.generating = false;
   state.modelLoading = false;
+  state.modelFailed = true;
   els.sendButton.disabled = false;
   els.loadButton.disabled = false;
   els.modelStatus.textContent = "Local model unavailable";
   els.modelDetail.textContent = message || "Use a recent Chromium browser with WebGPU.";
+  els.loadButton.innerHTML = '<i data-lucide="refresh-cw" aria-hidden="true"></i><span>Retry</span>';
   setRuntime("runtime error");
   setPortraitState("idle", "FALLBACK MODE");
+  state.worker?.terminate();
+  state.worker = null;
+  initializeIcons();
+  const loadingNotice = els.chatLog.querySelector('[data-loading-notice="true"]');
+  if (loadingNotice) {
+    loadingNotice.dataset.loadingNotice = "false";
+    const fallback = mockSynthesisAnswer(state.pendingPrompt || "");
+    renderMessage(loadingNotice.querySelector(".message__body"), fallback);
+    state.conversation.push({ role: "assistant", content: fallback });
+    state.pendingPrompt = null;
+  }
   if (state.assistantNode) {
     state.assistantNode.classList.remove("is-streaming");
     renderMessage(state.assistantNode.querySelector(".message__body"), "The local model could not start in this browser. Profile links and deterministic answers remain available.");
@@ -300,7 +318,12 @@ function handleModelError(message) {
 
 function generateAnswer(prompt) {
   if (!state.modelReady) {
-    deliverGroundedAnswer(mockSynthesisAnswer(prompt));
+    state.pendingPrompt = prompt;
+    els.chatLog.querySelectorAll('[data-loading-notice="true"]').forEach((node) => node.remove());
+    const notice = createMessage("assistant", "Personalized LFM2 is loading locally. I will answer this question as soon as the model is ready.");
+    notice.dataset.loadingNotice = "true";
+    setPortraitState("thinking", "LOADING LOCAL MODEL");
+    if (!state.modelLoading) initWorker();
     return;
   }
 
@@ -326,8 +349,8 @@ function generateAnswer(prompt) {
 function mockSynthesisAnswer(prompt) {
   const korean = /[가-힣]/.test(prompt);
   return korean
-    ? "현재는 Daniel의 검증된 프로필 정보를 기반으로 즉시 답하는 가벼운 데모 모드입니다. 이 질문에 대한 구체적인 정보는 프로필에 아직 없습니다. 실제 LFM2 로컬 추론은 위의 'Enable local AI' 버튼을 눌러 선택적으로 실행할 수 있습니다."
-    : "This is the lightweight demo mode, answering instantly from Daniel's verified profile. The portfolio does not yet contain a specific answer to that question. You can optionally run local LFM2 inference by selecting Enable local AI above.";
+    ? "이 브라우저에서는 개인화 LFM2를 시작하지 못했습니다. 검증된 프로필 질문과 링크는 계속 사용할 수 있지만, 이 자유 질문은 로컬 모델을 사용할 수 있는 최신 Chromium 브라우저에서 답할 수 있습니다."
+    : "Personalized LFM2 could not start in this browser. Verified profile questions and links remain available, but this free-form question requires a recent Chromium browser that can run the local model.";
 }
 
 function completeGeneration(data) {
@@ -376,7 +399,13 @@ function speak(text) {
   utterance.rate = 1.02;
   utterance.pitch = 0.96;
   const voices = window.speechSynthesis.getVoices();
-  utterance.voice = voices.find((voice) => voice.lang === utterance.lang) || null;
+  const languageVoices = voices.filter((voice) => voice.lang.toLowerCase().startsWith(korean ? "ko" : "en"));
+  const preferredNames = korean
+    ? ["Yuna", "Google 한국의"]
+    : ["Samantha", "Daniel", "Microsoft Aria", "Google US English"];
+  utterance.voice = preferredNames
+    .map((name) => languageVoices.find((voice) => voice.name.includes(name)))
+    .find(Boolean) || languageVoices[0] || null;
   utterance.onstart = () => {
     state.speaking = true;
     setPortraitState("speaking", "SPEAKING");
@@ -398,7 +427,7 @@ function initSpeechRecognition() {
   state.recognition = new Recognition();
   state.recognition.continuous = false;
   state.recognition.interimResults = true;
-  state.recognition.lang = navigator.language?.startsWith("ko") ? "ko-KR" : "en-US";
+  state.recognition.lang = "en-US";
   state.recognition.onstart = () => {
     els.micButton.classList.add("is-listening");
     setPortraitState("listening", "LISTENING");
@@ -454,7 +483,9 @@ function initWaveform() {
 }
 
 function bindEvents() {
-  els.loadButton.addEventListener("click", initWorker);
+  els.loadButton.addEventListener("click", () => {
+    if (!state.modelReady && !state.modelLoading) initWorker();
+  });
   els.form.addEventListener("submit", (event) => {
     event.preventDefault();
     submitPrompt(els.input.value);
@@ -490,16 +521,27 @@ async function boot() {
   bindEvents();
 
   state.backend = "gpu" in navigator ? "webgpu" : "wasm";
-  setRuntime("demo / private", true);
-  els.modelStatus.textContent = "Profile demo ready";
+  setRuntime(`${state.backend} / starting`);
+  els.modelStatus.textContent = "Preparing personalized LFM2";
   els.modelDetail.textContent = state.backend === "webgpu"
-    ? "instant grounded answers · personalized WebGPU model on demand"
-    : "instant grounded answers · personalized WASM model on demand";
+    ? "q4 · WebGPU · ~294 MB · automatic browser cache"
+    : "q4 · WASM fallback · ~294 MB · automatic browser cache";
 
   try {
     await loadProfile();
+    if (document.body.dataset.autoLoadModel === "true") {
+      initWorker();
+    } else {
+      els.modelStatus.textContent = "Development mock ready";
+      els.modelDetail.textContent = "production automatically loads personalized Q4 LFM2";
+      els.loadButton.disabled = false;
+      els.loadButton.innerHTML = '<i data-lucide="cpu" aria-hidden="true"></i><span>Load model</span>';
+      setRuntime("mock / private", true);
+      initializeIcons();
+    }
   } catch (error) {
     els.modelDetail.textContent = error.message;
+    els.modelStatus.textContent = "Profile context unavailable";
   }
 }
 

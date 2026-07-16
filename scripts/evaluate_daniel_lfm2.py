@@ -17,7 +17,7 @@ PROMPTS = [
     "What kind of engineering problems does Daniel enjoy?",
 ]
 
-CONTEXT = """Sangbum Daniel Choi is an AI research and systems engineer and a Data Scientist at Toss Bank. He works on an on-premise LLM agent, face and ID-card authentication, and an end-to-end document extraction pipeline using an approximately 1B-parameter VLM. He has contributed more than 40 pull requests to Hugging Face Transformers, including SAM2, Molmo2, RT-DETR, ViTPose, distributed training fixes, tests, and documentation. He believes open source expands the shared technical foundation."""
+CONTEXT = """Sangbum Daniel Choi is an AI research and systems engineer and a Data Scientist at Toss Bank. He works on an on-premise LLM agent, face and ID-card authentication, and an end-to-end document extraction pipeline using an approximately 1B-parameter VLM. He has made more than 40 contributions across the Hugging Face ecosystem, including 28 public pull requests authored in Transformers. His work includes SAM2, Molmo2, RT-DETR, ViTPose, distributed training fixes, tests, and documentation. He believes open source expands the shared technical foundation."""
 
 
 def main() -> None:

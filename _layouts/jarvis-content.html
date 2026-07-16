@@ -1,0 +1,43 @@
+---
+layout: compress
+---
+{% include base_path %}
+<!doctype html>
+<html lang="{{ site.locale | slice: 0,2 }}" class="jarvis-js">
+  <head>
+    <meta charset="utf-8">
+    {% include seo.html %}
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0b0d0f">
+    <link rel="stylesheet" href="{{ base_path }}/assets/css/jarvis.css?v={{ site.jarvis_asset_version }}">
+  </head>
+  <body class="jarvis-page jarvis-content-page">
+    <a class="skip-link" href="#content">Skip to content</a>
+    {% include jarvis-header.html %}
+
+    <main class="content-shell" id="content">
+      <header class="content-hero">
+        <p class="eyebrow">{{ page.eyebrow | default: 'DANIEL OS / PROFILE' }}</p>
+        <h1>{{ page.title }}</h1>
+        {% if page.dek %}<p class="content-hero__dek">{{ page.dek }}</p>{% endif %}
+        {% if page.date %}
+          <p class="content-hero__meta">
+            <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%B %d, %Y" }}</time>
+            {% if page.venue %}<span>{{ page.venue }}</span>{% endif %}
+          </p>
+        {% endif %}
+      </header>
+      <article class="content-body" itemscope itemtype="http://schema.org/CreativeWork">
+        {% if page.collection == 'publications' %}
+          <div class="publication-facts">
+            {% if page.citation %}<p><strong>Citation</strong><br>{{ page.citation }}</p>{% endif %}
+            {% if page.paperurl and page.paperurl != '' %}<a class="signal-link" href="{{ page.paperurl }}" target="_blank" rel="noopener">Open paper ↗</a>{% endif %}
+          </div>
+        {% endif %}
+        {{ content }}
+      </article>
+    </main>
+
+    {% include jarvis-footer.html %}
+  </body>
+</html>

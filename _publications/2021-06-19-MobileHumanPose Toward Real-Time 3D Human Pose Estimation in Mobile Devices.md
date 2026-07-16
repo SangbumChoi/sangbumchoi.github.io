@@ -1,7 +1,7 @@
 ---
 title: "MobileHumanPose: Toward Real-Time 3D Human Pose Estimation in Mobile Devices"
 collection: publications
-permalink: /publication/2021-06-19-MobileHumanPose-Toward-Real-Time-3D-Human-Pose-Estimation-in-Mobile-Devices
+permalink: /publication/2021-06-19-MobileHumanPose-Toward-Real-Time-3D-Human-Pose-Estimation-in-Mobile-Devices/
 excerpt: 'Mobile-friendly real-time 3D human pose estimation from a single RGB image.'
 date: 2021-06-19
 venue: 'IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops (CVPRW)'

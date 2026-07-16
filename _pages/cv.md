@@ -1,8 +1,10 @@
 ---
-layout: archive
+layout: jarvis-content
 title: "CV"
 permalink: /cv/
-author_profile: true
+eyebrow: "DANIEL OS / EXPERIENCE"
+dek: "AI research, multimodal systems, open-source engineering, and production delivery across six-plus years."
+author_profile: false
 redirect_from:
   - /resume
 ---
@@ -11,7 +13,7 @@ redirect_from:
 
 Summary
 ======
-AI research and systems engineer with 6+ years of experience in multimodal pre-training and post-training, data curation, evaluation, open-source model integration, and production deployment. Built PyTorch training/serving systems and contributed 40+ pull requests to Hugging Face Transformers.
+AI research and systems engineer with 6+ years of experience in multimodal pre-training and post-training, data curation, evaluation, open-source model integration, and production deployment. Built PyTorch training/serving systems and made 40+ contributions across the Hugging Face ecosystem, including 28 public pull requests authored in Transformers.
 
 Resume downloads
 ======
@@ -21,7 +23,7 @@ Resume downloads
 
 Open source
 ======
-* Hugging Face Transformers contributor with 40+ pull requests to a large production codebase, including model architectures, processors, conversion scripts, distributed training fixes, tests, and documentation.
+* Hugging Face ecosystem contributor with 40+ contributions, including 28 public pull requests authored in Transformers across model architectures, processors, conversion scripts, distributed training fixes, tests, and documentation.
 * Hugging Face Transformers contributor: led the addition of Segment Anything 2 (SAM2) support to `huggingface/transformers`.
   * Implemented and refined image/video segmentation model support, processors, documentation, conversion flow, and integration tests through a long-running community review cycle.
   * PR: <a href="https://github.com/huggingface/transformers/pull/32317">Add Segment Anything 2 (SAM2)</a>; merged 2025-08-13.

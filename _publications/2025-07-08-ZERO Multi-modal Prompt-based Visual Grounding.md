@@ -1,7 +1,7 @@
 ---
 title: "ZERO: Multi-modal Prompt-based Visual Grounding"
 collection: publications
-permalink: /publication/2025-07-08-ZERO-Multi-modal-Prompt-based-Visual-Grounding
+permalink: /publication/2025-07-08-ZERO-Multi-modal-Prompt-based-Visual-Grounding/
 excerpt: 'Zero-shot multi-prompt object detection model for production-ready visual grounding across industrial domains.'
 date: 2025-07-08
 venue: 'arXiv'

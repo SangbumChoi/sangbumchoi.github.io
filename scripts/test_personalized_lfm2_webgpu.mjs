@@ -47,7 +47,6 @@ try {
   logEvent("webgpu-adapter-ready");
 
   await page.locator('label[for="voice-output"]').click();
-  await page.getByRole("button", { name: "Enable local AI" }).click();
   progressTimer = setInterval(async () => {
     try {
       const state = await page.evaluate(() => ({

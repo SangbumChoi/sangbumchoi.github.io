@@ -1,8 +1,11 @@
 # Daniel OS LFM2 pipeline
 
-The website currently uses a verified profile index for factual questions and
-LFM2-350M for free-form local generation. The files in this directory create a
-genuinely personalized checkpoint before it is exported for WebGPU.
+The website uses a verified profile index for factual questions and
+automatically loads LFM2-350M for free-form local generation. Production loads
+the Q4 model in a Web Worker on entry; `_config.dev.yml` disables that automatic
+load so responsive UI work does not consume local memory. The files in this
+directory create a genuinely personalized checkpoint before it is exported for
+WebGPU.
 
 ## Train and evaluate
 
