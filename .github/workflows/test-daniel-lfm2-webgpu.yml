@@ -1,0 +1,42 @@
+name: Test personalized LFM2 in WebGPU
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/workflows/test-daniel-lfm2-webgpu.yml
+      - scripts/test_personalized_lfm2_webgpu.mjs
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: Deployed portfolio URL to test
+        required: true
+        default: https://sangbumchoi.github.io/
+
+jobs:
+  webgpu-smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TARGET_URL: ${{ inputs.target_url }}
+      MODEL_TIMEOUT_MS: "900000"
+
+    steps:
+      - name: Check out portfolio
+        uses: actions/checkout@v4
+
+      - name: Install Playwright in an isolated directory
+        run: |
+          test_dir="$RUNNER_TEMP/daniel-webgpu-test"
+          mkdir -p "$test_dir"
+          cp scripts/test_personalized_lfm2_webgpu.mjs "$test_dir/test.mjs"
+          cd "$test_dir"
+          npm init -y
+          npm install --save-exact @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run personalized WebGPU generation
+        run: |
+          cd "$RUNNER_TEMP/daniel-webgpu-test"
+          node test.mjs

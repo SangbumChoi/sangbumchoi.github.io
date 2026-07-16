@@ -65,3 +65,11 @@ and the browser cache is tied to the exact export revision.
 The deterministic profile index must remain in front of generation. A small
 model checkpoint is useful for tone and narrow profile synthesis, but it is not
 a substitute for grounding when exact dates, metrics, and links matter.
+
+## Remote browser verification
+
+Dispatch `.github/workflows/test-daniel-lfm2-webgpu.yml` after deployment. The
+workflow enables SwiftShader WebGPU in headless Chromium, confirms that the
+personalized Q4 model reaches `webgpu / private`, and runs one free-form
+generation. This keeps the 294 MB model download and runtime memory off the
+local development machine.
