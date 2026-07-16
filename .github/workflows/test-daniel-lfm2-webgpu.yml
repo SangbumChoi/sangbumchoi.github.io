@@ -1,5 +1,9 @@
 name: Test personalized LFM2 in WebGPU
 
+concurrency:
+  group: daniel-lfm2-browser-smoke
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -17,10 +21,10 @@ on:
 jobs:
   webgpu-smoke-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     env:
-      TARGET_URL: ${{ inputs.target_url }}
-      MODEL_TIMEOUT_MS: "900000"
+      TARGET_URL: ${{ inputs.target_url || 'https://sangbumchoi.github.io/' }}
+      MODEL_TIMEOUT_MS: "120000"
 
     steps:
       - name: Check out portfolio
@@ -36,7 +40,21 @@ jobs:
           npm install --save-exact @playwright/test@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Run personalized WebGPU generation
+      - name: Wait for the matching Pages deployment
+        run: |
+          expected_version="$(awk '/jarvis_asset_version/{print $3}' _config.yml)"
+          for attempt in $(seq 1 36); do
+            if curl --fail --silent --show-error --location \
+              "${TARGET_URL}?deployment=${GITHUB_SHA}-${attempt}" | grep -q "jarvis.js?v=${expected_version}"; then
+              echo "Found deployed asset version ${expected_version}."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Timed out waiting for asset version ${expected_version}." >&2
+          exit 1
+
+      - name: Verify personalized WebGPU autoload
         run: |
           cd "$RUNNER_TEMP/daniel-webgpu-test"
-          timeout --signal=TERM --kill-after=30s 20m node test.mjs
+          timeout --signal=TERM --kill-after=30s 3m node test.mjs

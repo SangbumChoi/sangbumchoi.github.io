@@ -72,7 +72,9 @@ a substitute for grounding when exact dates, metrics, and links matter.
 ## Remote browser verification
 
 Dispatch `.github/workflows/test-daniel-lfm2-webgpu.yml` after deployment. The
-workflow enables SwiftShader WebGPU in headless Chromium, confirms that the
-personalized Q4 model reaches `webgpu / private`, and runs one free-form
-generation. This keeps the 294 MB model download and runtime memory off the
-local development machine.
+workflow waits for the matching Pages asset version, enables SwiftShader WebGPU
+in headless Chromium, confirms automatic WebGPU model loading begins, observes
+a personalized model request, and verifies ranged access to the Q4 weights.
+Full graph inference is covered by the export job's CPU smoke test; the browser
+check intentionally avoids compiling the entire 294 MB graph in software
+WebGPU, which is not representative of a visitor's hardware GPU.

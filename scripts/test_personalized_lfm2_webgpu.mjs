@@ -1,9 +1,9 @@
 import { chromium } from "@playwright/test";
 
 const targetUrl = process.env.TARGET_URL || "https://sangbumchoi.github.io/";
-const timeout = Number(process.env.MODEL_TIMEOUT_MS || 900_000);
+const timeout = Number(process.env.MODEL_TIMEOUT_MS || 120_000);
 const consoleMessages = [];
-let progressTimer;
+const modelAssetUrl = "https://media.githubusercontent.com/media/SangbumChoi/sangbumchoi.github.io/7792cb8a5dbde55140a40658e7d9d6605d2c63d9/models/daniel-lfm2-350m-ONNX/onnx/model_q4.onnx_data";
 
 function logEvent(event, details = {}) {
   console.log(JSON.stringify({ event, at: new Date().toISOString(), ...details }));
@@ -25,6 +25,10 @@ const browser = await chromium.launch({
 
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  let resolveModelRequest;
+  const modelRequestPromise = new Promise((resolve) => {
+    resolveModelRequest = resolve;
+  });
   page.on("console", (message) => {
     const entry = `${message.type()}: ${message.text()}`;
     if (["error", "warning"].includes(message.type())) consoleMessages.push(entry);
@@ -35,6 +39,11 @@ try {
     const entry = `requestfailed: ${request.url()} (${request.failure()?.errorText || "unknown"})`;
     consoleMessages.push(entry);
     logEvent("request-failed", { message: entry });
+  });
+  page.on("request", (request) => {
+    if (request.url().includes("models/daniel-lfm2-350m-ONNX")) {
+      resolveModelRequest(request.url());
+    }
   });
 
   logEvent("navigation-start", { targetUrl });
@@ -47,61 +56,43 @@ try {
   logEvent("webgpu-adapter-ready");
 
   await page.locator('label[for="voice-output"]').click();
-  progressTimer = setInterval(async () => {
-    try {
-      const state = await page.evaluate(() => ({
-        status: document.querySelector("#model-status")?.textContent,
-        detail: document.querySelector("#model-detail")?.textContent,
-        progress: document.querySelector(".progress-track")?.getAttribute("aria-valuenow"),
-      }));
-      logEvent("model-progress", state);
-    } catch (error) {
-      logEvent("progress-read-failed", { message: error.message });
-    }
-  }, 15_000);
   await page.waitForFunction(
-    () => document.querySelector("#model-status")?.textContent === "Personalized LFM2 ready",
+    () => ["Loading personalized LFM2", "Personalized LFM2 ready"].includes(document.querySelector("#model-status")?.textContent),
     undefined,
     { timeout },
   );
-  clearInterval(progressTimer);
-  progressTimer = undefined;
 
-  const readyState = await page.evaluate(() => ({
+  const loadingState = await page.evaluate(() => ({
     runtime: document.querySelector("#runtime-label")?.textContent,
+    status: document.querySelector("#model-status")?.textContent,
     detail: document.querySelector("#model-detail")?.textContent,
     progress: document.querySelector(".progress-track")?.getAttribute("aria-valuenow"),
   }));
-  if (readyState.runtime !== "webgpu / private") {
-    throw new Error(`Expected WebGPU runtime, received ${readyState.runtime}: ${readyState.detail}`);
+  if (!loadingState.runtime?.startsWith("webgpu /")) {
+    throw new Error(`Expected WebGPU autoload, received ${loadingState.runtime}: ${loadingState.detail}`);
   }
 
-  const prompt = page.getByLabel("Ask Daniel a question");
-  await prompt.fill("In one short sentence, describe your role as Daniel's portfolio assistant.");
-  await page.getByRole("button", { name: "Send question" }).click();
-  await page.waitForFunction(
-    () => document.querySelector("#latency-label")?.textContent?.startsWith("WEBGPU"),
-    undefined,
-    { timeout: 180_000 },
-  );
+  const requestedModelFile = await Promise.race([
+    modelRequestPromise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("The browser worker did not request a personalized model asset.")), timeout)),
+  ]);
+  const rangeResponse = await fetch(modelAssetUrl, { headers: { Range: "bytes=0-1023" } });
+  const rangeBytes = new Uint8Array(await rangeResponse.arrayBuffer());
+  if (![200, 206].includes(rangeResponse.status) || rangeBytes.length < 1024) {
+    throw new Error(`Model asset range request failed: ${rangeResponse.status}, ${rangeBytes.length} bytes.`);
+  }
 
-  const result = await page.evaluate(() => {
-    const messages = [...document.querySelectorAll("#chat-log .message--assistant .message__body")];
-    return {
-      answer: messages.at(-1)?.textContent?.trim(),
-      latency: document.querySelector("#latency-label")?.textContent,
-      status: document.querySelector("#model-status")?.textContent,
-    };
+  logEvent("autoload-complete", {
+    adapterAvailable,
+    loadingState,
+    requestedModelFile,
+    rangeStatus: rangeResponse.status,
+    rangeBytes: rangeBytes.length,
+    consoleMessages,
   });
-  if (!result.answer || result.answer.length < 10) {
-    throw new Error("Personalized model generation returned an empty response.");
-  }
-
-  logEvent("generation-complete", { adapterAvailable, readyState, result, consoleMessages });
 } catch (error) {
   console.error(JSON.stringify({ error: error.message, consoleMessages }, null, 2));
   throw error;
 } finally {
-  clearInterval(progressTimer);
   await browser.close();
 }

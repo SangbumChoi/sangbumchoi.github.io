@@ -52,7 +52,7 @@ A real personal voice requires a clean, consented recording set, text alignment,
 
 ## Keeping development within 32 GB
 
-The local Mac is used for source changes, mock interaction, Jekyll builds, and responsive browser checks. Memory-heavy conversion and runtime tests are delegated to remote jobs. The export pipeline pins Liquid AI's ONNX tooling, generates symmetric Q4, runs a CPU smoke test, and publishes immutable artifacts. A GitHub Actions browser test separately checks WebGPU availability and generation without loading the 294 MB model on the development machine.
+The local Mac is used for source changes, mock interaction, Jekyll builds, and responsive browser checks. Memory-heavy conversion and runtime tests are delegated to remote jobs. The export pipeline pins Liquid AI's ONNX tooling, generates symmetric Q4, runs a CPU inference smoke test, and publishes immutable artifacts. A GitHub Actions browser check separately validates WebGPU availability, automatic loading, worker asset requests, and ranged access to the weights without compiling the complete graph in software WebGPU.
 
 The complete implementation is reproducible from the repository:
 
