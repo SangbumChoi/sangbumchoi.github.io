@@ -99,11 +99,16 @@ try {
     const previousCount = await answers.count();
     await page.locator("#prompt-input").fill(testCase.prompt);
     await page.locator("#send-button").click();
-    await page.waitForFunction(
-      (count) => document.querySelectorAll('.message--assistant[data-source="profile-index"]').length > count,
-      previousCount,
-      { timeout: 10_000 },
-    );
+    try {
+      await page.waitForFunction(
+        (count) => document.querySelectorAll('.message--assistant[data-source="profile-index"]').length > count,
+        previousCount,
+        { timeout: 10_000 },
+      );
+    } catch (error) {
+      const status = await page.locator("#model-status").textContent();
+      throw new Error(`Profile answer timeout for "${testCase.prompt}"; model status: ${status}; ${error.message}`);
+    }
     const answer = (await answers.last().innerText()).trim();
     const missing = testCase.terms.filter((term) => !answer.toLowerCase().includes(term.toLowerCase()));
     if (missing.length) {
@@ -121,11 +126,15 @@ try {
   const previousFollowUpCount = await followUpAnswers.count();
   await page.locator("#prompt-input").fill("How did it work, and where can I verify it?");
   await page.locator("#send-button").click();
-  await page.waitForFunction(
-    (count) => document.querySelectorAll('.message--assistant[data-source="profile-index"]').length > count,
-    previousFollowUpCount,
-    { timeout: 10_000 },
-  );
+  try {
+    await page.waitForFunction(
+      (count) => document.querySelectorAll('.message--assistant[data-source="profile-index"]').length > count,
+      previousFollowUpCount,
+      { timeout: 10_000 },
+    );
+  } catch (error) {
+    throw new Error(`ZZAZZ follow-up answer timeout; ${error.message}`);
+  }
   const followUpAnswer = (await followUpAnswers.last().innerText()).trim();
   for (const term of ["segmented", "3D", "tracked", "VentureSquare"]) {
     if (!followUpAnswer.toLowerCase().includes(term.toLowerCase())) {
