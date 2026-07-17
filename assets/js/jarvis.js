@@ -1,4 +1,4 @@
-const ASSET_VERSION = "12";
+const ASSET_VERSION = "13";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 
 const els = {
@@ -41,7 +41,6 @@ const state = {
   backend: "webgpu",
   fallbackAttempted: false,
   webgpuError: "",
-  lastTopic: null,
 };
 
 function initializeIcons() {
@@ -69,8 +68,12 @@ function updateClock() {
   els.localTime.textContent = `${value} KST`;
 }
 
-function selectProfileContext(profile, prompt = "") {
-  const query = prompt.toLowerCase();
+function selectProfileContext(profile, prompt = "", conversation = []) {
+  const recentContext = conversation
+    .slice(-6)
+    .map((message) => message.content)
+    .join("\n");
+  const query = `${recentContext}\n${prompt}`.toLowerCase();
   const context = { identity: profile.identity, links: profile.links };
 
   if (/how long|years? (?:of )?(?:experience|work)|worked? in ai|ai experience|career length|경력.*(?:몇|얼마나)|ai.*경력|몇 년/.test(query)) {
@@ -87,7 +90,7 @@ function selectProfileContext(profile, prompt = "") {
   } else if (/zzazz|째즈|team\s*island|팀\s*아일랜드/.test(query)) {
     context.other_experience = profile.other_experience;
     context.products = profile.products;
-  } else if (/toss|bank|document|authentication|agent|토스|은행|문서|인증|에이전트/.test(query)) {
+  } else if (/toss\s*bank|tossbank|document|authentication|agent|토스\s*뱅크|토스은행|문서|인증|에이전트/.test(query)) {
     context.current_work = profile.current_work;
   } else if (/superb|multimodal|ground|training|gpu|dataset|cvpr|멀티모달|학습|데이터/.test(query)) {
     context.previous_work = profile.previous_work;
@@ -105,8 +108,8 @@ function selectProfileContext(profile, prompt = "") {
   return context;
 }
 
-function buildSystemPrompt(profile, prompt = "") {
-  const focusedContext = selectProfileContext(profile, prompt);
+function buildSystemPrompt(profile, prompt = "", conversation = state.conversation) {
+  const focusedContext = selectProfileContext(profile, prompt, conversation);
   return [
     "You are Daniel OS, the personal AI portfolio of Sangbum Daniel Choi.",
     "Answer in the same language as the visitor, in at most 100 words.",
@@ -175,171 +178,11 @@ function routeCommand(prompt) {
   return true;
 }
 
-function isTopicFollowUp(query) {
-  return /^(?:what|how|where|why|tell me more|show me|can i|could i|it\b|that\b|the product|그게|그건|그거|그 제품|어떻게|왜|더|링크|출처|기사|어디)/.test(query.trim())
-    || /\b(?:it|that product)\b/.test(query)
-    || /(?:그게|그건|그거|그 제품)/.test(query);
-}
-
-function profileGuardAnswer(prompt) {
-  if (!state.profile) return null;
-  const query = prompt.toLowerCase().replace(/[’]/g, "'").trim();
-  const korean = /[가-힣]/.test(prompt);
-  const personReference = /\b(?:his|he|daniel|sangbum|personal|profile)\b/.test(query)
-    || /(?:최상범|다니엘|그의|본인)/.test(query);
-
-  if (/^who am i\b|^what do you know about me\b|^나는 누구/.test(query)) {
-    state.lastTopic = "visitor_identity";
-    return korean
-      ? "방문자 본인의 신원은 확인할 수 없습니다. 지금 대화 중인 대상은 Daniel의 브라우저 기반 포트폴리오 어시스턴트이며, 방문자가 Daniel의 가족이나 지인이라는 주장도 검증하지 않습니다."
-      : "I cannot identify you. You are speaking with Daniel's browser-native portfolio assistant, and I cannot verify that a visitor is Daniel's relative or associate.";
-  }
-
-  if (/^who are you\b|^what are you\b|^what is this\b|너는 누구/.test(query)) {
-    state.lastTopic = "assistant_identity";
-    return korean
-      ? "저는 최상범의 브라우저 기반 포트폴리오 어시스턴트입니다. 검증된 프로필과 공개 링크에 대해서만 답변합니다."
-      : "I am Daniel's browser-native portfolio assistant. I answer only from his verified profile and public links.";
-  }
-
-  const asksExactBirthday = /\b(?:birthday|date of birth|birth date|when was he born)\b|생일|출생일/.test(query) && personReference;
-  const asksAge = /\b(?:how old|what age|age is|current age)\b|몇 살|나이/.test(query) && personReference;
-  const asksBirthYear = /\b(?:birth year|born in|what year was he born)\b|몇 년생|출생년도|태어난 해/.test(query) && personReference;
-  if (asksExactBirthday) {
-    state.lastTopic = "birth_year";
-    return korean
-      ? "공개 프로필에는 최상범의 출생연도가 1997년으로 기재되어 있지만 정확한 생일은 공개되어 있지 않습니다."
-      : "The public profile lists 1997 as Daniel's birth year, but it does not publish his exact birthday.";
-  }
-  if (asksAge) {
-    state.lastTopic = "birth_year";
-    return korean
-      ? "공개 프로필에는 최상범의 출생연도가 1997년으로 기재되어 있습니다. 정확한 생일이 공개되어 있지 않으므로 현재 나이를 특정 숫자로 확정하지 않습니다."
-      : "The public profile lists 1997 as Daniel's birth year. Because his exact birthday is not published, his precise current age cannot be verified, so I will not guess a number.";
-  }
-  if (asksBirthYear) {
-    state.lastTopic = "birth_year";
-    return korean
-      ? "최상범의 공개 프로필에 기재된 출생연도는 1997년입니다."
-      : "Daniel's public profile lists 1997 as his birth year.";
-  }
-
-  const asksBankAccount = /\b(?:bank account|account number|routing number|iban|swift|bank details)\b|은행 계좌|계좌번호|통장/.test(query)
-    && (personReference || /what'?s|tell me|give me|알려/.test(query));
-  const asksPrivateDetails = /\b(?:home address|phone number|salary|income|passport|social security|ssn|credit card|marital status)\b|주소|전화번호|연봉|여권|주민번호|결혼 여부/.test(query)
-    && personReference;
-  if (asksBankAccount || asksPrivateDetails) {
-    state.lastTopic = "private_information";
-    return korean
-      ? "최상범의 계좌번호나 기타 사적인 금융·개인정보를 제공하거나 추측할 수 없습니다. 해당 정보는 검증된 공개 포트폴리오에 포함되어 있지 않습니다."
-      : "I cannot provide or infer Daniel's bank account or other private financial and personal information. It is not part of this verified public portfolio.";
-  }
-
-  const asksHeight = /\b(?:height|how tall|tall is|centimeter|centimetre|cm)\b|키|신장/.test(query)
-    && (personReference || state.lastTopic === "height");
-  if (asksHeight) {
-    state.lastTopic = "height";
-    return korean
-      ? "최상범의 키에 대한 검증된 정보는 포트폴리오에 없습니다. 따라서 센티미터 단위로 추측해 답하지 않습니다."
-      : "The portfolio does not contain a verified record of Daniel's height, so I will not guess or convert it to centimeters.";
-  }
-
-  const asksRelationship = /\b(?:relationship|relationship status|family|wife|husband|girlfriend|boyfriend|brother|sister|married|single)\b|관계|가족|형제|자매|결혼/.test(query)
-    && (personReference || state.lastTopic === "relationship");
-  if (asksRelationship) {
-    state.lastTopic = "relationship";
-    return korean
-      ? "최상범의 가족관계나 개인적인 인간관계에 대한 검증된 정보는 포트폴리오에 없습니다. 추측해서 답하지 않습니다."
-      : "The portfolio does not contain verified information about Daniel's family or personal relationships, so I will not guess.";
-  }
-
-  return null;
-}
-
-function careerAnswer(prompt) {
-  if (!state.profile?.career_timeline) return null;
-  const query = prompt.toLowerCase();
-  const korean = /[가-힣]/.test(prompt);
-  const timeline = state.profile.career_timeline;
-  const links = state.profile.links;
-  const explicitStartupQuestion = /startup|founder|co.?founder|start(?:ed)? (?:a )?company|start(?:ed)? .*team\s*island|launch(?:ed)?|창업|스타트업|회사를 세|창업했|창업 경험/.test(query);
-  const startupQuestion = explicitStartupQuestion;
-  const durationQuestion = /how long|worked? in ai|ai experience|years? (?:of )?(?:experience|work)|career length|경력.*(?:몇|얼마나)|ai.*경력|몇 년/.test(query);
-  const recordsQuestion = /\b2018\b|seerslab|uiuc|early career|earlier work|2018년|초기 경력/.test(query)
-    && /what|which|work|do|experience|career|record|했|경력|일/.test(query);
-
-  if (startupQuestion) {
-    state.lastTopic = "zzazz";
-    return korean
-      ? `네. 최상범은 Team ISLAND를 공동 창업하고 ${timeline.startup.dates} CTO로 일했습니다. 이 스타트업은 ZZAZZ라는 모바일 영상 편집 앱을 만들었고, 최상범은 Android·Unity·딥러닝을 담당하는 5명 팀을 이끌었습니다. 2018년 기록은 창업 전 Seerslab의 머신러닝 인턴과 UIUC 연구 경력입니다. [CV](${links.cv}).`
-      : `Yes. Daniel co-founded Team ISLAND and served as its CTO from ${timeline.startup.dates}. The startup built ZZAZZ, a mobile video-editing application, and he led a five-person team across Android, Unity, and deep learning. His 2018 records are earlier work at Seerslab and UIUC, before Team ISLAND. See the [CV](${links.cv}).`;
-  }
-
-  if (recordsQuestion) {
-    state.lastTopic = "career_timeline";
-    return korean
-      ? `2018년에는 Seerslab에서 얼굴 랜드마크 검출과 어노테이션 도구를 개발했고, 이후 UIUC에서 불규칙 마이크 배열의 방향 추정 연구를 했습니다. Team ISLAND 창업과 CTO 경력은 그 이후인 ${timeline.startup.dates}입니다. [CV](${links.cv}).`
-      : `In 2018, Daniel worked at Seerslab on face-landmark detection and an annotation tool, then researched direction-of-arrival estimation at UIUC. His Team ISLAND startup and CTO period came later, from ${timeline.startup.dates}. See the [CV](${links.cv}).`;
-  }
-
-  if (durationQuestion) {
-    state.lastTopic = "career_timeline";
-    const years = Math.max(0, new Date().getFullYear() - timeline.ai_start_year);
-    return korean
-      ? `공개 CV에는 최상범의 AI·ML 경력이 ${timeline.ai_start}부터 현재까지 기록되어 있어 2026년 기준 ${years}년 이상입니다. 이 수치는 Seerslab 인턴과 연구 경력을 포함한 전체 타임라인이고, 지원서의 6+ years는 더 좁은 전문 멀티모달·ML 엔지니어링 경력 기준입니다. [CV](${links.cv}).`
-      : `The public CV documents Daniel's AI and ML work from ${timeline.ai_start} to the present, which is ${years}+ years as of 2026. That broader timeline includes his Seerslab internship and research work; the resume's 6+ years is the narrower professional multimodal and ML-engineering count. See the [CV](${links.cv}).`;
-  }
-
-  return null;
-}
-
-function runProfileTool(prompt) {
-  if (!state.profile?.products?.zzazz) return null;
-  const query = prompt.toLowerCase().trim();
-  const directMatch = /zzazz|째즈|team\s*island|팀\s*아일랜드/.test(query);
-  const followUp = state.lastTopic === "zzazz" && isTopicFollowUp(query);
-  if (!directMatch && !followUp) return null;
-
-  const korean = /[가-힣]/.test(prompt);
-  const product = state.profile.products.zzazz;
-  const sourceLinks = product.sources.map((source) => `[${source.label}](${source.url})`).join(korean ? ", " : " and ");
-  const wantsLinks = /link|source|article|read|verify|링크|출처|기사|확인|어디/.test(query);
-  const wantsTechnology = /how|technology|technical|pipeline|detection|segmentation|mapping|tracking|작동|기술|구현|파이프라인|디텍션|세그멘테이션|트래킹|어떻게/.test(query);
-  const wantsDanielRole = /daniel.*(?:do|role|contribut|responsib)|(?:role|contribut|responsib).*daniel|최상범.*(?:역할|기여|했)|다니엘.*(?:역할|기여|했)|무슨 일을|뭘 했/.test(query);
-
-  state.lastTopic = "zzazz";
-  if (wantsTechnology) {
-    return korean
-      ? `ZZAZZ(째즈)는 영상에서 인물을 detection/segmentation으로 분리하고, 3D mapping으로 모션 효과의 위치·크기·각도를 맞춘 뒤, tracking으로 프레임 사이에서 인물을 따라가며 모바일에서 결과 영상을 렌더링했습니다. 기술 설명: ${sourceLinks}.`
-      : `ZZAZZ detected and segmented the person, mapped and transformed motion effects around that subject in 3D, tracked the subject across frames, and rendered the edited result on the mobile device. Technical descriptions: ${sourceLinks}.`;
-  }
-  if (wantsLinks) {
-    return korean
-      ? `ZZAZZ(째즈)의 제품 설명과 기술적 동작은 ${sourceLinks}에서 확인할 수 있습니다. 두 기사 모두 Team ISLAND의 모바일 영상 편집 앱으로 소개합니다.`
-      : `You can verify ZZAZZ and its technical workflow in the ${sourceLinks}. Both describe it as Team ISLAND's mobile video-editing application.`;
-  }
-  if (wantsDanielRole) {
-    return korean
-      ? `Daniel은 Team ISLAND의 공동 창업자이자 CTO로서 Android·Unity·딥러닝을 담당한 5명 개발팀을 이끌고 ZZAZZ의 모바일 비전 및 온디바이스 추론을 개발했습니다. ZZAZZ는 인물 주변에 모션 효과를 합성하는 모바일 영상 편집 앱이었습니다. ${sourceLinks}.`
-      : `As Team ISLAND's co-founder and CTO, Daniel led five developers across Android, Unity, and deep learning and worked on the mobile vision and on-device inference behind ZZAZZ. It was a mobile video-editing app for composing motion effects around people. ${sourceLinks}.`;
-  }
-  return korean
-    ? `ZZAZZ(째즈)는 Team ISLAND가 만든 모바일 영상 편집 앱입니다. 사용자가 고정된 효과에 맞춰 촬영하는 대신, 몇 번의 터치로 영상 속 인물 주변에 원하는 모션 효과를 조합할 수 있게 했습니다. 더 자세한 설명: ${sourceLinks}.`
-    : `ZZAZZ (째즈) was a mobile video-editing application built by Team ISLAND. Instead of recording for a fixed effect, users could combine motion effects around people in their own videos with a few touches. Read more in the ${sourceLinks}.`;
-}
-
 function groundedAnswer(prompt) {
   if (!state.profile) return null;
   const query = prompt.toLowerCase();
   const korean = /[가-힣]/.test(prompt);
   const links = state.profile.links;
-  const guarded = profileGuardAnswer(prompt);
-  if (guarded) return guarded;
-  const career = careerAnswer(prompt);
-  if (career) return career;
-  const toolAnswer = runProfileTool(prompt);
-  if (toolAnswer) return toolAnswer;
-
   if (/who (is|are) daniel|who (is|are) sangbum|about (daniel|sangbum)|introduce (daniel|yourself)|다니엘.*누구|상범.*누구|자기.?소개|소개해/.test(query)) {
     return korean
       ? "Sangbum Daniel Choi는 서울에서 일하는 AI research and systems engineer입니다. 6년 이상 멀티모달 모델 학습, 데이터 설계, 평가, 오픈소스 통합, 온디바이스 배포와 프로덕션 ML 인프라를 경험했으며 현재 Toss Bank의 Data Scientist입니다."
@@ -364,7 +207,7 @@ function groundedAnswer(prompt) {
       : "Daniel has made 40+ contributions across the Hugging Face ecosystem, including 28 public pull requests authored in Transformers. He led the SAM2 integration, opened Molmo2 support and published a Molmo2-4B checkpoint, and contributed to RT-DETR, ViTPose, DETA training, DINOv3 utilities, distributed training fixes, tests, and documentation.";
   }
 
-  if (/toss|bank|document|authentication|agent|토스|은행|문서|인증|에이전트/.test(query)) {
+  if (/toss\s*bank|tossbank|document|authentication|agent|토스\s*뱅크|토스은행|문서|인증|에이전트/.test(query)) {
     return korean
       ? "Toss Bank에서 Daniel은 내부 LLM을 사용하는 온프레미스 AI 에이전트, 얼굴·신분증 인증, 그리고 약 10억 파라미터 VLM 기반의 end-to-end 문서 추출 파이프라인을 개발합니다. 분류·회전·레이아웃·OCR/표·키값 추출 단계별 평가를 설계했고, 자동 처리 가능한 결과 기준 exact match 61%를 달성했습니다."
       : "At Toss Bank, Daniel works on an on-premise AI agent using internally deployed LLMs, face and ID-card authentication, and an end-to-end document extraction pipeline with an approximately 1B-parameter VLM. He designed stage-level evaluation and reached a 61% exact-match baseline for automation-ready outputs.";
@@ -711,7 +554,6 @@ function bindEvents() {
   });
   els.clearButton.addEventListener("click", () => {
     state.conversation = [];
-    state.lastTopic = null;
     window.speechSynthesis?.cancel();
     els.chatLog.querySelectorAll(".message:not(:first-child)").forEach((node) => node.remove());
     setPortraitState("idle", state.modelReady ? "LOCAL MODEL READY" : "STANDING BY");

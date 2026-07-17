@@ -1,11 +1,12 @@
 # Daniel OS LFM2 pipeline
 
-The website uses a verified profile index for factual questions and
-automatically loads LFM2-350M for free-form local generation. Production loads
-the Q4 model in a Web Worker on entry; `_config.dev.yml` disables that automatic
-load so responsive UI work does not consume local memory. The files in this
-directory create a genuinely personalized checkpoint before it is exported for
-WebGPU.
+The website supplies a focused slice of the verified profile and recent chat
+history to LFM2-350M for local generation. A small profile index remains for
+navigation and a few common exact facts, but privacy boundaries, visitor
+identity, career chronology, and contextual product follow-ups are learned by
+the checkpoint rather than returned as fixed JavaScript strings. Production
+loads the Q4 model in a Web Worker on entry; `_config.dev.yml` disables that
+automatic load so responsive UI work does not consume local memory.
 
 ## Train and evaluate
 
@@ -56,21 +57,21 @@ Push changes to the dataset, profile, trainer, validator, exporter, or
 
 1. validates every training and held-out record against the profile schema;
 2. trains and merges LFM2-350M on a GitHub-hosted runner;
-3. requires separate pass thresholds for verified answers, missing facts, and
-   out-of-scope refusals;
-4. publishes the evaluated FP16 checkpoint to `danelcsb/daniel-lfm2-350m`
-   and under the `daniel-lfm2-source-v2` GitHub release;
+3. requires separate pass thresholds for verified answers, missing facts,
+   out-of-scope refusals, Korean responses, and the public strict test;
+4. publishes the evaluated FP16 checkpoint and matching SFT dataset to Hugging
+   Face, and publishes the source under `daniel-lfm2-source-v2`;
 5. exports and smoke-tests symmetric Q4 ONNX before updating the
    `model-assets` branch and `daniel-lfm2-onnx-v1` release.
 
 This keeps model training and export isolated from the 32 GB development Mac.
-The website's immutable model revision is updated only after the remote job
-passes.
+After the remote job passes, pin the emitted model-assets revision and bump the
+browser cache version with `python3 scripts/pin_daniel_lfm2_model.py <revision>`.
 
 The merged model gate requires at least 70% overall, 60% verified-profile
-answers, two of three missing-fact answers, and four of five out-of-scope
-refusals. Exact profile facts are additionally tested through the production
-`profile-index` route, which runs before free-form model generation.
+answers, two-thirds of missing-fact answers, and 80% of out-of-scope refusals.
+The separate 51-case strict gate also checks privacy, chronology, Korean output,
+hallucination traps, and genuine multi-turn follow-ups before ONNX export.
 
 ## Export only
 
@@ -101,9 +102,9 @@ After the job succeeds, pin the `model-assets` branch commit in
 `media.githubusercontent.com` URL template so all model files are CORS-enabled
 and the browser cache is tied to the exact export revision.
 
-The deterministic profile index must remain in front of generation. A small
-model checkpoint is useful for tone and narrow profile synthesis, but it is not
-a substitute for grounding when exact dates, metrics, and links matter.
+The browser still retrieves verified JSON context before generation. The model
+learns how to apply that context and when to decline, while source data remains
+the authority for dates, metrics, private-fact absence, and links.
 
 As an alternative to GitHub Actions, submit the single-file trainer to Hugging
 Face Jobs with the dataset, held-out evaluation cases, and profile pinned to

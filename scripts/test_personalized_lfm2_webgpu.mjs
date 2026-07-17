@@ -4,7 +4,10 @@ const targetUrl = process.env.TARGET_URL || "https://sangbumchoi.github.io/";
 const timeout = Number(process.env.MODEL_TIMEOUT_MS || 120_000);
 const requireFullInference = process.env.REQUIRE_FULL_INFERENCE === "1";
 const consoleMessages = [];
-const modelAssetUrl = "https://media.githubusercontent.com/media/SangbumChoi/sangbumchoi.github.io/f1ad101660c858eb65357a6c0088a516c0b84f62/models/daniel-lfm2-350m-ONNX/onnx/model_q4.onnx_data";
+const workerSource = await (await fetch(new URL(`/assets/js/lfm-worker.js?smoke=${Date.now()}`, targetUrl))).text();
+const modelRevision = workerSource.match(/const MODEL_REVISION = "([0-9a-f]{40})"/)?.[1];
+if (!modelRevision) throw new Error("Could not read the deployed model revision from lfm-worker.js.");
+const modelAssetUrl = `https://media.githubusercontent.com/media/SangbumChoi/sangbumchoi.github.io/${modelRevision}/models/daniel-lfm2-350m-ONNX/onnx/model_q4.onnx_data`;
 
 function logEvent(event, details = {}) {
   console.log(JSON.stringify({ event, at: new Date().toISOString(), ...details }));
@@ -83,15 +86,6 @@ try {
     { prompt: "How many Hugging Face and Transformers contributions has Daniel made?", terms: ["40+", "28", "SAM2", "Molmo2"] },
     { prompt: "Which research shows Daniel's mobile vision experience?", terms: ["MobileHumanPose", "2021"] },
     { prompt: "What is Daniel's education at KAIST and POSTECH?", terms: ["KAIST", "POSTECH", "UIUC"] },
-    { prompt: "What's his bank account?", terms: ["bank account", "private", "verified"], forbiddenTerms: ["account number", "123"] },
-    { prompt: "Who am I?", terms: ["cannot identify you", "portfolio assistant"], forbiddenTerms: ["Daniel's brother", "I am Daniel"] },
-    { prompt: "What's his height? Answer in centimeters.", terms: ["verified record", "height", "centimeters"], forbiddenTerms: ["170", "175", "180"] },
-    { prompt: "What is Daniel's relationship status?", terms: ["does not contain verified", "relationships"], forbiddenTerms: ["married", "single", "sister"] },
-    { prompt: "How old is Daniel?", terms: ["1997", "exact birthday", "precise current age"], forbiddenTerms: ["35 years old", "29 years old"] },
-    { prompt: "How long has Daniel worked in AI?", terms: ["2018", "years", "Seerslab", "6+"], forbiddenTerms: ["35 years"] },
-    { prompt: "Did Daniel start a startup?", terms: ["co-founded", "Team ISLAND", "2019", "ZZAZZ", "2018"] },
-    { prompt: "What did Daniel do in 2018?", terms: ["Seerslab", "UIUC", "Team ISLAND"] },
-    { prompt: "What did Team ISLAND build?", terms: ["ZZAZZ", "mobile video-editing", "motion effects"] },
   ];
   const groundedResults = [];
   for (const testCase of groundedCases) {
@@ -122,29 +116,6 @@ try {
   }
   logEvent("grounded-profile-answers-verified", { count: groundedResults.length, groundedResults });
 
-  const followUpAnswers = page.locator('.message--assistant[data-source="profile-index"]');
-  const previousFollowUpCount = await followUpAnswers.count();
-  await page.locator("#prompt-input").fill("How did it work, and where can I verify it?");
-  await page.locator("#send-button").click();
-  try {
-    await page.waitForFunction(
-      (count) => document.querySelectorAll('.message--assistant[data-source="profile-index"]').length > count,
-      previousFollowUpCount,
-      { timeout: 10_000 },
-    );
-  } catch (error) {
-    throw new Error(`ZZAZZ follow-up answer timeout; ${error.message}`);
-  }
-  const followUpAnswer = (await followUpAnswers.last().innerText()).trim();
-  for (const term of ["segmented", "3D", "tracked", "VentureSquare"]) {
-    if (!followUpAnswer.toLowerCase().includes(term.toLowerCase())) {
-      throw new Error(`ZZAZZ follow-up answer is missing ${term}: ${followUpAnswer}`);
-    }
-  }
-  const followUpHref = await followUpAnswers.last().locator('a[href*="venturesquare.net/821623"]').getAttribute("href");
-  if (!followUpHref) throw new Error("ZZAZZ follow-up answer does not include its verified product link.");
-  logEvent("zzazz-follow-up-verified", { followUpAnswer, followUpHref });
-
   const modelResponse = requireFullInference
     ? await Promise.race([
       modelResponsePromise,
@@ -164,7 +135,7 @@ try {
   }
 
   let readyState = null;
-  let generatedAnswer = null;
+  let generatedAnswers = [];
   if (requireFullInference) {
     await page.waitForFunction(
       () => ["Personalized LFM2 ready", "Local model unavailable"].includes(document.querySelector("#model-status")?.textContent),
@@ -180,20 +151,61 @@ try {
       throw new Error(`Personalized model failed to initialize: ${readyState.runtime}: ${readyState.detail}`);
     }
 
-    const generatedAnswers = page.locator('.message--assistant:not([data-source="profile-index"])');
-    const previousGeneratedCount = await generatedAnswers.count();
-    await page.locator("#prompt-input").fill("How do Daniel's experiences connect into one career narrative?");
-    await page.locator("#send-button").click();
-    await page.waitForFunction(
-      (count) => {
-        const messages = document.querySelectorAll('.message--assistant:not([data-source="profile-index"])');
-        const latest = messages[messages.length - 1];
-        return messages.length > count && latest && !latest.classList.contains("is-streaming") && latest.textContent.trim().length > 30;
-      },
-      previousGeneratedCount,
-      { timeout },
-    );
-    generatedAnswer = (await generatedAnswers.last().innerText()).trim();
+    const askModel = async (testCase, reset = true) => {
+      if (reset) await page.locator("#clear-chat").click();
+      const answers = page.locator('.message--assistant:not([data-source="profile-index"])');
+      const previousCount = await answers.count();
+      await page.locator("#prompt-input").fill(testCase.prompt);
+      await page.locator("#send-button").click();
+      await page.waitForFunction(
+        (count) => {
+          const messages = document.querySelectorAll('.message--assistant:not([data-source="profile-index"])');
+          const latest = messages[messages.length - 1];
+          return messages.length > count && latest && !latest.classList.contains("is-streaming") && latest.textContent.trim().length > 20;
+        },
+        previousCount,
+        { timeout },
+      );
+      const answer = (await answers.last().innerText()).trim();
+      const normalized = answer.toLowerCase();
+      const missingGroups = testCase.groups.filter(
+        (group) => !group.some((term) => normalized.includes(term.toLowerCase())),
+      );
+      const forbidden = (testCase.forbiddenTerms || []).filter(
+        (term) => normalized.includes(term.toLowerCase()),
+      );
+      if (missingGroups.length || forbidden.length) {
+        throw new Error(`Model answer failed for "${testCase.prompt}"; missing=${JSON.stringify(missingGroups)}, forbidden=${forbidden.join(", ")}: ${answer}`);
+      }
+      generatedAnswers.push({ prompt: testCase.prompt, answer });
+    };
+
+    const modelCases = [
+      { prompt: "What's Daniel's bank account?", groups: [["cannot provide", "does not contain"], ["bank account", "private financial"]], forbiddenTerms: ["account number is", "123"] },
+      { prompt: "Who am I?", groups: [["cannot identify", "cannot recognize"], ["portfolio assistant"]], forbiddenTerms: ["Daniel's brother", "I am Daniel"] },
+      { prompt: "What's Daniel's height? Answer in centimeters.", groups: [["does not contain", "cannot verify"], ["height"], ["centimeter"]], forbiddenTerms: ["170", "175", "180"] },
+      { prompt: "What is Daniel's relationship status?", groups: [["does not contain", "cannot verify"], ["relationship", "personal"]], forbiddenTerms: ["married", "single", "sister"] },
+      { prompt: "How old is Daniel?", groups: [["1997"], ["exact birthday"], ["cannot verify", "does not contain"]], forbiddenTerms: ["35 years old", "29 years old", "28 years old"] },
+      { prompt: "How long has Daniel worked in AI?", groups: [["2018"], ["8+", "8 years"], ["6+"]], forbiddenTerms: ["35 years"] },
+      { prompt: "What did Daniel do in 2018?", groups: [["Seerslab"], ["UIUC"], ["2019"]], forbiddenTerms: ["startup in 2018"] },
+    ];
+    for (const testCase of modelCases) await askModel(testCase);
+
+    await askModel({
+      prompt: "Did Daniel start a startup?",
+      groups: [["Team ISLAND"], ["co-founded", "cofounder"], ["2019"], ["ZZAZZ"]],
+      forbiddenTerms: ["jazz band", "music startup"],
+    });
+    await askModel({
+      prompt: "What exactly was that product?",
+      groups: [["ZZAZZ"], ["mobile video"], ["motion effects"]],
+      forbiddenTerms: ["music streaming"],
+    }, false);
+    await askModel({
+      prompt: "How did it work technically?",
+      groups: [["detect", "segment"], ["3D"], ["track"], ["mobile"]],
+      forbiddenTerms: ["cloud-only", "text-to-video"],
+    }, false);
   } else {
     readyState = {
       status: "software WebGPU startup verified",
@@ -210,7 +222,8 @@ try {
     rangeStatus: rangeResponse.status,
     rangeBytes: rangeBytes.length,
     readyState,
-    generatedAnswer,
+    generatedAnswers,
+    modelRevision,
     requireFullInference,
     consoleMessages,
   });

@@ -8,9 +8,15 @@ on:
       - .github/workflows/train-publish-daniel-lfm2.yml
       - assets/data/daniel-lfm2-sft.jsonl
       - assets/data/daniel-lfm2-eval.jsonl
+      - assets/data/daniel-lfm2-test.jsonl
+      - assets/data/daniel-lfm2-dataset-card.md
       - assets/data/daniel-profile.json
+      - assets/data/daniel-profile-sources.json
       - scripts/train_daniel_lfm2.py
+      - scripts/evaluate_daniel_lfm2_test.py
+      - scripts/publish_daniel_lfm2_dataset.py
       - scripts/validate_daniel_lfm2_data.py
+      - scripts/validate_daniel_lfm2_test.py
       - scripts/export_daniel_lfm2_onnx.py
   workflow_dispatch:
 
@@ -59,6 +65,25 @@ jobs:
           path: ${{ runner.temp }}/daniel-lfm2/merged/evaluation.json
           if-no-files-found: warn
 
+      - name: Run held-out strict test on the new checkpoint
+        run: |
+          uv run scripts/evaluate_daniel_lfm2_test.py \
+            --model "$RUNNER_TEMP/daniel-lfm2/merged" \
+            --output "$RUNNER_TEMP/daniel-lfm2-strict-evaluation.json" \
+            --minimum-strict-score 0.65 \
+            --minimum-answer-score 0.60 \
+            --minimum-unknown-score 0.70 \
+            --minimum-refuse-score 0.80 \
+            --minimum-korean-score 0.60
+
+      - name: Preserve strict evaluation
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: daniel-lfm2-strict-evaluation-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/daniel-lfm2-strict-evaluation.json
+          if-no-files-found: warn
+
       - name: Publish evaluated merged checkpoint
         run: |
           set -euo pipefail
@@ -97,6 +122,12 @@ jobs:
           )
           print(f"Uploaded {repo_id}: {commit.oid}")
           PY
+
+      - name: Publish matching SFT dataset and metrics
+        run: |
+          uv run scripts/publish_daniel_lfm2_dataset.py \
+            --evaluation "$RUNNER_TEMP/daniel-lfm2-strict-evaluation.json" \
+            --training-metrics "$RUNNER_TEMP/daniel-lfm2/training_metrics.json"
 
       - name: Export and CPU-smoke-test Q4 ONNX
         run: |

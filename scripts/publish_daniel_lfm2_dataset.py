@@ -20,6 +20,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo-id", default="danelcsb/daniel-os-profile-sft")
     parser.add_argument("--evaluation", type=Path)
+    parser.add_argument(
+        "--training-metrics",
+        type=Path,
+        default=Path("assets/data/daniel-lfm2-training-metrics.json"),
+    )
     return parser.parse_args()
 
 
@@ -40,7 +45,7 @@ def main() -> None:
         copy("assets/data/daniel-lfm2-test.jsonl", root / "strict_test/test.jsonl")
         copy("assets/data/daniel-profile.json", root / "profile/profile.json")
         copy("assets/data/daniel-profile-sources.json", root / "profile/profile-sources.json")
-        copy("assets/data/daniel-lfm2-training-metrics.json", root / "metrics/training.json")
+        copy(args.training_metrics, root / "metrics/training.json")
         if args.evaluation and args.evaluation.exists():
             copy(args.evaluation, root / "metrics/strict-evaluation.json")
 

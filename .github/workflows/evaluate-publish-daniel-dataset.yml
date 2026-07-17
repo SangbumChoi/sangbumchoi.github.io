@@ -1,22 +1,6 @@
 name: Evaluate and publish Daniel OS dataset
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - .github/workflows/evaluate-publish-daniel-dataset.yml
-      - assets/data/daniel-lfm2-dataset-card.md
-      - assets/data/daniel-lfm2-eval.jsonl
-      - assets/data/daniel-lfm2-sft.jsonl
-      - assets/data/daniel-lfm2-test.jsonl
-      - assets/data/daniel-lfm2-training-metrics.json
-      - assets/data/daniel-profile-sources.json
-      - assets/data/daniel-profile.json
-      - scripts/evaluate_daniel_lfm2_test.py
-      - scripts/publish_daniel_lfm2_dataset.py
-      - scripts/validate_daniel_lfm2_data.py
-      - scripts/validate_daniel_lfm2_test.py
   workflow_dispatch:
 
 concurrency:

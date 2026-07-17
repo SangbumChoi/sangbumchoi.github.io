@@ -13,6 +13,26 @@ from pathlib import Path
 BEHAVIORS = {"answer", "unknown", "refuse"}
 
 
+def validate_messages(messages: list[dict], record_id: str, ending_role: str) -> None:
+    if not messages:
+        raise ValueError(f"{record_id}: messages cannot be empty")
+    roles = [message.get("role") for message in messages]
+    expected = ["user" if index % 2 == 0 else "assistant" for index in range(len(messages))]
+    if roles != expected or roles[-1] != ending_role:
+        raise ValueError(
+            f"{record_id}: messages must alternate user/assistant and end with {ending_role}"
+        )
+    if any(not isinstance(message.get("content"), str) or not message["content"].strip() for message in messages):
+        raise ValueError(f"{record_id}: every message needs non-empty content")
+
+
+def final_user_prompt(record: dict) -> str:
+    messages = record.get("messages")
+    if messages:
+        return messages[-2 if messages[-1].get("role") == "assistant" else -1]["content"]
+    return record["prompt"]
+
+
 def load_jsonl(path: Path) -> list[dict]:
     records = []
     for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
@@ -42,26 +62,31 @@ def validate_training(records: list[dict], profile: dict) -> Counter:
         if behavior not in BEHAVIORS:
             raise ValueError(f"{record_id}: invalid behavior {behavior}")
         counts[behavior] += 1
+        if record.get("language", "en") not in {"en", "ko"}:
+            raise ValueError(f"{record_id}: invalid language {record.get('language')}")
         context_keys = record.get("context_keys")
         if not context_keys or any(key not in profile for key in context_keys):
             raise ValueError(f"{record_id}: invalid context keys {context_keys}")
         messages = record.get("messages", [])
-        if [message.get("role") for message in messages] != ["user", "assistant"]:
-            raise ValueError(f"{record_id}: messages must be one user/assistant pair")
-        prompt = messages[0]["content"].strip().lower()
+        validate_messages(messages, record_id, "assistant")
+        prompt = final_user_prompt(record).strip().lower()
         if prompt in prompts:
             raise ValueError(f"{record_id}: duplicate prompt")
         prompts.add(prompt)
-        answer = messages[1]["content"].strip()
+        answer = messages[-1]["content"].strip()
         if len(answer.split()) > 110:
             raise ValueError(f"{record_id}: answer is too long")
         for term in record.get("expected_terms", []):
             if term.lower() not in answer.lower():
                 raise ValueError(f"{record_id}: expected term missing from answer: {term}")
-        if behavior == "unknown" and "does not contain" not in answer.lower():
+        if behavior == "unknown" and not any(
+            marker in answer.lower()
+            for marker in ("does not contain", "cannot verify", "cannot identify", "포함되어 있지", "확인할 수 없", "검증된 정보가 없")
+        ):
             raise ValueError(f"{record_id}: unknown answer must state that information is absent")
         if behavior == "refuse" and not any(
-            marker in answer.lower() for marker in ("outside this portfolio's scope", "cannot pretend")
+            marker in answer.lower()
+            for marker in ("outside this portfolio's scope", "cannot pretend", "cannot identify", "범위 밖", "식별할 수")
         ):
             raise ValueError(f"{record_id}: refusal boundary is missing")
         if behavior == "answer":
@@ -86,11 +111,17 @@ def validate_eval(records: list[dict], profile: dict, training_prompts: set[str]
         if behavior not in BEHAVIORS:
             raise ValueError(f"{record_id}: invalid behavior {behavior}")
         counts[behavior] += 1
+        if record.get("language", "en") not in {"en", "ko"}:
+            raise ValueError(f"{record_id}: invalid language {record.get('language')}")
         if any(key not in profile for key in record.get("context_keys", [])):
             raise ValueError(f"{record_id}: invalid context key")
-        if not record.get("prompt") or not record.get("expected_groups"):
-            raise ValueError(f"{record_id}: prompt and expected groups are required")
-        if record["prompt"].strip().lower() in training_prompts:
+        messages = record.get("messages")
+        if messages:
+            validate_messages(messages, record_id, "user")
+        if not (record.get("prompt") or messages) or not record.get("expected_groups"):
+            raise ValueError(f"{record_id}: prompt or messages and expected groups are required")
+        prompt = final_user_prompt(record).strip().lower()
+        if prompt in training_prompts:
             raise ValueError(f"{record_id}: evaluation prompt is present in training data")
         if behavior == "answer":
             context = flatten({key: profile[key] for key in record["context_keys"]}).lower()
@@ -110,7 +141,10 @@ def main() -> None:
     training = load_jsonl(args.dataset)
     evaluation = load_jsonl(args.eval)
     training_prompts = {
-        record["messages"][0]["content"].strip().lower() for record in training
+        message["content"].strip().lower()
+        for record in training
+        for message in record["messages"]
+        if message["role"] == "user"
     }
     summary = {
         "training_records": len(training),

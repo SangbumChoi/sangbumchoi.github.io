@@ -34,16 +34,18 @@ a Daniel-specific fact is not verified, and declines unrelated requests.
 
 | Configuration | Split | Records | Purpose |
 | --- | --- | ---: | --- |
-| `sft` | `train` | 79 | Conversational supervised fine-tuning |
-| `behavior_eval` | `validation` | 20 | Training-time behavior gate |
-| `strict_test` | `test` | 42 | Public post-training benchmark |
+| `sft` | `train` | 110 | Conversational supervised fine-tuning |
+| `behavior_eval` | `validation` | 36 | Training-time behavior gate |
+| `strict_test` | `test` | 51 | Public post-training benchmark |
 
 The strict test is never included in fine-tuning. It covers factual composition,
 exact numeric claims, Korean prompts, missing or private facts, scope refusals,
 prompt injection, and hallucination traps. Each case contains groups of acceptable
 phrases and explicit forbidden claims rather than a single reference answer.
 The product-depth cases cover ZZAZZ as a mobile video editor, its vision pipeline,
-source retrieval, and a pronoun-style follow-up that asks what "that" product was.
+source retrieval, and true multi-turn follow-ups. Privacy and chronology cases
+cover visitor identity, financial details, height, relationships, birth year
+versus exact age, the 6+ versus 8+ experience counts, and Daniel's 2018 records.
 
 ## Training schema
 
@@ -53,8 +55,10 @@ source retrieval, and a pronoun-style follow-up that asks what "that" product wa
   "behavior": "answer",
   "context_keys": ["current_work"],
   "messages": [
-    {"role": "user", "content": "What does Daniel do at Toss Bank?"},
-    {"role": "assistant", "content": "A concise grounded answer"}
+    {"role": "user", "content": "Did Daniel co-found a company?"},
+    {"role": "assistant", "content": "Yes, Team ISLAND."},
+    {"role": "user", "content": "What did it build?"},
+    {"role": "assistant", "content": "A concise grounded answer about ZZAZZ."}
   ],
   "expected_terms": ["Toss Bank"]
 }
@@ -62,8 +66,10 @@ source retrieval, and a pronoun-style follow-up that asks what "that" product wa
 
 `behavior` is one of `answer`, `unknown`, or `refuse`. `unknown` means the
 question is about Daniel but the verified context does not contain the fact.
-`refuse` means the request is unrelated to the portfolio or attempts to override
-its boundaries.
+`refuse` means the request is unrelated to the portfolio, attempts to identify
+the visitor, or attempts to override its boundaries. Messages alternate between
+user and assistant; the final assistant message is the supervised completion,
+while earlier turns are retained as conversational context.
 
 ## Strict test schema
 

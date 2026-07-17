@@ -14,6 +14,22 @@ LANGUAGES = {"en", "ko"}
 SOURCE_STATUSES = {"externally_verified", "public_self_report", "not_verified"}
 
 
+def validate_messages(messages: list[dict], record_id: str) -> None:
+    roles = [message.get("role") for message in messages]
+    expected = ["user" if index % 2 == 0 else "assistant" for index in range(len(messages))]
+    if not messages or roles != expected or roles[-1] != "user":
+        raise ValueError(
+            f"{record_id}: messages must alternate user/assistant and end with user"
+        )
+    if any(not isinstance(message.get("content"), str) or not message["content"].strip() for message in messages):
+        raise ValueError(f"{record_id}: every message needs non-empty content")
+
+
+def final_prompt(record: dict) -> str:
+    messages = record.get("messages")
+    return messages[-1]["content"] if messages else record.get("prompt", "")
+
+
 def read_jsonl(path: Path) -> list[dict]:
     records = []
     for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
@@ -82,7 +98,10 @@ def validate_test(
         context_keys = record.get("context_keys", [])
         if not context_keys or any(key not in profile for key in context_keys):
             raise ValueError(f"{record_id}: invalid context keys {context_keys}")
-        prompt = record.get("prompt", "").strip()
+        messages = record.get("messages")
+        if messages:
+            validate_messages(messages, record_id)
+        prompt = final_prompt(record).strip()
         normalized_prompt = prompt.lower()
         if not prompt or normalized_prompt in prompts or normalized_prompt in excluded_prompts:
             raise ValueError(f"{record_id}: prompt is empty, duplicated, or leaked from train/validation")
@@ -129,8 +148,13 @@ def main() -> None:
     train = read_jsonl(args.train)
     validation = read_jsonl(args.validation)
     excluded_prompts = {
-        record["messages"][0]["content"].strip().lower() for record in train
-    } | {record["prompt"].strip().lower() for record in validation}
+        message["content"].strip().lower()
+        for record in train
+        for message in record["messages"]
+        if message["role"] == "user"
+    } | {
+        final_prompt(record).strip().lower() for record in validation
+    }
     behaviors, languages = validate_test(read_jsonl(args.test), profile, excluded_prompts)
     summary = {
         "provenance_statuses": dict(validate_sources(args.sources)),

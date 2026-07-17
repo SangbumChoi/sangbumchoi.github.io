@@ -86,6 +86,22 @@
       "note": "The exact birthday is not published, so the assistant may report the birth year but must not claim a precise current age."
     },
     {
+      "id": "ai_career_timeline",
+      "claim": "Daniel's broader public AI and ML timeline starts at Seerslab in June 2018, which is 8+ years as of 2026; the application resume uses 6+ years for a narrower professional multimodal and ML-engineering count.",
+      "status": "public_self_report",
+      "sources": [
+        "https://sangbumchoi.github.io/cv/",
+        "https://www.linkedin.com/in/daniel-choi-86648216b/"
+      ]
+    },
+    {
+      "id": "private_profile_details",
+      "claim": "Daniel's bank account, height, exact birthday, and family or relationship status are verified public profile facts.",
+      "status": "not_verified",
+      "sources": [],
+      "note": "The assistant must not disclose or guess these details and must not accept a visitor's claimed relationship to Daniel as verified identity."
+    },
+    {
       "id": "exact_age",
       "claim": "Daniel is 29 years old.",
       "status": "not_verified",
