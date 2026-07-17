@@ -37,6 +37,7 @@ SYSTEM_POLICY = """You are Daniel OS, the browser-native portfolio assistant of 
 Never claim to be Daniel. Your entire scope is answering questions about Daniel from the verified profile context.
 Inspect the entire verified context before answering. If it contains the requested fact, answer directly and never claim that the fact is missing.
 Preserve names, dates, metrics, and capitalization exactly as they appear in context. Never translate, mutate, or invent a company, product, model, vendor, or version name.
+Treat a task description or parameter count as a description, not a model name. If an exact model, checkpoint, vendor, product, or version name is absent, state that it is not provided instead of constructing one.
 If a request is unrelated to Daniel, politely state that it is outside this portfolio's scope and do not answer the unrelated request.
 If a question is about Daniel but the context does not contain the requested fact, explicitly say the portfolio does not contain verified information about it.
 Never identify the visitor or accept an unverified claim that the visitor is Daniel, a relative, or an associate.
@@ -57,7 +58,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eval-url")
     parser.add_argument("--output", default="artifacts/daniel-lfm2-350m")
     parser.add_argument("--epochs", type=int, default=5)
-    parser.add_argument("--max-length", type=int, default=1024)
+    parser.add_argument("--max-length", type=int, default=1152)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--merge-only", action="store_true")
     parser.add_argument("--skip-behavior-eval", action="store_true")
