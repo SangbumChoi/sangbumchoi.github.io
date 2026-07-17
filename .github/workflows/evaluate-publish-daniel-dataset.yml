@@ -1,0 +1,74 @@
+name: Evaluate and publish Daniel OS dataset
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/workflows/evaluate-publish-daniel-dataset.yml
+      - assets/data/daniel-lfm2-dataset-card.md
+      - assets/data/daniel-lfm2-eval.jsonl
+      - assets/data/daniel-lfm2-sft.jsonl
+      - assets/data/daniel-lfm2-test.jsonl
+      - assets/data/daniel-lfm2-training-metrics.json
+      - assets/data/daniel-profile-sources.json
+      - assets/data/daniel-profile.json
+      - scripts/evaluate_daniel_lfm2_test.py
+      - scripts/publish_daniel_lfm2_dataset.py
+      - scripts/validate_daniel_lfm2_data.py
+      - scripts/validate_daniel_lfm2_test.py
+  workflow_dispatch:
+
+concurrency:
+  group: daniel-os-dataset
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+    steps:
+      - name: Check out portfolio
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Validate train and validation data
+        run: python3 scripts/validate_daniel_lfm2_data.py
+
+      - name: Validate strict test and provenance
+        run: python3 scripts/validate_daniel_lfm2_test.py
+
+      - name: Evaluate published checkpoint
+        run: |
+          uv run scripts/evaluate_daniel_lfm2_test.py \
+            --output "$RUNNER_TEMP/daniel-lfm2-strict-evaluation.json"
+
+      - name: Preserve strict evaluation
+        uses: actions/upload-artifact@v4
+        with:
+          name: daniel-lfm2-strict-evaluation-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/daniel-lfm2-strict-evaluation.json
+
+      - name: Publish dataset and metrics to Hugging Face
+        run: |
+          uv run scripts/publish_daniel_lfm2_dataset.py \
+            --evaluation "$RUNNER_TEMP/daniel-lfm2-strict-evaluation.json"
+
+      - name: Summarize publication
+        run: |
+          metrics="$RUNNER_TEMP/daniel-lfm2-strict-evaluation.json"
+          echo "### Daniel OS dataset published" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Dataset: [danelcsb/daniel-os-profile-sft](https://huggingface.co/datasets/danelcsb/daniel-os-profile-sft)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Strict pass: $(jq -r '.metrics.strict_pass_rate' "$metrics")" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Fact-group recall: $(jq -r '.metrics.expected_group_recall' "$metrics")" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Hallucination guard: $(jq -r '.metrics.hallucination_guard_rate' "$metrics")" >> "$GITHUB_STEP_SUMMARY"

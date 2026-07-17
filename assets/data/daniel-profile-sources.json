@@ -1,0 +1,85 @@
+{
+  "retrieved_at": "2026-07-17",
+  "policy": {
+    "externally_verified": "Confirmed by an official publication, repository, or public API.",
+    "public_self_report": "Published by Daniel on his portfolio, CV, or LinkedIn profile but not independently verifiable from public evidence.",
+    "not_verified": "No reliable public source was found. The assistant must not infer or repeat the claim as fact."
+  },
+  "claims": [
+    {
+      "id": "education_kaist",
+      "claim": "Sangbum Choi completed a professional master's program in Electrical Engineering at KAIST.",
+      "status": "public_self_report",
+      "sources": [
+        "https://sangbumchoi.github.io/cv/",
+        "https://www.linkedin.com/in/daniel-choi-86648216b/"
+      ]
+    },
+    {
+      "id": "team_island_cto",
+      "claim": "Sangbum Choi was a co-founder and CTO of Team ISLAND and led five developers on a mobile video product using 3D pose estimation.",
+      "status": "public_self_report",
+      "sources": [
+        "https://sangbumchoi.github.io/cv/",
+        "https://theorg.com/org/superb-ai/org-chart/sangbum-choi"
+      ]
+    },
+    {
+      "id": "zero_publication",
+      "claim": "Sangbum Choi co-authored ZERO: Multi-modal Prompt-based Visual Grounding in 2025.",
+      "status": "externally_verified",
+      "sources": [
+        "https://arxiv.org/abs/2507.04270"
+      ]
+    },
+    {
+      "id": "mobilehumanpose_publication",
+      "claim": "Sangbum Choi co-authored MobileHumanPose at the IEEE/CVF CVPR 2021 Workshops and released its implementation.",
+      "status": "externally_verified",
+      "sources": [
+        "https://openaccess.thecvf.com/content/CVPR2021W/MAI/html/Choi_MobileHumanPose_Toward_Real-Time_3D_Human_Pose_Estimation_in_Mobile_Devices_CVPRW_2021_paper.html",
+        "https://github.com/SangbumChoi/MobileHumanPose"
+      ]
+    },
+    {
+      "id": "transformers_pr_count",
+      "claim": "The GitHub account SangbumChoi authored 28 public pull requests in huggingface/transformers as of 2026-07-17.",
+      "status": "externally_verified",
+      "sources": [
+        "https://api.github.com/search/issues?q=repo%3Ahuggingface%2Ftransformers+is%3Apr+author%3ASangbumChoi",
+        "https://github.com/huggingface/transformers/pulls?q=is%3Apr+author%3ASangbumChoi"
+      ]
+    },
+    {
+      "id": "hugging_face_models",
+      "claim": "The Hugging Face account danelcsb publicly hosts Molmo2 and SAM2-family artifacts.",
+      "status": "externally_verified",
+      "sources": [
+        "https://huggingface.co/danelcsb/models"
+      ]
+    },
+    {
+      "id": "toss_bank_work",
+      "claim": "Daniel works at Toss Bank on an on-premise agent, AI authentication, and end-to-end VLM-based document extraction.",
+      "status": "public_self_report",
+      "sources": [
+        "https://sangbumchoi.github.io/cv/",
+        "https://www.linkedin.com/in/daniel-choi-86648216b/"
+      ]
+    },
+    {
+      "id": "exact_age",
+      "claim": "Daniel is 29 years old.",
+      "status": "not_verified",
+      "sources": [],
+      "note": "Age must not be inferred from education dates or career history."
+    },
+    {
+      "id": "team_island_jazz",
+      "claim": "Daniel performed jazz at Team ISLAND.",
+      "status": "not_verified",
+      "sources": [],
+      "note": "Public sources describe a CTO and machine-learning role, not a jazz activity."
+    }
+  ]
+}

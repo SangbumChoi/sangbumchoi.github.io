@@ -506,6 +506,11 @@ noscript { display: block; padding: 20px; color: var(--paper); }
 .content-body code { padding: 2px 5px; background: var(--panel-raised); color: var(--signal); font: 400 0.88em/1.4 var(--mono); }
 .content-body pre { max-width: 100%; overflow-x: auto; margin: 22px 0; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); background: #080a0b; }
 .content-body pre code { padding: 0; background: transparent; color: #d9dcda; }
+.content-body img { display: block; width: 100%; max-width: 100%; height: auto; margin: 26px 0; border: 1px solid var(--line); }
+.content-body table { display: block; width: 100%; max-width: 900px; overflow-x: auto; margin: 22px 0; border-collapse: collapse; font-size: 13px; }
+.content-body th,
+.content-body td { min-width: 150px; padding: 10px 12px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+.content-body th { color: var(--text); background: var(--panel-raised); font: 500 10px/1.4 var(--mono); text-transform: uppercase; }
 .publication-facts { margin: 0 0 30px; padding: 18px 0 24px; border-bottom: 1px solid var(--line); }
 .publication-facts p { color: #bfc5c3; }
 .publication-facts strong { color: var(--signal); font: 400 9px/1.4 var(--mono); text-transform: uppercase; }
