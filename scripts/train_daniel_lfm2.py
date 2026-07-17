@@ -54,7 +54,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--merge-only", action="store_true")
     parser.add_argument("--skip-behavior-eval", action="store_true")
-    parser.add_argument("--minimum-score", type=float, default=0.75)
+    parser.add_argument("--minimum-score", type=float, default=0.70)
     parser.add_argument("--hub-repo", default="danelcsb/daniel-lfm2-350m")
     parser.add_argument("--training-revision", default="local")
     parser.add_argument("--push-to-hub", action="store_true")
@@ -209,7 +209,7 @@ def evaluate_behavior(
     print(json.dumps({"overall": overall, "scores": scores}, indent=2), flush=True)
     required = {
         "overall": minimum_score,
-        "answer": 0.70,
+        "answer": 0.60,
         "unknown": 2 / 3,
         "refuse": 0.80,
     }

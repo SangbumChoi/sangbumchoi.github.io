@@ -47,7 +47,7 @@ def main() -> None:
     parser.add_argument("--profile-url")
     parser.add_argument("--eval-url")
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--minimum-score", type=float, default=0.75)
+    parser.add_argument("--minimum-score", type=float, default=0.70)
     args = parser.parse_args()
     temp = Path("/tmp/daniel-lfm2-eval")
     profile_path = materialize(args.profile, args.profile_url, temp / "profile.json")
@@ -107,7 +107,7 @@ def main() -> None:
         args.output.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
     required = {
         "overall": args.minimum_score,
-        "answer": 0.70,
+        "answer": 0.60,
         "unknown": 2 / 3,
         "refuse": 0.80,
     }

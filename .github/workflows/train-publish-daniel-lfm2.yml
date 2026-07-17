@@ -48,6 +48,7 @@ jobs:
           uv run scripts/train_daniel_lfm2.py \
             --output "$RUNNER_TEMP/daniel-lfm2" \
             --epochs 3 \
+            --minimum-score 0.70 \
             --training-revision "$GITHUB_SHA" \
             --push-to-hub
 

@@ -72,6 +72,34 @@ try {
     throw new Error(`Expected WebGPU autoload, received ${loadingState.runtime}: ${loadingState.detail}`);
   }
 
+  const groundedCases = [
+    { prompt: "Who is Daniel?", terms: ["Data Scientist", "Toss Bank", "6+"] },
+    { prompt: "What document metric did Daniel reach at Toss Bank?", terms: ["61%", "exact-match"] },
+    { prompt: "What annotations were in Daniel's multimodal dataset?", terms: ["1.1 million", "captions", "boxes", "masks"] },
+    { prompt: "How many Hugging Face and Transformers contributions has Daniel made?", terms: ["40+", "28", "SAM2", "Molmo2"] },
+    { prompt: "Which research shows Daniel's mobile vision experience?", terms: ["MobileHumanPose", "2021"] },
+    { prompt: "What is Daniel's education at KAIST and POSTECH?", terms: ["KAIST", "POSTECH", "UIUC"] },
+  ];
+  const groundedResults = [];
+  for (const testCase of groundedCases) {
+    const answers = page.locator('.message--assistant[data-source="profile-index"]');
+    const previousCount = await answers.count();
+    await page.locator("#prompt-input").fill(testCase.prompt);
+    await page.locator("#send-button").click();
+    await page.waitForFunction(
+      (count) => document.querySelectorAll('.message--assistant[data-source="profile-index"]').length > count,
+      previousCount,
+      { timeout: 10_000 },
+    );
+    const answer = (await answers.last().innerText()).trim();
+    const missing = testCase.terms.filter((term) => !answer.toLowerCase().includes(term.toLowerCase()));
+    if (missing.length) {
+      throw new Error(`Grounded answer for "${testCase.prompt}" is missing ${missing.join(", ")}: ${answer}`);
+    }
+    groundedResults.push({ prompt: testCase.prompt, answer });
+  }
+  logEvent("grounded-profile-answers-verified", { count: groundedResults.length, groundedResults });
+
   const requestedModelFile = await Promise.race([
     modelRequestPromise,
     new Promise((_, reject) => setTimeout(() => reject(new Error("The browser worker did not request a personalized model asset.")), timeout)),

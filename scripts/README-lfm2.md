@@ -67,6 +67,11 @@ This keeps model training and export isolated from the 32 GB development Mac.
 The website's immutable model revision is updated only after the remote job
 passes.
 
+The merged model gate requires at least 70% overall, 60% verified-profile
+answers, two of three missing-fact answers, and four of five out-of-scope
+refusals. Exact profile facts are additionally tested through the production
+`profile-index` route, which runs before free-form model generation.
+
 ## Export only
 
 The export script pins Liquid AI's official LiquidONNX revision, creates a
