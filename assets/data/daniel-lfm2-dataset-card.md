@@ -34,7 +34,7 @@ a Daniel-specific fact is not verified, and declines unrelated requests.
 
 | Configuration | Split | Records | Purpose |
 | --- | --- | ---: | --- |
-| `sft` | `train` | 110 | Conversational supervised fine-tuning |
+| `sft` | `train` | 142 | Conversational supervised fine-tuning |
 | `behavior_eval` | `validation` | 36 | Training-time behavior gate |
 | `strict_test` | `test` | 51 | Public post-training benchmark |
 

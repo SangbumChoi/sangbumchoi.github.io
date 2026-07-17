@@ -65,6 +65,14 @@ jobs:
           path: ${{ runner.temp }}/daniel-lfm2/merged/evaluation.json
           if-no-files-found: warn
 
+      - name: Preserve training metrics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: daniel-lfm2-training-metrics-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/daniel-lfm2/training_metrics.json
+          if-no-files-found: warn
+
       - name: Run held-out strict test on the new checkpoint
         run: |
           uv run scripts/evaluate_daniel_lfm2_test.py \
