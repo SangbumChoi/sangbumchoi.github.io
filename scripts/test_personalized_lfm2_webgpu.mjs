@@ -203,6 +203,7 @@ try {
     await page.close();
   }
 } catch (error) {
+  console.error(`::error::${String(error.message || error).replace(/\r?\n/g, " ").slice(0, 1200)}`);
   console.error(JSON.stringify({ error: error.message, consoleMessages }, null, 2));
   throw error;
 } finally {
