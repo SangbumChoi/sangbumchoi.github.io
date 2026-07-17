@@ -1,5 +1,5 @@
 const PROFILE_URL = "/assets/data/daniel-profile.json";
-const ASSET_VERSION = "8";
+const ASSET_VERSION = "10";
 
 const els = {
   runtimePill: document.querySelector("#runtime-pill"),
@@ -39,6 +39,8 @@ const state = {
   recognition: null,
   speaking: false,
   backend: "webgpu",
+  fallbackAttempted: false,
+  webgpuError: "",
 };
 
 function initializeIcons() {
@@ -234,11 +236,11 @@ function updateProgress(payload = {}) {
   if (payload.status === "ready") els.modelDetail.textContent = "Compiling local inference session";
 }
 
-async function initWorker() {
+async function initWorker(forcedBackend = null) {
   if (state.modelReady || state.modelLoading) return;
   state.modelLoading = true;
   state.modelFailed = false;
-  state.backend = "gpu" in navigator ? "webgpu" : "wasm";
+  state.backend = forcedBackend || ("gpu" in navigator ? "webgpu" : "wasm");
   try {
     await navigator.storage?.persist?.();
   } catch (_) {
@@ -259,9 +261,8 @@ async function initWorker() {
 function handleWorkerMessage(event) {
   const data = event.data || {};
   if (data.type === "progress") updateProgress(data.payload);
-  if (data.type === "fallback") {
-    state.backend = "wasm";
-    els.modelDetail.textContent = data.message;
+  if (data.type === "stage") {
+    els.modelDetail.textContent = `Initializing Q4 ${data.device.toUpperCase()} session`;
   }
   if (data.type === "ready") {
     state.modelReady = true;
@@ -289,7 +290,32 @@ function handleWorkerMessage(event) {
     els.chatLog.scrollTop = els.chatLog.scrollHeight;
   }
   if (data.type === "complete") completeGeneration(data);
-  if (data.type === "error") handleModelError(data.message);
+  if (data.type === "error") handleWorkerError(data);
+}
+
+function workerErrorMessage(data) {
+  const error = data.error || {};
+  return error.message || error.cause || `Could not initialize ${data.device || state.backend}.`;
+}
+
+function handleWorkerError(data) {
+  const message = workerErrorMessage(data);
+  if (data.phase === "load" && (data.device || state.backend) === "webgpu" && !state.fallbackAttempted) {
+    state.fallbackAttempted = true;
+    state.webgpuError = message;
+    state.modelLoading = false;
+    state.worker?.terminate();
+    state.worker = null;
+    els.modelStatus.textContent = "Trying CPU fallback";
+    els.modelDetail.textContent = `WebGPU failed: ${message}`;
+    setRuntime("wasm / retrying");
+    initWorker("wasm");
+    return;
+  }
+  const detail = state.webgpuError
+    ? `WebGPU: ${state.webgpuError} WASM: ${message}`
+    : message;
+  handleModelError(detail);
 }
 
 function handleModelError(message) {
@@ -488,7 +514,11 @@ function initWaveform() {
 
 function bindEvents() {
   els.loadButton.addEventListener("click", () => {
-    if (!state.modelReady && !state.modelLoading) initWorker();
+    if (!state.modelReady && !state.modelLoading) {
+      state.fallbackAttempted = false;
+      state.webgpuError = "";
+      initWorker();
+    }
   });
   els.form.addEventListener("submit", (event) => {
     event.preventDefault();

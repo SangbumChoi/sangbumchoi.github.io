@@ -1,4 +1,4 @@
-import { env, pipeline, TextStreamer } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1";
+import { env, pipeline, TextStreamer } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0";
 
 const MODEL_ID = "SangbumChoi/sangbumchoi.github.io";
 const MODEL_REVISION = "f1ad101660c858eb65357a6c0088a516c0b84f62";
@@ -7,33 +7,40 @@ const MODEL_PATH = "models/daniel-lfm2-350m-ONNX";
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
 env.remoteHost = "https://media.githubusercontent.com/media/";
-env.remotePathTemplate = `{model}/{revision}/${MODEL_PATH}/`;
+env.remotePathTemplate = `{model}/${MODEL_REVISION}/${MODEL_PATH}/`;
 
 let generator = null;
 let runtime = null;
 let loadingPromise = null;
 
-async function createGenerator(preferredDevice = "webgpu") {
+function serializeError(error) {
+  if (error && typeof error === "object") {
+    return {
+      name: error.name || "Error",
+      message: error.message || String(error),
+      stack: error.stack || "",
+      cause: error.cause ? String(error.cause) : "",
+    };
+  }
+  return {
+    name: typeof error,
+    message: typeof error === "number" ? `ONNX Runtime failed with code ${error}.` : String(error),
+    stack: "",
+    cause: "",
+  };
+}
+
+async function createGenerator(device = "webgpu") {
   const options = {
     dtype: "q4",
-    device: preferredDevice,
+    device,
     revision: MODEL_REVISION,
     progress_callback: (payload) => self.postMessage({ type: "progress", payload }),
   };
 
-  try {
-    generator = await pipeline("text-generation", MODEL_ID, options);
-    runtime = preferredDevice;
-  } catch (error) {
-    if (preferredDevice !== "webgpu") throw error;
-    self.postMessage({ type: "fallback", message: "WebGPU initialization failed. Falling back to WASM." });
-    generator = await pipeline("text-generation", MODEL_ID, {
-      ...options,
-      dtype: "q4",
-      device: "wasm",
-    });
-    runtime = "wasm";
-  }
+  self.postMessage({ type: "stage", stage: "initializing", device });
+  generator = await pipeline("text-generation", MODEL_ID, options);
+  runtime = device;
 
   self.postMessage({ type: "ready", runtime, model: MODEL_ID });
 }
@@ -53,8 +60,9 @@ self.addEventListener("message", async (event) => {
     } catch (error) {
       self.postMessage({
         type: "error",
-        message: error?.message || String(error),
-        stack: error?.stack || "",
+        phase: "load",
+        device: device || "webgpu",
+        error: serializeError(error),
       });
     }
     return;
@@ -96,8 +104,9 @@ self.addEventListener("message", async (event) => {
   } catch (error) {
     self.postMessage({
       type: "error",
-      message: error?.message || String(error),
-      stack: error?.stack || "",
+      phase: "generate",
+      device: runtime || device || "webgpu",
+      error: serializeError(error),
     });
   }
 });

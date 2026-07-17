@@ -60,7 +60,7 @@ try {
 
   await page.locator('label[for="voice-output"]').click();
   await page.waitForFunction(
-    () => ["Loading personalized LFM2", "Personalized LFM2 ready"].includes(document.querySelector("#model-status")?.textContent),
+    () => ["Loading personalized LFM2", "Personalized LFM2 ready", "Local model unavailable"].includes(document.querySelector("#model-status")?.textContent),
     undefined,
     { timeout },
   );
@@ -116,6 +116,35 @@ try {
     throw new Error(`Model asset range request failed: ${rangeResponse.status}, ${rangeBytes.length} bytes.`);
   }
 
+  await page.waitForFunction(
+    () => ["Personalized LFM2 ready", "Local model unavailable"].includes(document.querySelector("#model-status")?.textContent),
+    undefined,
+    { timeout },
+  );
+  const readyState = await page.evaluate(() => ({
+    runtime: document.querySelector("#runtime-label")?.textContent,
+    status: document.querySelector("#model-status")?.textContent,
+    detail: document.querySelector("#model-detail")?.textContent,
+  }));
+  if (readyState.status !== "Personalized LFM2 ready") {
+    throw new Error(`Personalized model failed to initialize: ${readyState.runtime}: ${readyState.detail}`);
+  }
+
+  const generatedAnswers = page.locator('.message--assistant:not([data-source="profile-index"])');
+  const previousGeneratedCount = await generatedAnswers.count();
+  await page.locator("#prompt-input").fill("How do Daniel's experiences connect into one career narrative?");
+  await page.locator("#send-button").click();
+  await page.waitForFunction(
+    (count) => {
+      const messages = document.querySelectorAll('.message--assistant:not([data-source="profile-index"])');
+      const latest = messages[messages.length - 1];
+      return messages.length > count && latest && !latest.classList.contains("is-streaming") && latest.textContent.trim().length > 30;
+    },
+    previousGeneratedCount,
+    { timeout },
+  );
+  const generatedAnswer = (await generatedAnswers.last().innerText()).trim();
+
   logEvent("autoload-complete", {
     adapterAvailable,
     loadingState,
@@ -123,6 +152,8 @@ try {
     modelResponseStatus: modelResponse.status,
     rangeStatus: rangeResponse.status,
     rangeBytes: rangeBytes.length,
+    readyState,
+    generatedAnswer,
     consoleMessages,
   });
 } catch (error) {

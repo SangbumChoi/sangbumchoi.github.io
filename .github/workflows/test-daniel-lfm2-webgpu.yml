@@ -10,6 +10,9 @@ on:
       - master
     paths:
       - .github/workflows/test-daniel-lfm2-webgpu.yml
+      - _config.yml
+      - assets/js/jarvis.js
+      - assets/js/lfm-worker.js
       - scripts/test_personalized_lfm2_webgpu.mjs
   workflow_dispatch:
     inputs:
@@ -21,10 +24,10 @@ on:
 jobs:
   webgpu-smoke-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       TARGET_URL: ${{ inputs.target_url || 'https://sangbumchoi.github.io/' }}
-      MODEL_TIMEOUT_MS: "120000"
+      MODEL_TIMEOUT_MS: "300000"
 
     steps:
       - name: Check out portfolio
