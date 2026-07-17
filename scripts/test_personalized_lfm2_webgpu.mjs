@@ -145,11 +145,16 @@ try {
   if (!followUpHref) throw new Error("ZZAZZ follow-up answer does not include its verified product link.");
   logEvent("zzazz-follow-up-verified", { followUpAnswer, followUpHref });
 
-  const modelResponse = await Promise.race([
-    modelResponsePromise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error("The browser worker did not receive a personalized model asset.")), timeout)),
-  ]);
-  if (modelResponse.url.includes("{file}") || modelResponse.url.includes("%7Bfile%7D")) {
+  const modelResponse = requireFullInference
+    ? await Promise.race([
+      modelResponsePromise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("The browser worker did not receive a personalized model asset.")), timeout)),
+    ])
+    : await Promise.race([
+      modelResponsePromise,
+      new Promise((resolve) => setTimeout(() => resolve(null), 5_000)),
+    ]);
+  if (modelResponse && (modelResponse.url.includes("{file}") || modelResponse.url.includes("%7Bfile%7D"))) {
     throw new Error(`The model URL contains an unresolved file placeholder: ${modelResponse.url}`);
   }
   const rangeResponse = await fetch(modelAssetUrl, { headers: { Range: "bytes=0-1023" } });
@@ -199,8 +204,9 @@ try {
   logEvent("autoload-complete", {
     adapterAvailable,
     loadingState,
-    requestedModelFile: modelResponse.url,
-    modelResponseStatus: modelResponse.status,
+    requestedModelFile: modelResponse?.url || null,
+    modelResponseStatus: modelResponse?.status || null,
+    modelResponseObserved: Boolean(modelResponse),
     rangeStatus: rangeResponse.status,
     rangeBytes: rangeBytes.length,
     readyState,
