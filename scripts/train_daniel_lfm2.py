@@ -250,7 +250,9 @@ tags:
 - peft
 - portfolio-assistant
 - grounded-generation
-license: lfm1.0
+license: other
+license_name: lfm1.0
+license_link: https://huggingface.co/LiquidAI/LFM2-350M/blob/main/LICENSE
 ---
 
 # Daniel OS LFM2-350M

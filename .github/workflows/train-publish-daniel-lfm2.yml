@@ -49,8 +49,7 @@ jobs:
             --output "$RUNNER_TEMP/daniel-lfm2" \
             --epochs 3 \
             --minimum-score 0.70 \
-            --training-revision "$GITHUB_SHA" \
-            --push-to-hub
+            --training-revision "$GITHUB_SHA"
 
       - name: Preserve behavioral evaluation
         if: ${{ always() }}
@@ -78,6 +77,26 @@ jobs:
               --title "Daniel OS LFM2 source v2" \
               --notes "$notes"
           fi
+
+      - name: Upload evaluated checkpoint to Hugging Face
+        env:
+          MERGED_DIR: ${{ runner.temp }}/daniel-lfm2/merged
+        run: |
+          uv run --with 'huggingface-hub>=0.34,<2' python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+
+          repo_id = "danelcsb/daniel-lfm2-350m"
+          api = HfApi()
+          api.create_repo(repo_id, repo_type="model", private=False, exist_ok=True)
+          commit = api.upload_folder(
+              repo_id=repo_id,
+              repo_type="model",
+              folder_path=os.environ["MERGED_DIR"],
+              commit_message="Retrain Daniel OS with verified scope boundaries",
+          )
+          print(f"Uploaded {repo_id}: {commit.oid}")
+          PY
 
       - name: Export and CPU-smoke-test Q4 ONNX
         run: |
