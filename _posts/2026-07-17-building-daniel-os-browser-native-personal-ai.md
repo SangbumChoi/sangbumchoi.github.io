@@ -16,7 +16,7 @@ Daniel OS is a personal portfolio assistant that runs its generative model in th
 
 The precise description matters. Daniel OS is not a one-bit fine-tuned model. I fine-tuned [LiquidAI/LFM2-350M](https://huggingface.co/LiquidAI/LFM2-350M) with LoRA, merged the adapter into the base checkpoint, and then exported the merged weights as a symmetric Q4 ONNX graph. Training and serving precision are separate decisions: LoRA makes adaptation memory-efficient, while Q4 reduces download size and inference memory for deployment.
 
-The training configuration uses rank 16, alpha 32, a batch size of one, and LoRA targets across the linear layers of LFM2's hybrid attention and convolution architecture. The small verified dataset teaches identity, tone, boundaries, and representative questions. It does not make the model the database of record.
+The training configuration uses rank 16, alpha 32, a batch size of one, and LoRA targets across the linear layers of LFM2's hybrid attention and convolution architecture. The verified dataset contains 75 curated conversations: 48 grounded profile answers, 9 explicit missing-fact answers, and 18 refusals for unrelated requests. Training preserves a larger share of factual answers, maintains minimum coverage for both boundary behaviors, and computes loss only on assistant completions. It does not make the model the database of record.
 
 ```text
 Verified conversations
@@ -30,11 +30,11 @@ ONNX graph + external weight data
 Transformers.js Web Worker / WebGPU
 ```
 
-The merged checkpoint is published as [danelcsb/daniel-lfm2-350m](https://huggingface.co/danelcsb/daniel-lfm2-350m). The browser artifact is approximately 294 MB and is pinned to an immutable Git LFS revision. After the first visit, normal browser caching prevents the model from being fetched again unless the revision changes.
+The merged checkpoint is published as [danelcsb/daniel-lfm2-350m](https://huggingface.co/danelcsb/daniel-lfm2-350m) and in a reproducible [GitHub source release](https://github.com/SangbumChoi/sangbumchoi.github.io/releases/tag/daniel-lfm2-source-v2). On 18 held-out prompts it scored 77.8% overall: 60% on profile synthesis, 100% on missing facts, and 100% on safe refusals. The browser artifact is approximately 294 MB and is pinned to an immutable Git LFS revision. After the first visit, normal browser caching prevents the model from being fetched again unless the revision changes.
 
 ## Grounding before generation
 
-A 350M-parameter model is useful for a focused conversational interface, but it should not invent dates, metrics, publication titles, or links. Daniel OS therefore routes recognizable profile questions through a small verified JSON index. Toss Bank work, multimodal training, publications, education, and open-source contributions are answered directly from that source. Free-form questions use the local model with only the relevant verified context inserted into the system prompt.
+A 350M-parameter model is useful for a focused conversational interface, but it should not invent dates, metrics, publication titles, or links. Daniel OS therefore routes recognizable profile questions through a small verified JSON index. Toss Bank work, multimodal training, publications, education, and open-source contributions are answered directly from that source. A production browser test submits six representative questions and verifies their source and required facts. Free-form questions use the local model with only the relevant verified context inserted into the system prompt.
 
 This split also improves perceived latency. Visitors can ask common questions while the Q4 model downloads in the background. Once the WebGPU session is ready, the same interface can synthesize less structured answers without sending the conversation to an application server.
 
@@ -57,6 +57,7 @@ The local Mac is used for source changes, mock interaction, Jekyll builds, and r
 The complete implementation is reproducible from the repository:
 
 - [Training and merge script](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/train_daniel_lfm2.py)
+- [Held-out behavioral evaluation](https://github.com/SangbumChoi/sangbumchoi.github.io/releases/download/daniel-lfm2-source-v2/daniel-lfm2-evaluation.json)
 - [Q4 ONNX export script](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/export_daniel_lfm2_onnx.py)
 - [Browser worker](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/js/lfm-worker.js)
 - [Q4 model release](https://github.com/SangbumChoi/sangbumchoi.github.io/releases/tag/daniel-lfm2-onnx-v1)
