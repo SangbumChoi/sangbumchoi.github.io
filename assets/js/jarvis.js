@@ -1,5 +1,5 @@
-const PROFILE_URL = "/assets/data/daniel-profile.json";
-const ASSET_VERSION = "10";
+const ASSET_VERSION = "11";
+const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 
 const els = {
   runtimePill: document.querySelector("#runtime-pill"),
@@ -41,6 +41,7 @@ const state = {
   backend: "webgpu",
   fallbackAttempted: false,
   webgpuError: "",
+  lastTopic: null,
 };
 
 function initializeIcons() {
@@ -74,6 +75,9 @@ function selectProfileContext(profile, prompt = "") {
 
   if (/open.?source|hugging|sam2|molmo|transformers|오픈.?소스/.test(query)) {
     context.open_source = profile.open_source;
+  } else if (/zzazz|째즈|team\s*island|팀\s*아일랜드/.test(query)) {
+    context.other_experience = profile.other_experience;
+    context.products = profile.products;
   } else if (/toss|bank|document|authentication|agent|토스|은행|문서|인증|에이전트/.test(query)) {
     context.current_work = profile.current_work;
   } else if (/superb|multimodal|ground|training|gpu|dataset|cvpr|멀티모달|학습|데이터/.test(query)) {
@@ -160,11 +164,54 @@ function routeCommand(prompt) {
   return true;
 }
 
+function isTopicFollowUp(query) {
+  return /^(?:what|how|where|why|tell me more|show me|can i|could i|it\b|that\b|the product|그게|그건|그거|그 제품|어떻게|왜|더|링크|출처|기사|어디)/.test(query.trim())
+    || /\b(?:it|that product)\b/.test(query)
+    || /(?:그게|그건|그거|그 제품)/.test(query);
+}
+
+function runProfileTool(prompt) {
+  if (!state.profile?.products?.zzazz) return null;
+  const query = prompt.toLowerCase().trim();
+  const directMatch = /zzazz|째즈|team\s*island|팀\s*아일랜드/.test(query);
+  const followUp = state.lastTopic === "zzazz" && isTopicFollowUp(query);
+  if (!directMatch && !followUp) return null;
+
+  const korean = /[가-힣]/.test(prompt);
+  const product = state.profile.products.zzazz;
+  const sourceLinks = product.sources.map((source) => `[${source.label}](${source.url})`).join(korean ? ", " : " and ");
+  const wantsLinks = /link|source|article|read|verify|링크|출처|기사|확인|어디/.test(query);
+  const wantsTechnology = /how|technology|technical|pipeline|detection|segmentation|mapping|tracking|작동|기술|구현|파이프라인|디텍션|세그멘테이션|트래킹|어떻게/.test(query);
+  const wantsDanielRole = /daniel.*(?:do|role|contribut|responsib)|(?:role|contribut|responsib).*daniel|최상범.*(?:역할|기여|했)|다니엘.*(?:역할|기여|했)|무슨 일을|뭘 했/.test(query);
+
+  state.lastTopic = "zzazz";
+  if (wantsTechnology) {
+    return korean
+      ? `ZZAZZ(째즈)는 영상에서 인물을 detection/segmentation으로 분리하고, 3D mapping으로 모션 효과의 위치·크기·각도를 맞춘 뒤, tracking으로 프레임 사이에서 인물을 따라가며 모바일에서 결과 영상을 렌더링했습니다. 기술 설명: ${sourceLinks}.`
+      : `ZZAZZ detected and segmented the person, mapped and transformed motion effects around that subject in 3D, tracked the subject across frames, and rendered the edited result on the mobile device. Technical descriptions: ${sourceLinks}.`;
+  }
+  if (wantsLinks) {
+    return korean
+      ? `ZZAZZ(째즈)의 제품 설명과 기술적 동작은 ${sourceLinks}에서 확인할 수 있습니다. 두 기사 모두 Team ISLAND의 모바일 영상 편집 앱으로 소개합니다.`
+      : `You can verify ZZAZZ and its technical workflow in the ${sourceLinks}. Both describe it as Team ISLAND's mobile video-editing application.`;
+  }
+  if (wantsDanielRole) {
+    return korean
+      ? `Daniel은 Team ISLAND의 공동 창업자이자 CTO로서 Android·Unity·딥러닝을 담당한 5명 개발팀을 이끌고 ZZAZZ의 모바일 비전 및 온디바이스 추론을 개발했습니다. ZZAZZ는 인물 주변에 모션 효과를 합성하는 모바일 영상 편집 앱이었습니다. ${sourceLinks}.`
+      : `As Team ISLAND's co-founder and CTO, Daniel led five developers across Android, Unity, and deep learning and worked on the mobile vision and on-device inference behind ZZAZZ. It was a mobile video-editing app for composing motion effects around people. ${sourceLinks}.`;
+  }
+  return korean
+    ? `ZZAZZ(째즈)는 Team ISLAND가 만든 모바일 영상 편집 앱입니다. 사용자가 고정된 효과에 맞춰 촬영하는 대신, 몇 번의 터치로 영상 속 인물 주변에 원하는 모션 효과를 조합할 수 있게 했습니다. 더 자세한 설명: ${sourceLinks}.`
+    : `ZZAZZ (째즈) was a mobile video-editing application built by Team ISLAND. Instead of recording for a fixed effect, users could combine motion effects around people in their own videos with a few touches. Read more in the ${sourceLinks}.`;
+}
+
 function groundedAnswer(prompt) {
   if (!state.profile) return null;
   const query = prompt.toLowerCase();
   const korean = /[가-힣]/.test(prompt);
   const links = state.profile.links;
+  const toolAnswer = runProfileTool(prompt);
+  if (toolAnswer) return toolAnswer;
 
   if (/who (is|are) daniel|who (is|are) sangbum|about (daniel|sangbum)|introduce (daniel|yourself)|다니엘.*누구|상범.*누구|자기.?소개|소개해/.test(query)) {
     return korean
@@ -537,6 +584,7 @@ function bindEvents() {
   });
   els.clearButton.addEventListener("click", () => {
     state.conversation = [];
+    state.lastTopic = null;
     window.speechSynthesis?.cancel();
     els.chatLog.querySelectorAll(".message:not(:first-child)").forEach((node) => node.remove());
     setPortraitState("idle", state.modelReady ? "LOCAL MODEL READY" : "STANDING BY");

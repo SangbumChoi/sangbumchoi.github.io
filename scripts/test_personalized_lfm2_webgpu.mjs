@@ -83,6 +83,7 @@ try {
     { prompt: "How many Hugging Face and Transformers contributions has Daniel made?", terms: ["40+", "28", "SAM2", "Molmo2"] },
     { prompt: "Which research shows Daniel's mobile vision experience?", terms: ["MobileHumanPose", "2021"] },
     { prompt: "What is Daniel's education at KAIST and POSTECH?", terms: ["KAIST", "POSTECH", "UIUC"] },
+    { prompt: "What did Team ISLAND build?", terms: ["ZZAZZ", "mobile video-editing", "motion effects"] },
   ];
   const groundedResults = [];
   for (const testCase of groundedCases) {
@@ -103,6 +104,25 @@ try {
     groundedResults.push({ prompt: testCase.prompt, answer });
   }
   logEvent("grounded-profile-answers-verified", { count: groundedResults.length, groundedResults });
+
+  const followUpAnswers = page.locator('.message--assistant[data-source="profile-index"]');
+  const previousFollowUpCount = await followUpAnswers.count();
+  await page.locator("#prompt-input").fill("How did it work, and where can I verify it?");
+  await page.locator("#send-button").click();
+  await page.waitForFunction(
+    (count) => document.querySelectorAll('.message--assistant[data-source="profile-index"]').length > count,
+    previousFollowUpCount,
+    { timeout: 10_000 },
+  );
+  const followUpAnswer = (await followUpAnswers.last().innerText()).trim();
+  for (const term of ["segmented", "3D", "tracked", "VentureSquare"]) {
+    if (!followUpAnswer.toLowerCase().includes(term.toLowerCase())) {
+      throw new Error(`ZZAZZ follow-up answer is missing ${term}: ${followUpAnswer}`);
+    }
+  }
+  const followUpHref = await followUpAnswers.last().locator('a[href*="venturesquare.net/821623"]').getAttribute("href");
+  if (!followUpHref) throw new Error("ZZAZZ follow-up answer does not include its verified product link.");
+  logEvent("zzazz-follow-up-verified", { followUpAnswer, followUpHref });
 
   const modelResponse = await Promise.race([
     modelResponsePromise,

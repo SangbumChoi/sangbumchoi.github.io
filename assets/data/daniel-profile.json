@@ -32,9 +32,35 @@
   },
   "other_experience": [
     "Machine Learning Engineer Intern at Kakao Enterprise, where he fixed an AutoGluon scaling issue and built a Flask AutoML framework.",
-    "Co-founder and CTO of Team ISLAND, where he led five developers, raised approximately 290 thousand US dollars, and deployed a lightweight 3D pose model to mobile devices.",
+    "Co-founder and CTO of Team ISLAND, where he led five developers, raised approximately 290 thousand US dollars, built the ZZAZZ mobile video-editing application, and deployed a lightweight 3D pose model and other vision models to mobile devices.",
     "Software Engineer Intern at Seerslab, where he built a facial-landmark annotation tool."
   ],
+  "products": {
+    "zzazz": {
+      "name": "ZZAZZ",
+      "korean_name": "째즈",
+      "company": "Team ISLAND",
+      "category": "Mobile video-editing application",
+      "description": "A mobile video-editing application that let people add and combine motion effects around subjects in their videos with a few touches instead of fitting recordings to fixed effects.",
+      "pipeline": [
+        "Detect and segment the person or subject in the video.",
+        "Map and transform motion effects around the subject in 3D.",
+        "Track the subject across frames.",
+        "Render the edited video on the mobile device."
+      ],
+      "daniel_role": "As co-founder and CTO, Daniel led a five-developer team across Android, Unity, and deep learning and worked on the mobile vision and on-device inference behind the product.",
+      "sources": [
+        {
+          "label": "VentureSquare product overview",
+          "url": "https://www.venturesquare.net/821623"
+        },
+        {
+          "label": "theBell Team ISLAND profile",
+          "url": "https://www.thebell.co.kr/front/newsview.asp?code=0303&key=202009161512084960103149"
+        }
+      ]
+    }
+  },
   "open_source": {
     "philosophy": "Open source expands the shared technical foundation. Making advanced models easier to inspect, reproduce, and use lets other engineers learn, improve the work, and create outcomes the original contributor could not anticipate.",
     "contributions": [

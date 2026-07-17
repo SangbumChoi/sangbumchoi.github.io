@@ -60,6 +60,7 @@ Work experience
 
 * 2019/02-2020/06: Co. Team Island CTO
   * <span style="font-weight:bold">Team Island</span>
+  * Built [ZZAZZ (째즈)](https://www.venturesquare.net/821623), a mobile video-editing application that applied customizable motion effects to people using detection/segmentation, 3D mapping, and tracking.
   * Built lightweight CNN models for mobile applications and on-device inference.
 
 * 2018/08-12: Undergraduate Researcher

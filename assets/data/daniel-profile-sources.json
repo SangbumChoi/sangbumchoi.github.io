@@ -17,11 +17,20 @@
     },
     {
       "id": "team_island_cto",
-      "claim": "Sangbum Choi was a co-founder and CTO of Team ISLAND and led five developers on a mobile video product using 3D pose estimation.",
+      "claim": "Sangbum Choi was a co-founder and CTO of Team ISLAND and led five developers across Android, Unity, and deep-learning workstreams.",
       "status": "public_self_report",
       "sources": [
         "https://sangbumchoi.github.io/cv/",
         "https://theorg.com/org/superb-ai/org-chart/sangbum-choi"
+      ]
+    },
+    {
+      "id": "zzazz_product",
+      "claim": "Team ISLAND developed ZZAZZ (째즈), a mobile video-editing application that used detection and segmentation, 3D mapping, and tracking to apply motion effects to people in videos.",
+      "status": "externally_verified",
+      "sources": [
+        "https://www.venturesquare.net/821623",
+        "https://www.thebell.co.kr/front/newsview.asp?code=0303&key=202009161512084960103149"
       ]
     },
     {
@@ -79,7 +88,7 @@
       "claim": "Daniel performed jazz at Team ISLAND.",
       "status": "not_verified",
       "sources": [],
-      "note": "Public sources describe a CTO and machine-learning role, not a jazz activity."
+      "note": "ZZAZZ (째즈) was the name of Team ISLAND's video-editing product; it does not verify a jazz performance or music activity."
     }
   ]
 }

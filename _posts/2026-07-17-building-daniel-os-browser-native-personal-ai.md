@@ -24,13 +24,13 @@ I began with claims from my CV, portfolio, LinkedIn profile, publications, GitHu
 | Public self-report | Published in my CV or LinkedIn, but not independently visible in a public technical artifact | Toss Bank project scope and internal metrics |
 | Not verified | No reliable public source was found | Exact age, birthday, salary, or the claim that I performed jazz at Team ISLAND |
 
-The external checks connect my KAIST education and Team ISLAND CTO history to the public CV, verify [ZERO](https://arxiv.org/abs/2507.04270) and MobileHumanPose from their publication pages, and query GitHub's public search API for 28 authored Transformers pull requests. The [provenance file](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/data/daniel-profile-sources.json) stores the retrieval date and URLs.
+The external checks connect my KAIST education and Team ISLAND CTO history to the public CV, verify [ZZAZZ](https://www.venturesquare.net/821623) as Team ISLAND's mobile video-editing application, verify [ZERO](https://arxiv.org/abs/2507.04270) and MobileHumanPose from their publication pages, and query GitHub's public search API for 28 authored Transformers pull requests. The [provenance file](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/data/daniel-profile-sources.json) stores the retrieval date and URLs.
 
 I do not infer personal facts from indirect signals. Graduation dates, for example, are not enough to establish that I am 29. That claim is deliberately represented as an unknown test case rather than an answer.
 
 ## LLM dataset design
 
-The supervised dataset contains 75 one-turn conversations: 48 grounded answers, 9 missing-fact responses, and 18 out-of-scope refusals. These behaviors are intentionally different:
+The supervised dataset contains 79 one-turn conversations: 52 grounded answers, 9 missing-fact responses, and 18 out-of-scope refusals. These behaviors are intentionally different:
 
 - `answer`: the supplied profile context contains the requested fact.
 - `unknown`: the question is about me, but the context does not verify the answer.
@@ -53,16 +53,16 @@ Each training record uses this schema:
 
 `context_keys` selects only the relevant portion of the profile. Numeric statements in an answer must also occur in that context. A validator rejects duplicate prompts, unknown context keys, unsupported numbers, malformed role pairs, and insufficient coverage of any behavior.
 
-For loss evaluation, the trainer takes a stratified five-conversation holdout: two `answer`, one `unknown`, and two `refuse` examples. After that holdout, minority behaviors are modestly repeated in the effective training stream so the model sees enough boundary examples without making refusal its dominant behavior. A separate 18-prompt validation gate is never used as a training target.
+For loss evaluation, the trainer takes a stratified five-conversation holdout: two `answer`, one `unknown`, and two `refuse` examples. After that holdout, minority behaviors are modestly repeated in the effective training stream so the model sees enough boundary examples without making refusal its dominant behavior. A separate 20-prompt validation gate is never used as a training target.
 
-The new public test set adds 39 harder prompts: 23 factual answers, 7 unknown facts, and 9 refusals. Nine are Korean. It includes cross-section synthesis, exact metric traps, privacy questions, unsupported internal model names, prompt injection, and the KAIST plus Team ISLAND plus ZERO career connection. It is a post-training test split and is not fed back into fine-tuning.
+The public test set contains 42 harder prompts: 26 factual answers, 7 unknown facts, and 9 refusals. Ten are Korean. It includes cross-section synthesis, exact metric traps, privacy questions, unsupported internal model names, prompt injection, the KAIST plus Team ISLAND plus ZERO career connection, and a three-case ZZAZZ product-depth extension. It is a post-training test split and is not fed back into fine-tuning.
 
 All three configurations are published in the [Daniel OS dataset on Hugging Face](https://huggingface.co/datasets/danelcsb/daniel-os-profile-sft):
 
 ```text
-sft/train.jsonl                 75 conversations
-behavior_eval/validation.jsonl  18 held-out behavior checks
-strict_test/test.jsonl          39 post-training tests
+sft/train.jsonl                 79 conversations
+behavior_eval/validation.jsonl  20 held-out behavior checks
+strict_test/test.jsonl          42 post-training tests
 profile/                        grounded facts and provenance
 metrics/                        training loss and strict evaluation
 ```
@@ -101,9 +101,9 @@ Transformers.js Web Worker / WebGPU
 
 ## A stricter evaluation contract
 
-The original 18-prompt gate scored 77.8% overall: 60% for grounded profile answers, 100% for missing facts, and 100% for refusals. That check is useful but too small to describe production behavior by itself.
+The original 18-prompt gate used for the current checkpoint scored 77.8% overall: 60% for grounded profile answers, 100% for missing facts, and 100% for refusals. The current data revision expands that gate to 20 prompts, but those new results require the next training run.
 
-The 39-case strict test records several metrics instead of reporting only one average:
+The original 39-case strict test recorded several metrics instead of reporting only one average. The current 42-case revision preserves those cases and adds three untouched ZZAZZ product questions:
 
 - **Expected fact-group recall:** how many required semantic fact groups appear in the answer.
 - **Behavior pass rate:** all expected groups are present and no forbidden claim appears.
@@ -113,13 +113,13 @@ The 39-case strict test records several metrics instead of reporting only one av
 - **Korean response rate:** Korean prompts receive a response containing Korean, in addition to passing the behavior checks.
 - **Strict pass rate:** behavior, forbidden-claim, and language requirements all pass together.
 
-The current checkpoint's first model-only run scores 46.2% on behavior pass, 33.3% on strict pass, 50.4% on expected fact-group recall, and 97.4% on controlled forbidden-claim avoidance. By behavior, it reaches 39.1% for factual answers, 28.6% for unknown facts, and 77.8% for refusals. Korean response rate is 0%. The complete [strict evaluation JSON](https://huggingface.co/datasets/danelcsb/daniel-os-profile-sft/resolve/main/metrics/strict-evaluation.json) includes every prompt, generated answer, matched fact group, and forbidden-term result.
+On the original 39-case revision, the current checkpoint's first model-only run scored 46.2% on behavior pass, 33.3% on strict pass, 50.4% on expected fact-group recall, and 97.4% on controlled forbidden-claim avoidance. By behavior, it reached 39.1% for factual answers, 28.6% for unknown facts, and 77.8% for refusals. Korean response rate was 0%. The complete [strict evaluation JSON](https://huggingface.co/datasets/danelcsb/daniel-os-profile-sft/resolve/main/metrics/strict-evaluation.json) retains that dataset revision; I do not present it as a score for the newer 42-case set.
 
 This is a baseline, not a success claim. The model has learned a useful refusal boundary and usually avoids planted false claims, but its compositional fact recall is weak and the English-only SFT data did not produce Korean answers. A manual audit also found an unsupported `Max Bin` name in one English response to a Korean identity prompt. That error was not one of the planted forbidden terms, so the 97.4% proxy does not measure every possible hallucination. Publishing every generated answer makes that limitation auditable. I keep this test version fixed and public rather than tuning directly on its failures. A later bilingual training revision should use newly written Korean examples and a separate untouched test set.
 
 A test case accepts groups of valid phrases rather than requiring one exact reference sentence. For example, `fivefold`, `five times`, and `5x` can express the same serving result. Forbidden terms test the opposite direction: a question that suggests a 10x speedup must not cause the model to repeat it.
 
-The browser adds another layer. Common profile questions are routed to the deterministic JSON index before generation, and a production test asks six questions about Toss Bank, multimodal training, open source, education, and publications. It verifies both the source route and required facts. This keeps exact dates and metrics reliable even when a small language model phrases a synthesis imperfectly.
+The browser adds another layer. Common profile questions are routed to the deterministic JSON index before generation. ZZAZZ uses a small local profile tool: it resolves the product from a direct Team ISLAND question, remembers that topic for follow-ups such as "What was that?" or "How did it work?", and returns curated VentureSquare and theBell links without sending the conversation to a remote service. A production test verifies both the product answer and the pronoun-style technical follow-up alongside questions about Toss Bank, multimodal training, open source, education, and publications. This keeps exact dates, metrics, and product definitions reliable even when a small language model phrases a synthesis imperfectly.
 
 ## What STT and TTS currently mean
 

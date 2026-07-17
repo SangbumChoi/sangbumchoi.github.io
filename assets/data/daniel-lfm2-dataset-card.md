@@ -34,14 +34,16 @@ a Daniel-specific fact is not verified, and declines unrelated requests.
 
 | Configuration | Split | Records | Purpose |
 | --- | --- | ---: | --- |
-| `sft` | `train` | 75 | Conversational supervised fine-tuning |
-| `behavior_eval` | `validation` | 18 | Training-time behavior gate |
-| `strict_test` | `test` | 39 | Public post-training benchmark |
+| `sft` | `train` | 79 | Conversational supervised fine-tuning |
+| `behavior_eval` | `validation` | 20 | Training-time behavior gate |
+| `strict_test` | `test` | 42 | Public post-training benchmark |
 
 The strict test is never included in fine-tuning. It covers factual composition,
 exact numeric claims, Korean prompts, missing or private facts, scope refusals,
 prompt injection, and hallucination traps. Each case contains groups of acceptable
 phrases and explicit forbidden claims rather than a single reference answer.
+The product-depth cases cover ZZAZZ as a mobile video editor, its vision pipeline,
+source retrieval, and a pronoun-style follow-up that asks what "that" product was.
 
 ## Training schema
 
@@ -85,6 +87,8 @@ its boundaries.
 self-reports, and claims for which no reliable public source was found. Exact
 age, birthday, home address, salary, relationship status, and confidential model
 names are not supplied as facts. Education dates are not used to infer age.
+ZZAZZ product details cite public VentureSquare and theBell descriptions; the
+similar-sounding product name is not treated as evidence of a jazz activity.
 
 The data contains no Hugging Face token, browser conversation, private recording,
 or cloned voice. Public profile facts may change; downstream users should retain
@@ -96,6 +100,8 @@ the source URLs and retrieval date when updating them.
 Actions training run. `metrics/strict-evaluation.json`, when present, contains
 post-training results for expected fact-group recall, forbidden-claim avoidance,
 behavior pass rate, Korean response rate, and per-behavior scores.
+Published checkpoint metrics may predate the three-case ZZAZZ strict-test extension
+and should retain their dataset revision when compared with later runs.
 
 ## Related model
 
