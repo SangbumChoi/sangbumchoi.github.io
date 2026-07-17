@@ -107,11 +107,15 @@ The 39-case strict test records several metrics instead of reporting only one av
 
 - **Expected fact-group recall:** how many required semantic fact groups appear in the answer.
 - **Behavior pass rate:** all expected groups are present and no forbidden claim appears.
-- **Hallucination guard rate:** the answer avoids planted false numbers, model names, personal facts, and unrelated content.
+- **Forbidden-claim avoidance:** a controlled hallucination proxy that checks whether the answer repeats planted false numbers, model names, personal facts, or unrelated content.
 - **Unknown claim leak rate:** an unknown-fact answer does not adopt the unsupported claim from the question.
 - **Refusal scope leak rate:** a refusal does not go on to answer the unrelated request.
 - **Korean response rate:** Korean prompts receive a response containing Korean, in addition to passing the behavior checks.
 - **Strict pass rate:** behavior, forbidden-claim, and language requirements all pass together.
+
+The current checkpoint's first model-only run scores 46.2% on behavior pass, 33.3% on strict pass, 50.4% on expected fact-group recall, and 97.4% on controlled forbidden-claim avoidance. By behavior, it reaches 39.1% for factual answers, 28.6% for unknown facts, and 77.8% for refusals. Korean response rate is 0%. The complete [strict evaluation JSON](https://huggingface.co/datasets/danelcsb/daniel-os-profile-sft/resolve/main/metrics/strict-evaluation.json) includes every prompt, generated answer, matched fact group, and forbidden-term result.
+
+This is a baseline, not a success claim. The model has learned a useful refusal boundary and usually avoids planted false claims, but its compositional fact recall is weak and the English-only SFT data did not produce Korean answers. A manual audit also found an unsupported `Max Bin` name in one English response to a Korean identity prompt. That error was not one of the planted forbidden terms, so the 97.4% proxy does not measure every possible hallucination. Publishing every generated answer makes that limitation auditable. I keep this test version fixed and public rather than tuning directly on its failures. A later bilingual training revision should use newly written Korean examples and a separate untouched test set.
 
 A test case accepts groups of valid phrases rather than requiring one exact reference sentence. For example, `fivefold`, `five times`, and `5x` can express the same serving result. Forbidden terms test the opposite direction: a question that suggests a 10x speedup must not cause the model to repeat it.
 
