@@ -3,7 +3,9 @@
     "name": "Sangbum Daniel Choi",
     "location": "Seoul, South Korea",
     "role": "AI research and systems engineer",
-    "summary": "Six-plus years across multimodal model training, data curation, evaluation, open-source integration, edge deployment, and production ML infrastructure."
+    "summary": "Six-plus years across multimodal model training, data curation, evaluation, open-source integration, edge deployment, and production ML infrastructure.",
+    "birth_year": 1997,
+    "birth_year_status": "Public self-report; the exact birthday is not published."
   },
   "current_work": {
     "company": "Toss Bank",
@@ -28,6 +30,22 @@
       "Delivered more than 1,100 models and 60 customer endpoints in one year.",
       "Used LoRA, Adapter, and LST methods and reduced GPU memory use by 65.6 percent and training time by 44.3 percent while preserving performance.",
       "Built interactive segmentation systems with RepViT-SAM, FocalClick, SAM, and SAM2, increasing labeling speed by 25 times."
+    ]
+  },
+  "career_timeline": {
+    "ai_start": "June 2018",
+    "ai_start_year": 2018,
+    "first_ai_role": "Software Engineer Intern at Seerslab",
+    "professional_summary": "The application resume uses 6+ years for the narrower professional multimodal and ML-engineering experience count; the broader public CV records AI and ML work from June 2018 to the present.",
+    "startup": {
+      "company": "Team ISLAND",
+      "role": "Co-founder and CTO",
+      "dates": "February 2019 to June 2020",
+      "product": "ZZAZZ, a mobile video-editing application"
+    },
+    "2018_records": [
+      "Software Engineer Intern at Seerslab from June to August 2018, working on face landmark detection and an annotation tool.",
+      "Undergraduate researcher at UIUC from August to December 2018, working on direction-of-arrival estimation with irregular microphone arrays."
     ]
   },
   "other_experience": [
