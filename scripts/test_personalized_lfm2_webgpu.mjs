@@ -167,6 +167,9 @@ try {
     requireFullInference,
     consoleMessages,
   });
+  if (!requireFullInference) {
+    await page.close();
+  }
 } catch (error) {
   console.error(JSON.stringify({ error: error.message, consoleMessages }, null, 2));
   throw error;
