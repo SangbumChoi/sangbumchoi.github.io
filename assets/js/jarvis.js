@@ -1,4 +1,4 @@
-const ASSET_VERSION = "11";
+const ASSET_VERSION = "12";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 
 const els = {
