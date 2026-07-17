@@ -1,5 +1,5 @@
 const PROFILE_URL = "/assets/data/daniel-profile.json";
-const ASSET_VERSION = "6";
+const ASSET_VERSION = "7";
 
 const els = {
   runtimePill: document.querySelector("#runtime-pill"),

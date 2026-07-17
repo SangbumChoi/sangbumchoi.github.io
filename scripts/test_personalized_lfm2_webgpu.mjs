@@ -25,9 +25,11 @@ const browser = await chromium.launch({
 
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-  let resolveModelRequest;
-  const modelRequestPromise = new Promise((resolve) => {
-    resolveModelRequest = resolve;
+  let resolveModelResponse;
+  let rejectModelResponse;
+  const modelResponsePromise = new Promise((resolve, reject) => {
+    resolveModelResponse = resolve;
+    rejectModelResponse = reject;
   });
   page.on("console", (message) => {
     const entry = `${message.type()}: ${message.text()}`;
@@ -40,9 +42,10 @@ try {
     consoleMessages.push(entry);
     logEvent("request-failed", { message: entry });
   });
-  page.on("request", (request) => {
-    if (request.url().includes("models/daniel-lfm2-350m-ONNX")) {
-      resolveModelRequest(request.url());
+  page.on("response", (response) => {
+    if (response.url().includes("models/daniel-lfm2-350m-ONNX")) {
+      if (response.ok()) resolveModelResponse({ url: response.url(), status: response.status() });
+      else rejectModelResponse(new Error(`Model asset request failed: ${response.status()} ${response.url()}`));
     }
   });
 
@@ -100,10 +103,13 @@ try {
   }
   logEvent("grounded-profile-answers-verified", { count: groundedResults.length, groundedResults });
 
-  const requestedModelFile = await Promise.race([
-    modelRequestPromise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error("The browser worker did not request a personalized model asset.")), timeout)),
+  const modelResponse = await Promise.race([
+    modelResponsePromise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("The browser worker did not receive a personalized model asset.")), timeout)),
   ]);
+  if (modelResponse.url.includes("{file}") || modelResponse.url.includes("%7Bfile%7D")) {
+    throw new Error(`The model URL contains an unresolved file placeholder: ${modelResponse.url}`);
+  }
   const rangeResponse = await fetch(modelAssetUrl, { headers: { Range: "bytes=0-1023" } });
   const rangeBytes = new Uint8Array(await rangeResponse.arrayBuffer());
   if (![200, 206].includes(rangeResponse.status) || rangeBytes.length < 1024) {
@@ -113,7 +119,8 @@ try {
   logEvent("autoload-complete", {
     adapterAvailable,
     loadingState,
-    requestedModelFile,
+    requestedModelFile: modelResponse.url,
+    modelResponseStatus: modelResponse.status,
     rangeStatus: rangeResponse.status,
     rangeBytes: rangeBytes.length,
     consoleMessages,

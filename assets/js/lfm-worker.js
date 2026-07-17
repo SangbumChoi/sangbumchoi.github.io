@@ -7,7 +7,7 @@ const MODEL_PATH = "models/daniel-lfm2-350m-ONNX";
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
 env.remoteHost = "https://media.githubusercontent.com/media/";
-env.remotePathTemplate = `{model}/{revision}/${MODEL_PATH}/{file}`;
+env.remotePathTemplate = `{model}/{revision}/${MODEL_PATH}/`;
 
 let generator = null;
 let runtime = null;
