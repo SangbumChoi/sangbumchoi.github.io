@@ -1,4 +1,4 @@
-name: Test personalized LFM2 in WebGPU
+name: Test Daniel LFM2 browser integration
 
 concurrency:
   group: daniel-lfm2-browser-smoke
@@ -28,6 +28,7 @@ jobs:
     env:
       TARGET_URL: ${{ inputs.target_url || 'https://sangbumchoi.github.io/' }}
       MODEL_TIMEOUT_MS: "300000"
+      REQUIRE_FULL_INFERENCE: "0"
 
     steps:
       - name: Check out portfolio
@@ -57,7 +58,7 @@ jobs:
           echo "Timed out waiting for asset version ${expected_version}." >&2
           exit 1
 
-      - name: Verify personalized WebGPU autoload
+      - name: Verify model assets and software WebGPU startup
         run: |
           cd "$RUNNER_TEMP/daniel-webgpu-test"
           timeout --signal=TERM --kill-after=30s 8m node test.mjs

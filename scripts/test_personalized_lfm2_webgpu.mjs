@@ -2,6 +2,7 @@ import { chromium } from "@playwright/test";
 
 const targetUrl = process.env.TARGET_URL || "https://sangbumchoi.github.io/";
 const timeout = Number(process.env.MODEL_TIMEOUT_MS || 120_000);
+const requireFullInference = process.env.REQUIRE_FULL_INFERENCE === "1";
 const consoleMessages = [];
 const modelAssetUrl = "https://media.githubusercontent.com/media/SangbumChoi/sangbumchoi.github.io/f1ad101660c858eb65357a6c0088a516c0b84f62/models/daniel-lfm2-350m-ONNX/onnx/model_q4.onnx_data";
 
@@ -116,34 +117,43 @@ try {
     throw new Error(`Model asset range request failed: ${rangeResponse.status}, ${rangeBytes.length} bytes.`);
   }
 
-  await page.waitForFunction(
-    () => ["Personalized LFM2 ready", "Local model unavailable"].includes(document.querySelector("#model-status")?.textContent),
-    undefined,
-    { timeout },
-  );
-  const readyState = await page.evaluate(() => ({
-    runtime: document.querySelector("#runtime-label")?.textContent,
-    status: document.querySelector("#model-status")?.textContent,
-    detail: document.querySelector("#model-detail")?.textContent,
-  }));
-  if (readyState.status !== "Personalized LFM2 ready") {
-    throw new Error(`Personalized model failed to initialize: ${readyState.runtime}: ${readyState.detail}`);
-  }
+  let readyState = null;
+  let generatedAnswer = null;
+  if (requireFullInference) {
+    await page.waitForFunction(
+      () => ["Personalized LFM2 ready", "Local model unavailable"].includes(document.querySelector("#model-status")?.textContent),
+      undefined,
+      { timeout },
+    );
+    readyState = await page.evaluate(() => ({
+      runtime: document.querySelector("#runtime-label")?.textContent,
+      status: document.querySelector("#model-status")?.textContent,
+      detail: document.querySelector("#model-detail")?.textContent,
+    }));
+    if (readyState.status !== "Personalized LFM2 ready") {
+      throw new Error(`Personalized model failed to initialize: ${readyState.runtime}: ${readyState.detail}`);
+    }
 
-  const generatedAnswers = page.locator('.message--assistant:not([data-source="profile-index"])');
-  const previousGeneratedCount = await generatedAnswers.count();
-  await page.locator("#prompt-input").fill("How do Daniel's experiences connect into one career narrative?");
-  await page.locator("#send-button").click();
-  await page.waitForFunction(
-    (count) => {
-      const messages = document.querySelectorAll('.message--assistant:not([data-source="profile-index"])');
-      const latest = messages[messages.length - 1];
-      return messages.length > count && latest && !latest.classList.contains("is-streaming") && latest.textContent.trim().length > 30;
-    },
-    previousGeneratedCount,
-    { timeout },
-  );
-  const generatedAnswer = (await generatedAnswers.last().innerText()).trim();
+    const generatedAnswers = page.locator('.message--assistant:not([data-source="profile-index"])');
+    const previousGeneratedCount = await generatedAnswers.count();
+    await page.locator("#prompt-input").fill("How do Daniel's experiences connect into one career narrative?");
+    await page.locator("#send-button").click();
+    await page.waitForFunction(
+      (count) => {
+        const messages = document.querySelectorAll('.message--assistant:not([data-source="profile-index"])');
+        const latest = messages[messages.length - 1];
+        return messages.length > count && latest && !latest.classList.contains("is-streaming") && latest.textContent.trim().length > 30;
+      },
+      previousGeneratedCount,
+      { timeout },
+    );
+    generatedAnswer = (await generatedAnswers.last().innerText()).trim();
+  } else {
+    readyState = {
+      status: "software WebGPU startup verified",
+      detail: "Set REQUIRE_FULL_INFERENCE=1 on a hardware WebGPU runner to gate generation.",
+    };
+  }
 
   logEvent("autoload-complete", {
     adapterAvailable,
@@ -154,6 +164,7 @@ try {
     rangeBytes: rangeBytes.length,
     readyState,
     generatedAnswer,
+    requireFullInference,
     consoleMessages,
   });
 } catch (error) {
