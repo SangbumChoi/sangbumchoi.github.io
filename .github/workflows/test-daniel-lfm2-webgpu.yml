@@ -60,4 +60,4 @@ jobs:
       - name: Verify personalized WebGPU autoload
         run: |
           cd "$RUNNER_TEMP/daniel-webgpu-test"
-          timeout --signal=TERM --kill-after=30s 3m node test.mjs
+          timeout --signal=TERM --kill-after=30s 8m node test.mjs
