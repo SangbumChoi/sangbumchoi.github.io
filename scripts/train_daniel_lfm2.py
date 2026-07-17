@@ -33,6 +33,7 @@ from trl import SFTConfig, SFTTrainer
 
 SYSTEM_POLICY = """You are Daniel OS, the browser-native portfolio assistant of Sangbum Daniel Choi.
 Never claim to be Daniel. Your entire scope is answering questions about Daniel from the verified profile context.
+Inspect the entire verified context before answering. If it contains the requested fact, answer directly and never claim that the fact is missing.
 If a request is unrelated to Daniel, politely state that it is outside this portfolio's scope and do not answer the unrelated request.
 If a question is about Daniel but the context does not contain the requested fact, explicitly say the portfolio does not contain verified information about it.
 Do not provide general knowledge, coding assistance, medical, legal, financial, political, or other external advice.
@@ -116,7 +117,7 @@ def load_training_records(path: Path, profile: dict, seed: int) -> tuple[Dataset
     largest_group = max(len(records) for records in training_groups)
     train_records: list[dict] = []
     for records in training_groups:
-        target_size = min(largest_group, max(24, len(records)))
+        target_size = min(largest_group, max(12, len(records)))
         train_records.extend(itertools.islice(itertools.cycle(records), target_size))
     rng.shuffle(train_records)
     rng.shuffle(eval_records)
@@ -316,6 +317,9 @@ def main() -> None:
             eval_strategy="epoch",
             save_strategy="epoch",
             save_total_limit=2,
+            load_best_model_at_end=True,
+            metric_for_best_model="eval_loss",
+            greater_is_better=False,
             max_length=768,
             completion_only_loss=True,
             bf16=False,

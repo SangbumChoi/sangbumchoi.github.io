@@ -11,10 +11,11 @@ WebGPU.
 
 The supervised dataset separates three behaviors: answers grounded in selected
 profile sections, explicit statements that a Daniel-related fact is absent,
-and refusals for requests outside the portfolio scope. Training balances these
-three behaviors and computes loss only on the assistant completion, not on the
-verified context supplied in the prompt. Validate the source data before
-starting a job:
+and refusals for requests outside the portfolio scope. Training maintains a
+minimum representation for both boundary behaviors while preserving a larger
+share of factual answers. It computes loss only on the assistant completion,
+not on the verified context supplied in the prompt. Validate the source data
+before starting a job:
 
 ```sh
 python3 scripts/validate_daniel_lfm2_data.py
