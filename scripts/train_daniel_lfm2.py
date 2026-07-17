@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import itertools
 import json
+import math
 import os
 import random
 import re
@@ -56,6 +57,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eval-url")
     parser.add_argument("--output", default="artifacts/daniel-lfm2-350m")
     parser.add_argument("--epochs", type=int, default=5)
+    parser.add_argument("--max-length", type=int, default=1024)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--merge-only", action="store_true")
     parser.add_argument("--skip-behavior-eval", action="store_true")
@@ -106,10 +108,47 @@ def evaluation_messages(case: dict) -> list[dict]:
     return case.get("messages") or [{"role": "user", "content": case["prompt"]}]
 
 
-def load_training_records(path: Path, profile: dict, seed: int) -> tuple[Dataset, Dataset, Counter]:
+def validate_training_token_budget(
+    records: list[dict],
+    profile: dict,
+    tokenizer: AutoTokenizer,
+    max_length: int,
+) -> None:
+    overflowing = []
+    for record in records:
+        prompt = [
+            {"role": "system", "content": system_prompt(profile, record["context_keys"])},
+            *record["messages"][:-1],
+        ]
+        prompt_length = len(
+            tokenizer.apply_chat_template(prompt, add_generation_prompt=True, tokenize=True)
+        )
+        full_length = len(
+            tokenizer.apply_chat_template([*prompt, record["messages"][-1]], tokenize=True)
+        )
+        if prompt_length >= max_length or full_length > max_length:
+            overflowing.append(
+                f"{record['id']} (prompt={prompt_length}, full={full_length})"
+            )
+    if overflowing:
+        details = ", ".join(overflowing[:10])
+        raise ValueError(
+            f"{len(overflowing)} training conversations exceed max_length={max_length}: "
+            f"{details}. Increase --max-length so completion tokens are never truncated."
+        )
+
+
+def load_training_records(
+    path: Path,
+    profile: dict,
+    tokenizer: AutoTokenizer,
+    max_length: int,
+    seed: int,
+) -> tuple[Dataset, Dataset, Counter]:
     source_records = read_jsonl(path)
     if len(source_records) < 40:
         raise ValueError("At least 40 verified conversations are required.")
+    validate_training_token_budget(source_records, profile, tokenizer, max_length)
     grouped: dict[str, list[dict]] = {}
     counts: Counter = Counter()
     for record in source_records:
@@ -314,6 +353,7 @@ def write_training_metrics(
     log_history: list[dict],
     training_revision: str,
     epochs: int,
+    max_length: int,
     train_metrics: dict,
 ) -> None:
     train = []
@@ -328,15 +368,21 @@ def write_training_metrics(
                 }
             )
         if "eval_loss" in entry:
-            point = {"epoch": entry.get("epoch"), "loss": entry["eval_loss"]}
+            eval_loss = entry["eval_loss"]
+            point = {
+                "epoch": entry.get("epoch"),
+                "loss": eval_loss if is_finite_number(eval_loss) else None,
+            }
             if "eval_mean_token_accuracy" in entry:
                 point["mean_token_accuracy"] = entry["eval_mean_token_accuracy"]
             validation.append(point)
-    best = min(validation, key=lambda point: point["loss"]) if validation else None
+    finite_validation = [point for point in validation if point["loss"] is not None]
+    best = min(finite_validation, key=lambda point: point["loss"]) if finite_validation else None
     payload = {
         "source": {
             "training_revision": training_revision,
             "epochs": epochs,
+            "max_length": max_length,
             "best_checkpoint_epoch": best["epoch"] if best else None,
             "selection_metric": "eval_loss",
         },
@@ -349,6 +395,28 @@ def write_training_metrics(
         },
     }
     output.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def is_finite_number(value: object) -> bool:
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def require_finite_validation_loss(log_history: list[dict]) -> None:
+    validation = [entry for entry in log_history if "eval_loss" in entry]
+    invalid_epochs = [
+        entry.get("epoch")
+        for entry in validation
+        if not is_finite_number(entry["eval_loss"])
+    ]
+    if not validation or invalid_epochs:
+        raise RuntimeError(
+            "Training produced no finite validation loss. "
+            f"Invalid epochs: {invalid_epochs or 'all'}. "
+            "Check completion masking and the training token budget before publishing."
+        )
 
 
 def main() -> None:
@@ -369,7 +437,7 @@ def main() -> None:
     behavior_counts: Counter
     if not args.merge_only:
         train_data, loss_eval_data, behavior_counts = load_training_records(
-            dataset_path, profile, args.seed
+            dataset_path, profile, tokenizer, args.max_length, args.seed
         )
         model = AutoModelForCausalLM.from_pretrained(args.model, dtype=dtype)
         model.config.use_cache = False
@@ -388,7 +456,7 @@ def main() -> None:
             load_best_model_at_end=True,
             metric_for_best_model="eval_loss",
             greater_is_better=False,
-            max_length=768,
+            max_length=args.max_length,
             completion_only_loss=True,
             bf16=False,
             fp16=torch.cuda.is_available(),
@@ -411,15 +479,17 @@ def main() -> None:
             peft_config=lora,
         )
         train_result = trainer.train()
-        trainer.save_model(str(adapter_dir))
-        tokenizer.save_pretrained(adapter_dir)
         write_training_metrics(
             output / "training_metrics.json",
             trainer.state.log_history,
             args.training_revision,
             args.epochs,
+            args.max_length,
             train_result.metrics,
         )
+        require_finite_validation_loss(trainer.state.log_history)
+        trainer.save_model(str(adapter_dir))
+        tokenizer.save_pretrained(adapter_dir)
         del trainer, model
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
