@@ -3,7 +3,7 @@ title: "Building Daniel OS: data, training, and strict evaluation"
 permalink: /posts/daniel-os-lfm2/
 date: 2026-07-17
 eyebrow: "FIELD NOTE / LOCAL AI"
-dek: "How I built a source-grounded personal dataset, fine-tuned LFM2-350M, measured its boundaries, and deployed speech and four-bit inference in the browser."
+dek: "How I built a source-grounded personal dataset, fine-tuned LFM2-350M, measured its boundaries, and designed a generalized browser STT pipeline."
 read_time: true
 comments: false
 share: false
@@ -12,7 +12,7 @@ related: false
 
 Daniel OS is a personal portfolio assistant that runs its generative model in the visitor's browser. It combines a verified profile index for exact facts, a personalized language model for conversational synthesis, browser speech recognition, and local speech output. The goal is to make the portfolio queryable while keeping visitor conversations on the device.
 
-This post separates what is implemented from what is planned. The LLM was fine-tuned and evaluated. The current speech layer uses browser APIs; it is not a custom-trained STT model or a clone of my voice.
+This post separates what is implemented from what is planned. The LLM was fine-tuned and evaluated. The current speech layer uses browser APIs; it is not a custom-trained STT model or a clone of my voice. A reproducible STT data, fine-tuning, and evaluation pipeline now exists in the repository, but its checkpoint will not replace the browser API until real multi-speaker data and browser tests pass.
 
 ## Building a source-grounded profile
 
@@ -103,7 +103,7 @@ Transformers.js Web Worker / WebGPU
 
 The original 18-prompt gate used for the current checkpoint scored 77.8% overall: 60% for grounded profile answers, 100% for missing facts, and 100% for refusals. The current data revision expands that gate to 20 prompts, but those new results require the next training run.
 
-The original 39-case strict test recorded several metrics instead of reporting only one average. The current 42-case revision preserves those cases and adds three untouched ZZAZZ product questions:
+The 42-case strict test records several metrics instead of reporting only one average. It preserves the original 39 cases and adds three untouched ZZAZZ product questions:
 
 - **Expected fact-group recall:** how many required semantic fact groups appear in the answer.
 - **Behavior pass rate:** all expected groups are present and no forbidden claim appears.
@@ -113,7 +113,7 @@ The original 39-case strict test recorded several metrics instead of reporting o
 - **Korean response rate:** Korean prompts receive a response containing Korean, in addition to passing the behavior checks.
 - **Strict pass rate:** behavior, forbidden-claim, and language requirements all pass together.
 
-On the original 39-case revision, the current checkpoint's first model-only run scored 46.2% on behavior pass, 33.3% on strict pass, 50.4% on expected fact-group recall, and 97.4% on controlled forbidden-claim avoidance. By behavior, it reached 39.1% for factual answers, 28.6% for unknown facts, and 77.8% for refusals. Korean response rate was 0%. The complete [strict evaluation JSON](https://huggingface.co/datasets/danelcsb/daniel-os-profile-sft/resolve/main/metrics/strict-evaluation.json) retains that dataset revision; I do not present it as a score for the newer 42-case set.
+On the 42-case revision, the pre-ZZAZZ checkpoint scored 42.9% on behavior pass, 31.0% on strict pass, 47.6% on expected fact-group recall, and 97.6% on controlled forbidden-claim avoidance. By behavior, it reached 34.6% for factual answers, 28.6% for unknown facts, and 77.8% for refusals. Korean response rate remained 0%. The complete [strict evaluation JSON](https://huggingface.co/datasets/danelcsb/daniel-os-profile-sft/resolve/main/metrics/strict-evaluation.json) includes all 42 prompts and generated answers. These are deliberately reported as pre-retraining measurements; the new product examples had not yet entered that checkpoint.
 
 This is a baseline, not a success claim. The model has learned a useful refusal boundary and usually avoids planted false claims, but its compositional fact recall is weak and the English-only SFT data did not produce Korean answers. A manual audit also found an unsupported `Max Bin` name in one English response to a Korean identity prompt. That error was not one of the planted forbidden terms, so the 97.4% proxy does not measure every possible hallucination. Publishing every generated answer makes that limitation auditable. I keep this test version fixed and public rather than tuning directly on its failures. A later bilingual training revision should use newly written Korean examples and a separate untouched test set.
 
@@ -125,35 +125,52 @@ The browser adds another layer. Common profile questions are routed to the deter
 
 English speech input currently uses the browser's speech-recognition interface. The final transcript is passed through the same grounded route as typed text. Speech output uses the browser's `speechSynthesis` interface and a voice installed by the browser or operating system.
 
-There is therefore no custom STT dataset, STT checkpoint, STT training loss, personal TTS dataset, or voice-cloning loss in the current release. Browser vendors do not expose the model or objective behind their speech-recognition implementation. Calling the current output my trained voice would be inaccurate.
+There is therefore no custom STT checkpoint or personal TTS checkpoint in the current release. Browser vendors do not expose the model or objective behind their speech-recognition implementation. Calling the current output a WebGPU STT model or my trained voice would be inaccurate.
 
-For a future consented personal voice, I would store recordings as mono PCM WAV and keep session boundaries so that train and test audio from the same recording session cannot leak across splits. A minimal manifest would be:
+STT and TTS also require opposite data strategies. A personal TTS model should learn one consented target speaker: me. STT must recognize a visitor it has never heard before, so tuning it mostly on my voice would optimize the wrong problem. The [new STT pipeline](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/README-stt.md) requires many pseudonymous speakers and keeps every utterance from one speaker in exactly one of train, validation, or test. It also rejects cross-split recording-session and audio-hash leakage.
+
+The STT manifest records the factors needed to diagnose generalization without storing a real name:
 
 ```json
 {
-  "utterance_id": "daniel_en_0001",
-  "split": "train",
-  "audio_path": "audio/daniel_en_0001.wav",
-  "transcript": "Original transcript",
-  "normalized_text": "Normalized transcript",
+  "utterance_id": "speaker_hash_session_utterance",
+  "audio_path": "audio/example.wav",
+  "transcript": "What did he build at Toss Bank?",
+  "speaker_id": "pseudonymous_speaker_hash",
+  "session_id": "pseudonymous_session_hash",
   "language": "en",
-  "sample_rate_hz": 24000,
-  "duration_seconds": 4.2,
-  "recording_session": "session_01",
-  "consent_version": "v1",
-  "sha256": "..."
+  "source": "consented",
+  "domain": "portfolio",
+  "environment": "quiet_mobile",
+  "accent_group": "self_reported_coarse_group",
+  "consent": "explicit-v1",
+  "split": "train"
 }
 ```
 
-A practical local STT candidate would be an English Whisper-family checkpoint trained with sequence-to-sequence token cross-entropy and evaluated with word error rate. A lightweight personal TTS candidate would use a speaker-conditioned VITS or Piper-style model and report intelligibility with ASR word error rate, speaker similarity with an independently held-out speaker encoder, and human listening scores. Its exact loss depends on the selected implementation, commonly combining text-to-acoustic reconstruction, duration or alignment, KL, and adversarial terms. These are design candidates, not results claimed by the current site.
+Audio is mono 16 kHz PCM WAV, 0.4-30 seconds. The intended mixture is primarily licensed multi-speaker English speech, plus consented phone, laptop, and headset recordings. The committed [capture prompts](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/data/daniel-stt-capture-prompts.jsonl) include natural variations and difficult names such as Hugging Face, Molmo2, ZZAZZ, ZERO, WebGPU, and Toss Bank. Corrected failures may enter an error-replay slice only after explicit opt-in; the fixed test recording itself never becomes a training sample.
 
-Voice data is more sensitive than profile text. It should require explicit consent, exclude incidental speakers, retain checksums and recording-session metadata, and never be published by default. The current Hugging Face dataset contains no voice recording or visitor conversation.
+The browser-sized target is `openai/whisper-tiny.en`, adapted with rank-16 LoRA on attention query and value projections. The 16 kHz waveform becomes a log-Mel spectrogram, and padded transcript tokens are ignored while the decoder minimizes sequence-to-sequence cross-entropy:
+
+```text
+L_ASR = -(1 / N) sum[t in transcript tokens] log p(y_t | log-Mel(audio), y_<t)
+```
+
+Training applies light gain, speed, and SNR perturbation together with Whisper SpecAugment. Those augmentations support, rather than replace, real diversity across speakers, accents, rooms, and microphones. A larger Distil-Whisper model can propose pseudo-labels for untranscribed consented audio, but uncertain labels and portfolio names still require human review. I chose the smaller deployment target because Transformers.js already supports Whisper ASR on WebGPU and the first-download and memory budget matter in a portfolio page.
+
+The release gate is deliberately broader than one average WER. It reports micro WER, macro and worst-speaker WER, substitution/deletion/insertion counts, WER by domain, environment, and coarse self-reported accent group, recall of portfolio keywords, model-side latency, and real-time factor. A passed PyTorch checkpoint is only a candidate: an ONNX build must repeat the frozen suite in WebGPU and WASM and also pass download-size, peak-memory, microphone-lifecycle, first-load-latency, and browser real-time-factor checks.
+
+There is no STT loss chart or WER result yet because no real audio corpus has been admitted to the pipeline. The trainer saves its raw log history, and the [plotter](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/plot_daniel_stt_metrics.py) refuses to draw unless both real train and validation loss points exist. This avoids turning a planned experiment into an apparent result.
+
+Personal TTS remains a separate later stage. Its recordings should be only my explicitly consented voice, stored as session-separated mono PCM WAV at the sample rate required by the chosen implementation. A speaker-conditioned VITS or Piper-style candidate would report intelligibility through an independent ASR, speaker similarity through a held-out speaker encoder, and human listening scores. Its objective commonly combines text-to-acoustic reconstruction, duration or alignment, KL, and adversarial terms, but the exact loss belongs to the selected implementation rather than this untrained design.
+
+Voice data is more sensitive than profile text. The [dataset publisher](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/publish_daniel_stt_dataset.py) creates a private repository by default and requires a separate `allow_publication` flag on every item before a public upload. Visitor audio remains ephemeral by default, incidental speakers are excluded, and the current public Hugging Face profile dataset contains no voice recording or visitor conversation.
 
 ## Browser runtime and reproducibility
 
 The model runs in a module Web Worker so model download, ONNX session creation, and token generation do not block the interface. Recent Chromium browsers use WebGPU; unsupported environments fall back to WASM. The browser artifact is about 294 MB, pinned to an immutable Git LFS revision, and cached after the first successful load.
 
-The local 32 GB Mac handles source changes, mock interaction, and responsive browser checks. Remote jobs perform training, Q4 export, CPU inference smoke testing, strict behavior evaluation, Hugging Face publication, and WebGPU browser checks.
+The local 32 GB Mac handles source changes, mock interaction, and responsive browser checks. Existing LLM remote jobs perform training, Q4 export, CPU inference smoke testing, strict behavior evaluation, Hugging Face publication, and WebGPU browser checks. The STT workflow is wired to a remote A10G job, but it has not been dispatched because the required consented multi-speaker corpus does not yet exist.
 
 The complete implementation is reproducible from the repository:
 
@@ -164,5 +181,8 @@ The complete implementation is reproducible from the repository:
 - [Merged LFM2 checkpoint](https://huggingface.co/danelcsb/daniel-lfm2-350m)
 - [Q4 browser model release](https://github.com/SangbumChoi/sangbumchoi.github.io/releases/tag/daniel-lfm2-onnx-v1)
 - [Browser worker](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/js/lfm-worker.js)
+- [Speaker-disjoint STT preparer](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/prepare_daniel_stt_dataset.py)
+- [Whisper LoRA trainer and release gate](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/train_daniel_stt.py)
+- [Grouped STT evaluator](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/score_daniel_stt_predictions.py)
 
 The principle is simple: train the model to communicate within a narrow scope, keep exact facts in a source-grounded layer, publish tests that can expose failure, and describe every untrained component honestly.

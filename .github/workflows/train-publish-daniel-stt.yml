@@ -1,0 +1,87 @@
+name: Train and publish Daniel browser STT
+
+on:
+  workflow_dispatch:
+    inputs:
+      dataset_repo:
+        description: Private speaker-disjoint Hugging Face dataset
+        required: true
+        default: danelcsb/daniel-os-stt
+      model_repo:
+        description: Hugging Face model repository
+        required: true
+        default: danelcsb/daniel-stt-tiny-en
+      dataset_revision:
+        description: Immutable dataset revision or main
+        required: true
+        default: main
+      public_model:
+        description: Publish the passed checkpoint publicly
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: daniel-browser-stt-training
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+    steps:
+      - name: Check out portfolio
+        uses: actions/checkout@v4
+
+      - name: Validate the public dataset contract
+        run: |
+          python3 scripts/prepare_daniel_stt_dataset.py \
+            --manifest assets/data/daniel-stt-manifest.example.jsonl \
+            --output-dir "$RUNNER_TEMP/daniel-stt-schema" \
+            --schema-only
+
+      - name: Install Hugging Face CLI
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Submit training to a remote A10G
+        env:
+          DATASET_REPO: ${{ inputs.dataset_repo }}
+          MODEL_REPO: ${{ inputs.model_repo }}
+          DATASET_REVISION: ${{ inputs.dataset_revision }}
+          PUBLIC_MODEL: ${{ inputs.public_model }}
+        run: |
+          set -euo pipefail
+          uv tool install 'huggingface-hub>=1,<2'
+          command=(
+            hf jobs uv run
+            --name daniel-stt-tiny-en
+            --flavor a10g-small
+            --timeout 4h
+            --secrets HF_TOKEN
+            "https://raw.githubusercontent.com/SangbumChoi/sangbumchoi.github.io/${GITHUB_SHA}/scripts/train_daniel_stt.py"
+            --dataset-repo "$DATASET_REPO"
+            --dataset-revision "$DATASET_REVISION"
+            --hub-repo "$MODEL_REPO"
+            --training-revision "$GITHUB_SHA"
+            --push-to-hub
+          )
+          if [[ "$PUBLIC_MODEL" == "true" ]]; then
+            command+=(--public-model)
+          fi
+          "${command[@]}"
+
+      - name: Summarize candidate checkpoint
+        run: |
+          echo "### Browser STT candidate trained" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Dataset: `${{ inputs.dataset_repo }}@${{ inputs.dataset_revision }}`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Model: [${{ inputs.model_repo }}](https://huggingface.co/${{ inputs.model_repo }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Portfolio revision: `$GITHUB_SHA`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Browser promotion still requires ONNX and WebGPU/WASM gates." >> "$GITHUB_STEP_SUMMARY"

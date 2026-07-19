@@ -2,3 +2,5 @@ _site/
 tmp/
 artifacts/
 .sass-cache/
+__pycache__/
+*.py[cod]

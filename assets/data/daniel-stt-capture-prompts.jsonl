@@ -1,0 +1,24 @@
+{"id":"identity_01","category":"portfolio","text":"Who is Sangbum Daniel Choi?","terms":["Sangbum Daniel Choi"]}
+{"id":"identity_02","category":"portfolio","text":"Tell me about Daniel's current role at Toss Bank.","terms":["Toss Bank"]}
+{"id":"identity_03","category":"career","text":"How long has he worked in artificial intelligence?","terms":[]}
+{"id":"identity_04","category":"career","text":"Did he start his own company?","terms":[]}
+{"id":"identity_05","category":"education","text":"What did he study at KAIST?","terms":["KAIST"]}
+{"id":"domain_01","category":"open_source","text":"Describe his open source contributions to Hugging Face Transformers.","terms":["Hugging Face","Transformers"]}
+{"id":"domain_02","category":"open_source","text":"What did he contribute to Molmo2?","terms":["Molmo2"]}
+{"id":"domain_03","category":"startup","text":"What is ZZAZZ and how did Team ISLAND build it?","terms":["ZZAZZ","Team ISLAND"]}
+{"id":"domain_04","category":"research","text":"Explain the ZERO visual grounding model.","terms":["ZERO"]}
+{"id":"domain_05","category":"deployment","text":"Does the local model use WebGPU or WebAssembly?","terms":["WebGPU","WebAssembly"]}
+{"id":"domain_06","category":"deployment","text":"How was the model exported to ONNX?","terms":["ONNX"]}
+{"id":"domain_07","category":"document_ai","text":"Was the document extraction pipeline end to end?","terms":["document extraction"]}
+{"id":"domain_08","category":"document_ai","text":"Did the pipeline use a vision-language model?","terms":["vision-language model"]}
+{"id":"domain_09","category":"open_source","text":"Why does Daniel believe in open source?","terms":["open source"]}
+{"id":"variation_01","category":"natural_question","text":"Could you walk me through what he does these days?","terms":[]}
+{"id":"variation_02","category":"natural_question","text":"What was that mobile video editor called again?","terms":[]}
+{"id":"variation_03","category":"natural_question","text":"Which bank does he work for now?","terms":[]}
+{"id":"variation_04","category":"natural_question","text":"What kind of machine learning systems has he deployed?","terms":[]}
+{"id":"variation_05","category":"natural_question","text":"Can you summarize his research in one minute?","terms":[]}
+{"id":"variation_06","category":"natural_question","text":"Where can I read his publications?","terms":[]}
+{"id":"noise_01","category":"robustness","text":"I am speaking from a busy cafe; tell me about his startup.","terms":[]}
+{"id":"noise_02","category":"robustness","text":"I am using a phone microphone; explain his document AI work.","terms":[]}
+{"id":"pace_01","category":"robustness","text":"Please describe the difference between WebGPU and WebAssembly inference.","terms":["WebGPU","WebAssembly"]}
+{"id":"pace_02","category":"robustness","text":"What exactly did Sangbum contribute to open source machine learning?","terms":["Sangbum","open source"]}

@@ -1,0 +1,17 @@
+# Terms whose recall is measured separately from aggregate WER.
+Sangbum Daniel Choi
+Toss Bank
+Superb AI
+Hugging Face
+Transformers
+Molmo2
+KAIST
+Team ISLAND
+ZZAZZ
+ZERO
+WebGPU
+WebAssembly
+ONNX
+vision-language model
+document extraction
+open source
