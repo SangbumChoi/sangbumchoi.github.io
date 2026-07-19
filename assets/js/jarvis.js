@@ -1,4 +1,4 @@
-const ASSET_VERSION = "15";
+const ASSET_VERSION = "16";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 
 const els = {
@@ -37,6 +37,10 @@ const state = {
   streamedText: "",
   conversation: [],
   recognition: null,
+  listening: false,
+  speechTranscript: "",
+  speechSilenceTimer: null,
+  speechError: false,
   speaking: false,
   backend: "webgpu",
   fallbackAttempted: false,
@@ -270,7 +274,7 @@ async function initWorker(forcedBackend = null) {
   els.loadButton.innerHTML = '<i data-lucide="loader-circle" aria-hidden="true"></i><span>Loading</span>';
   els.modelStatus.textContent = "Loading personalized LFM2";
   els.modelDetail.textContent = state.backend === "webgpu" ? "q4 · WebGPU · ~294 MB · cached" : "q4 · WASM fallback · ~294 MB · cached";
-  setRuntime(`${state.backend} / loading`);
+  setRuntime(`LLM ${state.backend} / loading`);
 
   state.worker = new Worker(`/assets/js/lfm-worker.js?v=${ASSET_VERSION}`, { type: "module" });
   state.worker.addEventListener("message", handleWorkerMessage);
@@ -295,7 +299,7 @@ function handleWorkerMessage(event) {
     els.modelDetail.textContent = `q4 · ${data.runtime.toUpperCase()} · runs locally`;
     els.loadButton.innerHTML = '<i data-lucide="check" aria-hidden="true"></i><span>Ready</span>';
     els.loadButton.disabled = true;
-    setRuntime(`${data.runtime} / private`, true);
+    setRuntime(`LLM ${data.runtime} / private`, true);
     setPortraitState("idle", "LOCAL MODEL READY");
     initializeIcons();
     if (state.pendingPrompt) {
@@ -328,7 +332,7 @@ function handleWorkerError(data) {
     state.worker = null;
     els.modelStatus.textContent = "Trying CPU fallback";
     els.modelDetail.textContent = `WebGPU failed: ${message}`;
-    setRuntime("wasm / retrying");
+    setRuntime("LLM wasm / retrying");
     initWorker("wasm");
     return;
   }
@@ -412,7 +416,7 @@ function completeGeneration(data) {
     renderMessage(state.assistantNode.querySelector(".message__body"), answer);
   }
   state.conversation.push({ role: "assistant", content: answer });
-  els.latency.textContent = `${data.runtime.toUpperCase()} · ${(data.elapsed / 1000).toFixed(1)}s · local`;
+  els.latency.textContent = `LLM: ${data.runtime.toUpperCase()} · ${(data.elapsed / 1000).toFixed(1)}s · local`;
   setPortraitState("idle", "LOCAL MODEL READY");
   if (els.voiceOutput.checked) speak(answer);
 }
@@ -475,24 +479,50 @@ function initSpeechRecognition() {
     return;
   }
   state.recognition = new Recognition();
-  state.recognition.continuous = false;
+  state.recognition.continuous = true;
   state.recognition.interimResults = true;
   state.recognition.lang = "en-US";
   state.recognition.onstart = () => {
+    state.listening = true;
+    state.speechTranscript = "";
+    state.speechError = false;
+    window.clearTimeout(state.speechSilenceTimer);
     els.micButton.classList.add("is-listening");
     setPortraitState("listening", "LISTENING");
   };
   state.recognition.onresult = (event) => {
-    const transcript = Array.from(event.results).map((result) => result[0].transcript).join("");
-    els.input.value = transcript;
+    let finalTranscript = "";
+    let interimTranscript = "";
+    Array.from(event.results).forEach((result) => {
+      const transcript = result[0].transcript.trim();
+      if (!transcript) return;
+      if (result.isFinal) finalTranscript += `${transcript} `;
+      else interimTranscript += `${transcript} `;
+    });
+    state.speechTranscript = finalTranscript.trim();
+    els.input.value = [state.speechTranscript, interimTranscript.trim()].filter(Boolean).join(" ");
     resizeComposer();
-    if (event.results[event.results.length - 1].isFinal) submitPrompt(transcript);
+    window.clearTimeout(state.speechSilenceTimer);
+    if (event.results[event.results.length - 1].isFinal) {
+      state.speechSilenceTimer = window.setTimeout(() => {
+        if (state.listening) state.recognition.stop();
+      }, 2200);
+    }
   };
   state.recognition.onend = () => {
+    const transcript = els.input.value.trim();
+    const shouldSubmit = transcript && !state.generating && !state.speechError;
+    state.listening = false;
+    state.speechTranscript = "";
+    state.speechError = false;
+    window.clearTimeout(state.speechSilenceTimer);
     els.micButton.classList.remove("is-listening");
     if (!state.generating && !state.speaking) setPortraitState("idle", state.modelReady ? "LOCAL MODEL READY" : "STANDING BY");
+    if (shouldSubmit) submitPrompt(transcript);
   };
-  state.recognition.onerror = () => state.recognition.onend();
+  state.recognition.onerror = () => {
+    state.speechError = true;
+  };
 }
 
 function resizeComposer() {
@@ -553,6 +583,11 @@ function bindEvents() {
   });
   els.micButton.addEventListener("click", () => {
     if (!state.recognition) return;
+    if (state.listening) {
+      window.clearTimeout(state.speechSilenceTimer);
+      state.recognition.stop();
+      return;
+    }
     try { state.recognition.start(); } catch (_) { state.recognition.stop(); }
   });
   els.clearButton.addEventListener("click", () => {
@@ -575,7 +610,7 @@ async function boot() {
   bindEvents();
 
   state.backend = "gpu" in navigator ? "webgpu" : "wasm";
-  setRuntime(`${state.backend} / starting`);
+  setRuntime(`LLM ${state.backend} / starting`);
   els.modelStatus.textContent = "Preparing personalized LFM2";
   els.modelDetail.textContent = state.backend === "webgpu"
     ? "q4 · WebGPU · ~294 MB · automatic browser cache"

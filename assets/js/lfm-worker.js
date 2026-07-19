@@ -84,7 +84,7 @@ self.addEventListener("message", async (event) => {
     });
 
     const output = await generator(messages, {
-      max_new_tokens: 150,
+      max_new_tokens: 256,
       do_sample: false,
       repetition_penalty: 1.05,
       streamer,

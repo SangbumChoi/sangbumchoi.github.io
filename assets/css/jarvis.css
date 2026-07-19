@@ -151,6 +151,7 @@ button { color: inherit; }
 .console-panel { min-width: 0; }
 
 .identity-panel {
+  container-type: inline-size;
   display: grid;
   grid-template-rows: auto minmax(140px, 1fr) auto auto;
   min-height: 0;
@@ -262,12 +263,12 @@ button { color: inherit; }
 .identity-copy h1 {
   max-width: 760px;
   margin: 0;
-  font-size: clamp(38px, 4.2vw, 66px);
-  line-height: 0.95;
+  font-size: clamp(28px, 9cqi, 58px);
+  line-height: 1.02;
   font-weight: 600;
   letter-spacing: 0;
+  white-space: nowrap;
 }
-.identity-copy h1 span { display: block; }
 
 .identity-copy__intro {
   max-width: 620px;
@@ -596,7 +597,6 @@ noscript { display: block; padding: 20px; color: var(--paper); }
   .identity-copy { align-self: center; padding: 0; }
   .identity-copy .eyebrow { margin-bottom: 5px; font-size: 8px; }
   .identity-copy h1 { font-size: 23px; line-height: 1.05; }
-  .identity-copy h1 span { display: inline; }
   .console-panel { min-height: 0; grid-template-rows: auto auto minmax(0, 1fr) auto auto auto; gap: 7px; padding: 10px 14px 12px; }
   .console-heading { align-items: center; }
   .console-heading .eyebrow { margin-bottom: 4px; font-size: 8px; }

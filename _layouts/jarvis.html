@@ -49,7 +49,7 @@ layout: compress
 
         <div class="identity-copy">
           <p class="eyebrow">AI RESEARCH &amp; SYSTEMS ENGINEER</p>
-          <h1 id="identity-title">Sangbum <span>Daniel Choi</span></h1>
+          <h1 id="identity-title">Sangbum Daniel Choi</h1>
           <p class="identity-copy__intro">
             I build multimodal models, production AI systems, and open-source tools.
             Ask this private profile assistant about my work, research, or the decisions behind it.
@@ -108,9 +108,9 @@ layout: compress
 
         <form class="composer" id="prompt-form">
           <label class="sr-only" for="prompt-input">Ask Daniel a question</label>
-          <textarea id="prompt-input" rows="1" maxlength="1000" placeholder="Ask about Daniel's work, research, or open source…"></textarea>
+          <textarea id="prompt-input" rows="1" maxlength="2000" placeholder="Ask about Daniel's work, research, or open source…"></textarea>
           <div class="composer__actions">
-            <button class="icon-button icon-button--mic" id="mic-button" type="button" title="Speak a question" aria-label="Speak a question">
+            <button class="icon-button icon-button--mic" id="mic-button" type="button" title="STT: browser SpeechRecognition; not WebGPU and may use a remote service" aria-label="Speak a question">
               <i data-lucide="mic" aria-hidden="true"></i>
             </button>
             <button class="icon-button icon-button--send" id="send-button" type="submit" title="Send question" aria-label="Send question">
@@ -120,7 +120,7 @@ layout: compress
         </form>
 
         <div class="console-footer">
-          <label class="voice-toggle" for="voice-output">
+          <label class="voice-toggle" for="voice-output" title="TTS: browser or operating-system SpeechSynthesis voice; not WebGPU">
             <input id="voice-output" type="checkbox" checked>
             <span aria-hidden="true"></span>
             Read replies aloud

@@ -75,7 +75,7 @@ try {
     detail: document.querySelector("#model-detail")?.textContent,
     progress: document.querySelector(".progress-track")?.getAttribute("aria-valuenow"),
   }));
-  if (!loadingState.runtime?.startsWith("webgpu /")) {
+  if (!loadingState.runtime?.startsWith("LLM webgpu /")) {
     throw new Error(`Expected WebGPU autoload, received ${loadingState.runtime}: ${loadingState.detail}`);
   }
 
