@@ -1,4 +1,4 @@
-const ASSET_VERSION = "16";
+const ASSET_VERSION = "17";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 
 const els = {
@@ -38,9 +38,12 @@ const state = {
   conversation: [],
   recognition: null,
   listening: false,
+  recognitionActive: false,
   speechTranscript: "",
-  speechSilenceTimer: null,
-  speechError: false,
+  speechSessionTranscript: "",
+  speechRestartTimer: null,
+  speechStopRequested: false,
+  speechError: "",
   speaking: false,
   backend: "webgpu",
   fallbackAttempted: false,
@@ -483,11 +486,13 @@ function initSpeechRecognition() {
   state.recognition.interimResults = true;
   state.recognition.lang = "en-US";
   state.recognition.onstart = () => {
+    state.recognitionActive = true;
     state.listening = true;
-    state.speechTranscript = "";
-    state.speechError = false;
-    window.clearTimeout(state.speechSilenceTimer);
+    state.speechError = "";
     els.micButton.classList.add("is-listening");
+    els.micButton.setAttribute("aria-pressed", "true");
+    els.micButton.setAttribute("aria-label", "Stop and send voice question");
+    els.micButton.title = "Stop and send voice question";
     setPortraitState("listening", "LISTENING");
   };
   state.recognition.onresult = (event) => {
@@ -499,30 +504,68 @@ function initSpeechRecognition() {
       if (result.isFinal) finalTranscript += `${transcript} `;
       else interimTranscript += `${transcript} `;
     });
-    state.speechTranscript = finalTranscript.trim();
-    els.input.value = [state.speechTranscript, interimTranscript.trim()].filter(Boolean).join(" ");
+    state.speechSessionTranscript = finalTranscript.trim();
+    els.input.value = [state.speechTranscript, state.speechSessionTranscript, interimTranscript.trim()]
+      .filter(Boolean)
+      .join(" ");
     resizeComposer();
-    window.clearTimeout(state.speechSilenceTimer);
-    if (event.results[event.results.length - 1].isFinal) {
-      state.speechSilenceTimer = window.setTimeout(() => {
-        if (state.listening) state.recognition.stop();
-      }, 2200);
-    }
   };
   state.recognition.onend = () => {
-    const transcript = els.input.value.trim();
-    const shouldSubmit = transcript && !state.generating && !state.speechError;
-    state.listening = false;
-    state.speechTranscript = "";
-    state.speechError = false;
-    window.clearTimeout(state.speechSilenceTimer);
-    els.micButton.classList.remove("is-listening");
-    if (!state.generating && !state.speaking) setPortraitState("idle", state.modelReady ? "LOCAL MODEL READY" : "STANDING BY");
-    if (shouldSubmit) submitPrompt(transcript);
+    state.recognitionActive = false;
+    state.speechTranscript = [state.speechTranscript, state.speechSessionTranscript]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    state.speechSessionTranscript = "";
+
+    if (state.speechStopRequested) {
+      finishSpeechRecognition(true);
+      return;
+    }
+
+    const recoverable = !state.speechError || ["aborted", "no-speech"].includes(state.speechError);
+    if (!recoverable) {
+      finishSpeechRecognition(false);
+      return;
+    }
+
+    els.input.value = state.speechTranscript;
+    resizeComposer();
+    window.clearTimeout(state.speechRestartTimer);
+    state.speechRestartTimer = window.setTimeout(startSpeechRecognitionSession, 250);
   };
-  state.recognition.onerror = () => {
-    state.speechError = true;
+  state.recognition.onerror = (event) => {
+    state.speechError = event.error || "unknown";
   };
+}
+
+function startSpeechRecognitionSession() {
+  if (!state.recognition || !state.listening || state.speechStopRequested || state.recognitionActive) return;
+  try {
+    state.recognition.start();
+  } catch (_) {
+    window.clearTimeout(state.speechRestartTimer);
+    state.speechRestartTimer = window.setTimeout(startSpeechRecognitionSession, 250);
+  }
+}
+
+function finishSpeechRecognition(shouldSubmit) {
+  const transcript = els.input.value.trim() || state.speechTranscript;
+  state.listening = false;
+  state.recognitionActive = false;
+  state.speechTranscript = "";
+  state.speechSessionTranscript = "";
+  state.speechStopRequested = false;
+  state.speechError = "";
+  window.clearTimeout(state.speechRestartTimer);
+  els.micButton.classList.remove("is-listening");
+  els.micButton.setAttribute("aria-pressed", "false");
+  els.micButton.setAttribute("aria-label", "Start voice input");
+  els.micButton.title = "Start voice input; click again to stop and send";
+  if (!state.generating && !state.speaking) {
+    setPortraitState("idle", state.modelReady ? "LOCAL MODEL READY" : "STANDING BY");
+  }
+  if (shouldSubmit && transcript && !state.generating) submitPrompt(transcript);
 }
 
 function resizeComposer() {
@@ -584,11 +627,26 @@ function bindEvents() {
   els.micButton.addEventListener("click", () => {
     if (!state.recognition) return;
     if (state.listening) {
-      window.clearTimeout(state.speechSilenceTimer);
-      state.recognition.stop();
+      state.speechStopRequested = true;
+      window.clearTimeout(state.speechRestartTimer);
+      if (state.recognitionActive) {
+        try { state.recognition.stop(); } catch (_) { finishSpeechRecognition(true); }
+      } else {
+        finishSpeechRecognition(true);
+      }
       return;
     }
-    try { state.recognition.start(); } catch (_) { state.recognition.stop(); }
+    state.listening = true;
+    state.speechTranscript = els.input.value.trim();
+    state.speechSessionTranscript = "";
+    state.speechStopRequested = false;
+    state.speechError = "";
+    els.micButton.classList.add("is-listening");
+    els.micButton.setAttribute("aria-pressed", "true");
+    els.micButton.setAttribute("aria-label", "Stop and send voice question");
+    els.micButton.title = "Stop and send voice question";
+    setPortraitState("listening", "LISTENING");
+    startSpeechRecognitionSession();
   });
   els.clearButton.addEventListener("click", () => {
     state.conversation = [];
