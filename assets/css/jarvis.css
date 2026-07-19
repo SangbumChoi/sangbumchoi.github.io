@@ -186,30 +186,122 @@ button { color: inherit; }
   background: #1e211f;
 }
 
-.portrait__media img {
+.portrait__avatar {
+  --left-eye-x: 43%;
+  --left-eye-y: 47%;
+  --right-eye-x: 53%;
+  --right-eye-y: 47%;
+  --eye-width: 28px;
+  --eye-height: 16px;
+  --mouth-x: 48%;
+  --mouth-y: 59%;
+  --mouth-width: 44px;
+  --mouth-height: 10px;
+  --portrait-skin: rgb(240 177 132);
+  position: absolute;
+  inset: 0;
+  animation: portrait-breathe 6s ease-in-out infinite;
+}
+
+.portrait__avatar img {
   width: 100%;
   height: 100%;
   display: block;
   object-fit: cover;
-  object-position: center 42%;
+  object-position: center top;
   filter: saturate(0.82) contrast(1.05);
-  transform: scale(1.06);
   transition: filter 260ms ease;
-  animation: portrait-breathe 6s ease-in-out infinite;
 }
 
-.portrait[data-state="listening"] .portrait__media img {
+.portrait__mouth {
+  position: absolute;
+  z-index: 2;
+  top: var(--mouth-y);
+  left: var(--mouth-x);
+  width: var(--mouth-width);
+  height: var(--mouth-height);
+  border: 2px solid #17100d;
+  border-radius: 50%;
+  background: #2c1012;
+  box-shadow: inset 0 -3px 0 #d96f62;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.8, 0.15);
+  transform-origin: center;
+  transition: opacity 45ms linear, transform 70ms ease-out;
+}
+
+.portrait__eye {
+  position: absolute;
+  z-index: 2;
+  top: var(--left-eye-y);
+  left: var(--left-eye-x);
+  width: var(--eye-width);
+  height: var(--eye-height);
+  border-radius: 48%;
+  background: var(--portrait-skin);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.portrait__eye--right {
+  top: var(--right-eye-y);
+  left: var(--right-eye-x);
+}
+
+.portrait__eye::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 27%;
+  height: 74%;
+  border-radius: 50%;
+  background: #17100d;
+  transform: translate(-50%, -50%);
+  transform-origin: center;
+  animation: portrait-eye-motion 8s ease-in-out infinite;
+}
+
+.portrait[data-landmarks="mediapipe-478"] .portrait__eye { opacity: 1; }
+
+.portrait[data-state="speaking"][data-viseme="open"] .portrait__mouth {
+  opacity: 0.96;
+  transform: translate(-50%, -50%) scale(0.72, 1.55);
+}
+
+.portrait[data-state="speaking"][data-viseme="wide"] .portrait__mouth {
+  opacity: 0.94;
+  transform: translate(-50%, -50%) scale(1.12, 0.72);
+}
+
+.portrait[data-state="speaking"][data-viseme="round"] .portrait__mouth {
+  opacity: 0.96;
+  transform: translate(-50%, -50%) scale(0.52, 1.8);
+}
+
+.portrait[data-state="listening"] .portrait__avatar img {
   filter: saturate(1.05) contrast(1.05);
+}
+
+.portrait[data-state="listening"] .portrait__avatar {
   animation: portrait-listen 1.4s ease-in-out infinite;
 }
 
-.portrait[data-state="thinking"] .portrait__media img {
+.portrait[data-state="thinking"] .portrait__avatar img {
   filter: saturate(0.65) contrast(1.14);
+}
+
+.portrait[data-state="thinking"] .portrait__avatar {
   animation: portrait-think 2.8s ease-in-out infinite;
 }
 
-.portrait[data-state="speaking"] .portrait__media img {
+.portrait[data-state="speaking"] .portrait__avatar img {
   filter: saturate(1) contrast(1.07);
+}
+
+.portrait[data-state="speaking"] .portrait__avatar {
   animation: portrait-speak 420ms ease-in-out infinite alternate;
 }
 
@@ -462,6 +554,13 @@ noscript { display: block; padding: 20px; color: var(--paper); }
 @keyframes portrait-listen { 0%, 100% { transform: scale(1.07) rotate(0); } 50% { transform: scale(1.08) rotate(-0.35deg); } }
 @keyframes portrait-think { 0%, 100% { transform: scale(1.07) translateX(0); } 50% { transform: scale(1.08) translateX(-3px); } }
 @keyframes portrait-speak { from { transform: scale(1.07) translateY(0); } to { transform: scale(1.085) translateY(-2px); } }
+@keyframes portrait-eye-motion {
+  0%, 12%, 46%, 54%, 82%, 100% { transform: translate(-50%, -50%) scale(1); }
+  18%, 30% { transform: translate(calc(-50% + 1.5px), -50%) scale(1); }
+  36%, 42% { transform: translate(calc(-50% - 1px), calc(-50% + 0.5px)) scale(1); }
+  49%, 51% { transform: translate(-50%, -50%) scale(2.1, 0.12); }
+  64%, 76% { transform: translate(calc(-50% - 1.5px), -50%) scale(1); }
+}
 @keyframes cursor-blink { 50% { opacity: 0; } }
 @keyframes mic-pulse { 50% { box-shadow: 0 0 0 5px rgba(255, 107, 87, 0.12); } }
 @keyframes loader-spin { to { transform: rotate(360deg); } }
@@ -593,6 +692,15 @@ noscript { display: block; padding: 20px; color: var(--paper); }
   .identity-panel__topline, .signal-grid, .identity-copy__intro { display: none; }
   .portrait { width: 72px; height: 72px; grid-template-rows: 1fr; }
   .portrait__media { aspect-ratio: 1; }
+  .portrait__avatar {
+    --mouth-y: 35%;
+    --mouth-width: 7px;
+    --mouth-height: 3px;
+    animation: none;
+    transform: translateY(18px) scale(1.6);
+  }
+  .portrait__avatar img { object-position: center; }
+  .portrait__mouth { border-width: 1px; box-shadow: inset 0 -1px 0 #d96f62; }
   .portrait__wave, .portrait figcaption { display: none; }
   .identity-copy { align-self: center; padding: 0; }
   .identity-copy .eyebrow { margin-bottom: 5px; font-size: 8px; }

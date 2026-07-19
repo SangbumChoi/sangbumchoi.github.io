@@ -29,13 +29,20 @@ layout: compress
 
         <figure class="portrait" id="portrait" data-state="idle">
           <div class="portrait__media">
-            <img
-              src="https://avatars.githubusercontent.com/u/34004152?v=4"
-              alt="Illustrated portrait of Sangbum Daniel Choi"
-              width="460"
-              height="460"
-              fetchpriority="high"
-            >
+            <div class="portrait__avatar">
+              <img
+                id="portrait-image"
+                src="https://avatars.githubusercontent.com/u/34004152?v=4"
+                crossorigin="anonymous"
+                alt="Illustrated portrait of Sangbum Daniel Choi"
+                width="460"
+                height="460"
+                fetchpriority="high"
+              >
+              <span class="portrait__eye portrait__eye--left" aria-hidden="true"></span>
+              <span class="portrait__eye portrait__eye--right" aria-hidden="true"></span>
+              <span class="portrait__mouth" aria-hidden="true"></span>
+            </div>
             <div class="portrait__scan" aria-hidden="true"></div>
             <div class="portrait__focus portrait__focus--top" aria-hidden="true"></div>
             <div class="portrait__focus portrait__focus--bottom" aria-hidden="true"></div>

@@ -1,4 +1,6 @@
-const ASSET_VERSION = "17";
+import { detectPortraitFeatures } from "./portrait-landmarks.js?v=19";
+
+const ASSET_VERSION = "19";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 
 const els = {
@@ -6,7 +8,10 @@ const els = {
   runtimeLabel: document.querySelector("#runtime-label"),
   localTime: document.querySelector("#local-time"),
   portrait: document.querySelector("#portrait"),
+  portraitAvatar: document.querySelector(".portrait__avatar"),
+  portraitImage: document.querySelector("#portrait-image"),
   portraitState: document.querySelector("#portrait-state"),
+  portraitMouth: document.querySelector(".portrait__mouth"),
   canvas: document.querySelector("#voice-wave"),
   loader: document.querySelector("#model-loader"),
   modelStatus: document.querySelector("#model-status"),
@@ -45,9 +50,15 @@ const state = {
   speechStopRequested: false,
   speechError: "",
   speaking: false,
+  speechRequestId: 0,
+  lipTimers: [],
+  lipFallbackTimer: null,
+  lastLipBoundaryAt: 0,
   backend: "webgpu",
   fallbackAttempted: false,
   webgpuError: "",
+  portraitFeatures: null,
+  portraitResizeObserver: null,
 };
 
 function initializeIcons() {
@@ -58,6 +69,70 @@ function initializeIcons() {
 function setPortraitState(next, label) {
   els.portrait.dataset.state = next;
   els.portraitState.textContent = label || next.toUpperCase();
+  if (next !== "speaking") setMouthViseme("rest");
+}
+
+function setMouthViseme(viseme = "rest") {
+  if (!els.portraitMouth) return;
+  els.portrait.dataset.viseme = viseme;
+}
+
+function clearLipTimers() {
+  state.lipTimers.forEach((timer) => window.clearTimeout(timer));
+  state.lipTimers = [];
+}
+
+function wordVisemes(word) {
+  const visemes = [];
+  Array.from(word.toLowerCase()).forEach((character) => {
+    let next = "open";
+    if (/[bmp]/.test(character)) next = "rest";
+    else if (/[ouqw]/.test(character)) next = "round";
+    else if (/[aeiyfv]/.test(character)) next = "wide";
+    if (visemes[visemes.length - 1] !== next) visemes.push(next);
+  });
+  return visemes.length ? visemes.slice(0, 7) : ["open"];
+}
+
+function animateWordVisemes(text, charIndex) {
+  clearLipTimers();
+  state.lastLipBoundaryAt = performance.now();
+  const remainder = text.slice(Number.isFinite(charIndex) ? charIndex : 0);
+  const word = remainder.match(/[\p{L}\p{N}']+/u)?.[0] || remainder.trim().split(/\s+/)[0] || "";
+  const visemes = wordVisemes(word);
+  const step = Math.max(70, Math.min(115, 420 / visemes.length));
+  visemes.forEach((viseme, index) => {
+    state.lipTimers.push(window.setTimeout(() => setMouthViseme(viseme), index * step));
+  });
+}
+
+function startLipSync() {
+  clearLipTimers();
+  window.clearInterval(state.lipFallbackTimer);
+  state.lastLipBoundaryAt = 0;
+  const fallbackVisemes = ["open", "wide", "open", "round", "rest"];
+  let frame = 0;
+  setMouthViseme("open");
+  state.lipFallbackTimer = window.setInterval(() => {
+    if (performance.now() - state.lastLipBoundaryAt < 480) return;
+    setMouthViseme(fallbackVisemes[frame % fallbackVisemes.length]);
+    frame += 1;
+  }, 105);
+}
+
+function stopLipSync() {
+  clearLipTimers();
+  window.clearInterval(state.lipFallbackTimer);
+  state.lipFallbackTimer = null;
+  state.lastLipBoundaryAt = 0;
+  setMouthViseme("rest");
+}
+
+function cancelSpeechOutput() {
+  state.speechRequestId += 1;
+  state.speaking = false;
+  stopLipSync();
+  window.speechSynthesis?.cancel();
 }
 
 function setRuntime(label, ready = false) {
@@ -73,6 +148,71 @@ function updateClock() {
     hour12: false,
   }).format(new Date());
   els.localTime.textContent = `${value} KST`;
+}
+
+function objectPositionFactor(value, fallback) {
+  if (!value) return fallback;
+  if (value === "left" || value === "top") return 0;
+  if (value === "right" || value === "bottom") return 1;
+  if (value === "center") return 0.5;
+  if (value.endsWith("%")) return Number.parseFloat(value) / 100;
+  return fallback;
+}
+
+function applyPortraitFeatureAnchors(features) {
+  const media = els.portraitAvatar?.parentElement;
+  const image = els.portraitImage;
+  if (!features || !media || !image?.naturalWidth || !image.naturalHeight) return;
+
+  const width = media.clientWidth;
+  const height = media.clientHeight;
+  const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+  const fittedWidth = image.naturalWidth * scale;
+  const fittedHeight = image.naturalHeight * scale;
+  const position = getComputedStyle(image).objectPosition.trim().split(/\s+/);
+  const offsetX = (width - fittedWidth) * objectPositionFactor(position[0], 0.5);
+  const offsetY = (height - fittedHeight) * objectPositionFactor(position[1], 0.5);
+  const mapPoint = (x, y) => ({ x: offsetX + x * fittedWidth, y: offsetY + y * fittedHeight });
+  const mapBounds = (bounds) => {
+    const center = mapPoint((bounds.minX + bounds.maxX) / 2, (bounds.minY + bounds.maxY) / 2);
+    return {
+      ...center,
+      width: (bounds.maxX - bounds.minX) * fittedWidth,
+      height: (bounds.maxY - bounds.minY) * fittedHeight,
+    };
+  };
+
+  const leftEye = mapBounds(features.leftEye);
+  const rightEye = mapBounds(features.rightEye);
+  const lips = mapBounds(features.lips);
+  const mouthY = mapPoint(0, features.lips.minY + (features.lips.maxY - features.lips.minY) * 0.35).y;
+  const style = els.portraitAvatar.style;
+  style.setProperty("--left-eye-x", `${leftEye.x}px`);
+  style.setProperty("--left-eye-y", `${leftEye.y}px`);
+  style.setProperty("--right-eye-x", `${rightEye.x}px`);
+  style.setProperty("--right-eye-y", `${rightEye.y}px`);
+  style.setProperty("--eye-width", `${Math.max(3.5, Math.min(36, Math.max(leftEye.width, rightEye.width) * 1.25))}px`);
+  style.setProperty("--eye-height", `${Math.max(4, Math.min(20, Math.max(leftEye.height, rightEye.height) * 2.4))}px`);
+  style.setProperty("--mouth-x", `${lips.x}px`);
+  style.setProperty("--mouth-y", `${mouthY}px`);
+  style.setProperty("--mouth-width", `${Math.max(7, Math.min(44, lips.width * 0.72))}px`);
+  style.setProperty("--mouth-height", `${Math.max(3, Math.min(10, lips.width * 0.16))}px`);
+  style.setProperty("--portrait-skin", features.skinColor);
+}
+
+async function initPortraitLandmarks() {
+  if (!els.portraitImage || !els.portraitAvatar) return;
+  els.portrait.dataset.landmarks = "loading";
+  try {
+    state.portraitFeatures = await detectPortraitFeatures(els.portraitImage);
+    applyPortraitFeatureAnchors(state.portraitFeatures);
+    els.portrait.dataset.landmarks = state.portraitFeatures.source;
+    state.portraitResizeObserver = new ResizeObserver(() => applyPortraitFeatureAnchors(state.portraitFeatures));
+    state.portraitResizeObserver.observe(els.portraitAvatar.parentElement);
+  } catch (error) {
+    els.portrait.dataset.landmarks = "unavailable";
+    console.warn("Portrait landmark detection unavailable:", error.message);
+  }
 }
 
 function selectProfileContext(profile, prompt = "", conversation = []) {
@@ -434,7 +574,7 @@ function submitPrompt(rawPrompt) {
   const prompt = rawPrompt.trim();
   if (!prompt || state.generating) return;
   if (routeCommand(prompt)) return;
-  window.speechSynthesis?.cancel();
+  cancelSpeechOutput();
   createMessage("user", prompt);
   state.conversation.push({ role: "user", content: prompt });
   els.input.value = "";
@@ -449,8 +589,10 @@ function submitPrompt(rawPrompt) {
 
 function speak(text) {
   if (!("speechSynthesis" in window) || !text) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1"));
+  cancelSpeechOutput();
+  const requestId = state.speechRequestId;
+  const spokenText = text.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+  const utterance = new SpeechSynthesisUtterance(spokenText);
   const korean = /[가-힣]/.test(text);
   utterance.lang = korean ? "ko-KR" : "en-US";
   utterance.rate = 1.02;
@@ -464,11 +606,18 @@ function speak(text) {
     .map((name) => languageVoices.find((voice) => voice.name.includes(name)))
     .find(Boolean) || languageVoices[0] || null;
   utterance.onstart = () => {
+    if (requestId !== state.speechRequestId) return;
     state.speaking = true;
     setPortraitState("speaking", "SPEAKING");
+    startLipSync();
+  };
+  utterance.onboundary = (event) => {
+    if (requestId === state.speechRequestId) animateWordVisemes(spokenText, event.charIndex);
   };
   utterance.onend = utterance.onerror = () => {
+    if (requestId !== state.speechRequestId) return;
     state.speaking = false;
+    stopLipSync();
     setPortraitState("idle", state.modelReady ? "LOCAL MODEL READY" : "STANDING BY");
   };
   window.speechSynthesis.speak(utterance);
@@ -650,12 +799,17 @@ function bindEvents() {
   });
   els.clearButton.addEventListener("click", () => {
     state.conversation = [];
-    window.speechSynthesis?.cancel();
+    cancelSpeechOutput();
     els.chatLog.querySelectorAll(".message:not(:first-child)").forEach((node) => node.remove());
     setPortraitState("idle", state.modelReady ? "LOCAL MODEL READY" : "STANDING BY");
   });
   document.querySelectorAll("[data-prompt]").forEach((button) => {
     button.addEventListener("click", () => submitPrompt(button.dataset.prompt));
+  });
+  els.voiceOutput.addEventListener("change", () => {
+    if (els.voiceOutput.checked) return;
+    cancelSpeechOutput();
+    setPortraitState("idle", state.modelReady ? "LOCAL MODEL READY" : "STANDING BY");
   });
 }
 
@@ -666,6 +820,7 @@ async function boot() {
   initWaveform();
   initSpeechRecognition();
   bindEvents();
+  window.setTimeout(initPortraitLandmarks, 250);
 
   state.backend = "gpu" in navigator ? "webgpu" : "wasm";
   setRuntime(`LLM ${state.backend} / starting`);
