@@ -200,7 +200,7 @@ button { color: inherit; }
   --portrait-skin: rgb(240 177 132);
   position: absolute;
   inset: 0;
-  animation: portrait-breathe 6s ease-in-out infinite;
+  animation: portrait-breathe 8s ease-in-out infinite;
 }
 
 .portrait__avatar img {
@@ -220,15 +220,15 @@ button { color: inherit; }
   left: var(--mouth-x);
   width: var(--mouth-width);
   height: var(--mouth-height);
-  border: 2px solid #17100d;
+  border: 1px solid rgba(23, 16, 13, 0.9);
   border-radius: 50%;
-  background: #2c1012;
-  box-shadow: inset 0 -3px 0 #d96f62;
+  background: #321719;
+  box-shadow: inset 0 -1.5px 0 rgba(217, 111, 98, 0.72);
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, -50%) scale(0.8, 0.15);
+  transform: translate(-50%, -50%) scale(0.76, 0.18);
   transform-origin: center;
-  transition: opacity 45ms linear, transform 70ms ease-out;
+  transition: opacity 110ms ease, transform 140ms cubic-bezier(0.22, 0.8, 0.32, 1);
 }
 
 .portrait__eye {
@@ -238,8 +238,8 @@ button { color: inherit; }
   left: var(--left-eye-x);
   width: var(--eye-width);
   height: var(--eye-height);
-  border-radius: 48%;
-  background: var(--portrait-skin);
+  border-radius: 50%;
+  background: transparent;
   opacity: 0;
   pointer-events: none;
   transform: translate(-50%, -50%);
@@ -250,35 +250,48 @@ button { color: inherit; }
   left: var(--right-eye-x);
 }
 
+.portrait__eye::before,
 .portrait__eye::after {
   content: "";
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 27%;
-  height: 74%;
+  opacity: 0;
+  pointer-events: none;
+  animation: portrait-friendly-blink 10.5s ease-in-out infinite;
+}
+
+.portrait__eye::before {
+  width: 112%;
+  height: 112%;
   border-radius: 50%;
-  background: #17100d;
-  transform: translate(-50%, -50%);
-  transform-origin: center;
-  animation: portrait-eye-motion 8s ease-in-out infinite;
+  background: var(--portrait-skin);
+  transform: translate(-50%, -50%) scaleY(0.18);
+}
+
+.portrait__eye::after {
+  width: 64%;
+  height: 1.5px;
+  border-radius: 999px;
+  background: rgba(23, 16, 13, 0.88);
+  transform: translate(-50%, -50%) scaleX(0.82);
 }
 
 .portrait[data-landmarks="mediapipe-478"] .portrait__eye { opacity: 1; }
 
 .portrait[data-state="speaking"][data-viseme="open"] .portrait__mouth {
-  opacity: 0.96;
-  transform: translate(-50%, -50%) scale(0.72, 1.55);
+  opacity: 0.82;
+  transform: translate(-50%, -50%) scale(0.76, 1.02);
 }
 
 .portrait[data-state="speaking"][data-viseme="wide"] .portrait__mouth {
-  opacity: 0.94;
-  transform: translate(-50%, -50%) scale(1.12, 0.72);
+  opacity: 0.76;
+  transform: translate(-50%, -50%) scale(0.96, 0.58);
 }
 
 .portrait[data-state="speaking"][data-viseme="round"] .portrait__mouth {
-  opacity: 0.96;
-  transform: translate(-50%, -50%) scale(0.52, 1.8);
+  opacity: 0.8;
+  transform: translate(-50%, -50%) scale(0.62, 1.14);
 }
 
 .portrait[data-state="listening"] .portrait__avatar img {
@@ -286,7 +299,7 @@ button { color: inherit; }
 }
 
 .portrait[data-state="listening"] .portrait__avatar {
-  animation: portrait-listen 1.4s ease-in-out infinite;
+  animation: portrait-listen 2.4s ease-in-out infinite;
 }
 
 .portrait[data-state="thinking"] .portrait__avatar img {
@@ -294,7 +307,7 @@ button { color: inherit; }
 }
 
 .portrait[data-state="thinking"] .portrait__avatar {
-  animation: portrait-think 2.8s ease-in-out infinite;
+  animation: portrait-think 4s ease-in-out infinite;
 }
 
 .portrait[data-state="speaking"] .portrait__avatar img {
@@ -302,7 +315,7 @@ button { color: inherit; }
 }
 
 .portrait[data-state="speaking"] .portrait__avatar {
-  animation: portrait-speak 420ms ease-in-out infinite alternate;
+  animation: portrait-speak 1.2s ease-in-out infinite alternate;
 }
 
 .portrait__scan {
@@ -550,16 +563,13 @@ button { color: inherit; }
 
 noscript { display: block; padding: 20px; color: var(--paper); }
 
-@keyframes portrait-breathe { 0%, 100% { transform: scale(1.06) translateY(0); } 50% { transform: scale(1.075) translateY(-2px); } }
-@keyframes portrait-listen { 0%, 100% { transform: scale(1.07) rotate(0); } 50% { transform: scale(1.08) rotate(-0.35deg); } }
-@keyframes portrait-think { 0%, 100% { transform: scale(1.07) translateX(0); } 50% { transform: scale(1.08) translateX(-3px); } }
-@keyframes portrait-speak { from { transform: scale(1.07) translateY(0); } to { transform: scale(1.085) translateY(-2px); } }
-@keyframes portrait-eye-motion {
-  0%, 12%, 46%, 54%, 82%, 100% { transform: translate(-50%, -50%) scale(1); }
-  18%, 30% { transform: translate(calc(-50% + 1.5px), -50%) scale(1); }
-  36%, 42% { transform: translate(calc(-50% - 1px), calc(-50% + 0.5px)) scale(1); }
-  49%, 51% { transform: translate(-50%, -50%) scale(2.1, 0.12); }
-  64%, 76% { transform: translate(calc(-50% - 1.5px), -50%) scale(1); }
+@keyframes portrait-breathe { 0%, 100% { transform: scale(1.055) translateY(0); } 50% { transform: scale(1.06) translateY(-1px); } }
+@keyframes portrait-listen { 0%, 100% { transform: scale(1.058) rotate(0); } 50% { transform: scale(1.062) rotate(-0.12deg); } }
+@keyframes portrait-think { 0%, 100% { transform: scale(1.058) translateX(0); } 50% { transform: scale(1.062) translateX(-1px); } }
+@keyframes portrait-speak { from { transform: scale(1.058) translateY(0); } to { transform: scale(1.064) translateY(-0.75px); } }
+@keyframes portrait-friendly-blink {
+  0%, 48.9%, 51.1%, 100% { opacity: 0; }
+  49.7%, 50.3% { opacity: 1; }
 }
 @keyframes cursor-blink { 50% { opacity: 0; } }
 @keyframes mic-pulse { 50% { box-shadow: 0 0 0 5px rgba(255, 107, 87, 0.12); } }
@@ -699,8 +709,14 @@ noscript { display: block; padding: 20px; color: var(--paper); }
     animation: none;
     transform: translateY(18px) scale(1.6);
   }
+  .portrait[data-state="listening"] .portrait__avatar,
+  .portrait[data-state="thinking"] .portrait__avatar,
+  .portrait[data-state="speaking"] .portrait__avatar {
+    animation: none;
+    transform: translateY(18px) scale(1.6);
+  }
   .portrait__avatar img { object-position: center; }
-  .portrait__mouth { border-width: 1px; box-shadow: inset 0 -1px 0 #d96f62; }
+  .portrait__mouth { box-shadow: inset 0 -1px 0 rgba(217, 111, 98, 0.68); }
   .portrait__wave, .portrait figcaption { display: none; }
   .identity-copy { align-self: center; padding: 0; }
   .identity-copy .eyebrow { margin-bottom: 5px; font-size: 8px; }

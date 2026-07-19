@@ -1,6 +1,6 @@
-import { detectPortraitFeatures } from "./portrait-landmarks.js?v=19";
+import { detectPortraitFeatures } from "./portrait-landmarks.js?v=20";
 
-const ASSET_VERSION = "19";
+const ASSET_VERSION = "20";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 
 const els = {
@@ -91,7 +91,7 @@ function wordVisemes(word) {
     else if (/[aeiyfv]/.test(character)) next = "wide";
     if (visemes[visemes.length - 1] !== next) visemes.push(next);
   });
-  return visemes.length ? visemes.slice(0, 7) : ["open"];
+  return visemes.length ? visemes.slice(0, 4) : ["open"];
 }
 
 function animateWordVisemes(text, charIndex) {
@@ -100,7 +100,7 @@ function animateWordVisemes(text, charIndex) {
   const remainder = text.slice(Number.isFinite(charIndex) ? charIndex : 0);
   const word = remainder.match(/[\p{L}\p{N}']+/u)?.[0] || remainder.trim().split(/\s+/)[0] || "";
   const visemes = wordVisemes(word);
-  const step = Math.max(70, Math.min(115, 420 / visemes.length));
+  const step = Math.max(120, Math.min(170, 560 / visemes.length));
   visemes.forEach((viseme, index) => {
     state.lipTimers.push(window.setTimeout(() => setMouthViseme(viseme), index * step));
   });
@@ -110,14 +110,14 @@ function startLipSync() {
   clearLipTimers();
   window.clearInterval(state.lipFallbackTimer);
   state.lastLipBoundaryAt = 0;
-  const fallbackVisemes = ["open", "wide", "open", "round", "rest"];
+  const fallbackVisemes = ["open", "wide", "open", "round"];
   let frame = 0;
   setMouthViseme("open");
   state.lipFallbackTimer = window.setInterval(() => {
     if (performance.now() - state.lastLipBoundaryAt < 480) return;
     setMouthViseme(fallbackVisemes[frame % fallbackVisemes.length]);
     frame += 1;
-  }, 105);
+  }, 165);
 }
 
 function stopLipSync() {
