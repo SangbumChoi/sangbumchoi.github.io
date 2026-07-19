@@ -1,6 +1,6 @@
-import { detectPortraitFeatures } from "./portrait-landmarks.js?v=20";
+import { detectPortraitFeatures } from "./portrait-landmarks.js?v=21";
 
-const ASSET_VERSION = "20";
+const ASSET_VERSION = "21";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 
 const els = {
@@ -83,15 +83,13 @@ function clearLipTimers() {
 }
 
 function wordVisemes(word) {
-  const visemes = [];
-  Array.from(word.toLowerCase()).forEach((character) => {
-    let next = "open";
-    if (/[bmp]/.test(character)) next = "rest";
-    else if (/[ouqw]/.test(character)) next = "round";
-    else if (/[aeiyfv]/.test(character)) next = "wide";
-    if (visemes[visemes.length - 1] !== next) visemes.push(next);
-  });
-  return visemes.length ? visemes.slice(0, 4) : ["open"];
+  const normalized = word.toLowerCase();
+  const firstVowel = normalized.match(/[aeiouy]/)?.[0] || "a";
+  let primary = "open";
+  if (/[ou]/.test(firstVowel) || /[qw]/.test(normalized)) primary = "round";
+  else if (/[eiy]/.test(firstVowel)) primary = "wide";
+  if (/^[bmp]/.test(normalized)) return ["rest", primary];
+  return primary === "open" ? ["open"] : ["open", primary];
 }
 
 function animateWordVisemes(text, charIndex) {
@@ -100,7 +98,7 @@ function animateWordVisemes(text, charIndex) {
   const remainder = text.slice(Number.isFinite(charIndex) ? charIndex : 0);
   const word = remainder.match(/[\p{L}\p{N}']+/u)?.[0] || remainder.trim().split(/\s+/)[0] || "";
   const visemes = wordVisemes(word);
-  const step = Math.max(120, Math.min(170, 560 / visemes.length));
+  const step = 155;
   visemes.forEach((viseme, index) => {
     state.lipTimers.push(window.setTimeout(() => setMouthViseme(viseme), index * step));
   });
@@ -110,14 +108,14 @@ function startLipSync() {
   clearLipTimers();
   window.clearInterval(state.lipFallbackTimer);
   state.lastLipBoundaryAt = 0;
-  const fallbackVisemes = ["open", "wide", "open", "round"];
+  const fallbackVisemes = ["open", "wide", "rest", "open", "round", "open"];
   let frame = 0;
   setMouthViseme("open");
   state.lipFallbackTimer = window.setInterval(() => {
     if (performance.now() - state.lastLipBoundaryAt < 480) return;
     setMouthViseme(fallbackVisemes[frame % fallbackVisemes.length]);
     frame += 1;
-  }, 165);
+  }, 185);
 }
 
 function stopLipSync() {
@@ -185,7 +183,8 @@ function applyPortraitFeatureAnchors(features) {
   const leftEye = mapBounds(features.leftEye);
   const rightEye = mapBounds(features.rightEye);
   const lips = mapBounds(features.lips);
-  const mouthY = mapPoint(0, features.lips.minY + (features.lips.maxY - features.lips.minY) * 0.35).y;
+  const mouthX = lips.x + lips.width * 0.26;
+  const mouthY = lips.y;
   const style = els.portraitAvatar.style;
   style.setProperty("--left-eye-x", `${leftEye.x}px`);
   style.setProperty("--left-eye-y", `${leftEye.y}px`);
@@ -193,10 +192,10 @@ function applyPortraitFeatureAnchors(features) {
   style.setProperty("--right-eye-y", `${rightEye.y}px`);
   style.setProperty("--eye-width", `${Math.max(3.5, Math.min(36, Math.max(leftEye.width, rightEye.width) * 1.25))}px`);
   style.setProperty("--eye-height", `${Math.max(4, Math.min(20, Math.max(leftEye.height, rightEye.height) * 2.4))}px`);
-  style.setProperty("--mouth-x", `${lips.x}px`);
+  style.setProperty("--mouth-x", `${mouthX}px`);
   style.setProperty("--mouth-y", `${mouthY}px`);
-  style.setProperty("--mouth-width", `${Math.max(7, Math.min(44, lips.width * 0.72))}px`);
-  style.setProperty("--mouth-height", `${Math.max(3, Math.min(10, lips.width * 0.16))}px`);
+  style.setProperty("--mouth-width", `${Math.max(9, Math.min(60, lips.width * 1.08))}px`);
+  style.setProperty("--mouth-height", `${Math.max(5, Math.min(22, Math.max(lips.height * 1.4, lips.width * 0.28)))}px`);
   style.setProperty("--portrait-skin", features.skinColor);
 }
 
