@@ -187,138 +187,39 @@ button { color: inherit; }
 }
 
 .portrait__avatar {
-  --left-eye-x: 43%;
-  --left-eye-y: 47%;
-  --right-eye-x: 53%;
-  --right-eye-y: 47%;
-  --eye-width: 28px;
-  --eye-height: 16px;
-  --mouth-x: 48%;
-  --mouth-y: 59%;
-  --mouth-width: 44px;
-  --mouth-height: 10px;
-  --portrait-skin: rgb(240 177 132);
   position: absolute;
   inset: 0;
   animation: portrait-breathe 8s ease-in-out infinite;
 }
 
-.portrait__avatar img {
+.portrait__avatar img,
+.portrait__mesh {
   width: 100%;
   height: 100%;
   display: block;
+  transition: filter 260ms ease, opacity 140ms ease;
+}
+
+.portrait__avatar img {
   object-fit: cover;
   object-position: center top;
   filter: saturate(0.82) contrast(1.05);
-  transition: filter 260ms ease;
 }
 
-.portrait__mouth {
+.portrait__mesh {
   position: absolute;
   z-index: 2;
-  top: var(--mouth-y);
-  left: var(--mouth-x);
-  width: var(--mouth-width);
-  height: var(--mouth-height);
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
+  inset: 0;
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, -50%);
-  transition: opacity 150ms ease;
+  filter: saturate(0.82) contrast(1.05);
 }
 
-.portrait__mouth::after {
-  content: "";
-  position: absolute;
-  top: 60%;
-  left: 50%;
-  width: 56%;
-  height: 32%;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(50, 23, 25, 0.76);
-  box-shadow: inset 0 -1px 0 rgba(217, 111, 98, 0.42);
-  opacity: 0;
-  transform: translate(-50%, -50%) scale(0.8, 0.12);
-  transform-origin: center;
-  transition: opacity 180ms ease, transform 220ms cubic-bezier(0.22, 0.8, 0.32, 1);
-}
+.portrait[data-mesh="texture-warp"] .portrait__avatar img { opacity: 0; }
+.portrait[data-mesh="texture-warp"] .portrait__mesh { opacity: 1; }
 
-.portrait__eye {
-  position: absolute;
-  z-index: 2;
-  top: var(--left-eye-y);
-  left: var(--left-eye-x);
-  width: var(--eye-width);
-  height: var(--eye-height);
-  border-radius: 50%;
-  background: transparent;
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-}
-
-.portrait__eye--right {
-  top: var(--right-eye-y);
-  left: var(--right-eye-x);
-}
-
-.portrait__eye::before,
-.portrait__eye::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  opacity: 0;
-  pointer-events: none;
-  animation: portrait-friendly-blink 10.5s ease-in-out infinite;
-}
-
-.portrait__eye::before {
-  width: 112%;
-  height: 112%;
-  border-radius: 50%;
-  background: var(--portrait-skin);
-  transform: translate(-50%, -50%) scaleY(0.18);
-}
-
-.portrait__eye::after {
-  width: 64%;
-  height: 1.5px;
-  border-radius: 999px;
-  background: rgba(23, 16, 13, 0.88);
-  transform: translate(-50%, -50%) scaleX(0.82);
-}
-
-.portrait[data-landmarks="mediapipe-478"] .portrait__eye { opacity: 1; }
-
-.portrait[data-state="speaking"] .portrait__mouth {
-  opacity: 0.98;
-}
-
-.portrait[data-state="speaking"][data-viseme="rest"] .portrait__mouth::after {
-  opacity: 0;
-  transform: translate(-50%, -50%) scale(0.8, 0.12);
-}
-
-.portrait[data-state="speaking"][data-viseme="open"] .portrait__mouth::after {
-  opacity: 0.68;
-  transform: translate(-50%, -50%) scale(0.82, 0.6);
-}
-
-.portrait[data-state="speaking"][data-viseme="wide"] .portrait__mouth::after {
-  opacity: 0.56;
-  transform: translate(-50%, -50%) scale(0.94, 0.34);
-}
-
-.portrait[data-state="speaking"][data-viseme="round"] .portrait__mouth::after {
-  opacity: 0.62;
-  transform: translate(-50%, -50%) scale(0.68, 0.52);
-}
-
-.portrait[data-state="listening"] .portrait__avatar img {
+.portrait[data-state="listening"] .portrait__avatar img,
+.portrait[data-state="listening"] .portrait__mesh {
   filter: saturate(1.05) contrast(1.05);
 }
 
@@ -326,7 +227,8 @@ button { color: inherit; }
   animation: portrait-listen 2.4s ease-in-out infinite;
 }
 
-.portrait[data-state="thinking"] .portrait__avatar img {
+.portrait[data-state="thinking"] .portrait__avatar img,
+.portrait[data-state="thinking"] .portrait__mesh {
   filter: saturate(0.65) contrast(1.14);
 }
 
@@ -334,7 +236,8 @@ button { color: inherit; }
   animation: portrait-think 4s ease-in-out infinite;
 }
 
-.portrait[data-state="speaking"] .portrait__avatar img {
+.portrait[data-state="speaking"] .portrait__avatar img,
+.portrait[data-state="speaking"] .portrait__mesh {
   filter: saturate(1) contrast(1.07);
 }
 
@@ -591,10 +494,6 @@ noscript { display: block; padding: 20px; color: var(--paper); }
 @keyframes portrait-listen { 0%, 100% { transform: scale(1.058) rotate(0); } 50% { transform: scale(1.062) rotate(-0.12deg); } }
 @keyframes portrait-think { 0%, 100% { transform: scale(1.058) translateX(0); } 50% { transform: scale(1.062) translateX(-1px); } }
 @keyframes portrait-speak { from { transform: scale(1.058) translateY(0); } to { transform: scale(1.064) translateY(-0.75px); } }
-@keyframes portrait-friendly-blink {
-  0%, 48.9%, 51.1%, 100% { opacity: 0; }
-  49.7%, 50.3% { opacity: 1; }
-}
 @keyframes cursor-blink { 50% { opacity: 0; } }
 @keyframes mic-pulse { 50% { box-shadow: 0 0 0 5px rgba(255, 107, 87, 0.12); } }
 @keyframes loader-spin { to { transform: rotate(360deg); } }
@@ -727,9 +626,6 @@ noscript { display: block; padding: 20px; color: var(--paper); }
   .portrait { width: 72px; height: 72px; grid-template-rows: 1fr; }
   .portrait__media { aspect-ratio: 1; }
   .portrait__avatar {
-    --mouth-y: 35%;
-    --mouth-width: 7px;
-    --mouth-height: 3px;
     animation: none;
     transform: translateY(18px) scale(1.6);
   }
@@ -740,7 +636,7 @@ noscript { display: block; padding: 20px; color: var(--paper); }
     transform: translateY(18px) scale(1.6);
   }
   .portrait__avatar img { object-position: center; }
-  .portrait__mouth::after { box-shadow: none; }
+  .portrait__focus { display: none; }
   .portrait__wave, .portrait figcaption { display: none; }
   .identity-copy { align-self: center; padding: 0; }
   .identity-copy .eyebrow { margin-bottom: 5px; font-size: 8px; }

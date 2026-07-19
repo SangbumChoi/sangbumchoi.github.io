@@ -1,6 +1,7 @@
-import { detectPortraitFeatures } from "./portrait-landmarks.js?v=21";
+import { detectPortraitFeatures } from "./portrait-landmarks.js?v=22";
+import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=22";
 
-const ASSET_VERSION = "21";
+const ASSET_VERSION = "22";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 
 const els = {
@@ -10,8 +11,8 @@ const els = {
   portrait: document.querySelector("#portrait"),
   portraitAvatar: document.querySelector(".portrait__avatar"),
   portraitImage: document.querySelector("#portrait-image"),
+  portraitMesh: document.querySelector("#portrait-mesh"),
   portraitState: document.querySelector("#portrait-state"),
-  portraitMouth: document.querySelector(".portrait__mouth"),
   canvas: document.querySelector("#voice-wave"),
   loader: document.querySelector("#model-loader"),
   modelStatus: document.querySelector("#model-status"),
@@ -58,6 +59,7 @@ const state = {
   fallbackAttempted: false,
   webgpuError: "",
   portraitFeatures: null,
+  portraitAnimator: null,
   portraitResizeObserver: null,
 };
 
@@ -69,12 +71,13 @@ function initializeIcons() {
 function setPortraitState(next, label) {
   els.portrait.dataset.state = next;
   els.portraitState.textContent = label || next.toUpperCase();
+  state.portraitAnimator?.setState(next);
   if (next !== "speaking") setMouthViseme("rest");
 }
 
 function setMouthViseme(viseme = "rest") {
-  if (!els.portraitMouth) return;
   els.portrait.dataset.viseme = viseme;
+  state.portraitAnimator?.setViseme(viseme);
 }
 
 function clearLipTimers() {
@@ -148,68 +151,28 @@ function updateClock() {
   els.localTime.textContent = `${value} KST`;
 }
 
-function objectPositionFactor(value, fallback) {
-  if (!value) return fallback;
-  if (value === "left" || value === "top") return 0;
-  if (value === "right" || value === "bottom") return 1;
-  if (value === "center") return 0.5;
-  if (value.endsWith("%")) return Number.parseFloat(value) / 100;
-  return fallback;
-}
-
-function applyPortraitFeatureAnchors(features) {
-  const media = els.portraitAvatar?.parentElement;
-  const image = els.portraitImage;
-  if (!features || !media || !image?.naturalWidth || !image.naturalHeight) return;
-
-  const width = media.clientWidth;
-  const height = media.clientHeight;
-  const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
-  const fittedWidth = image.naturalWidth * scale;
-  const fittedHeight = image.naturalHeight * scale;
-  const position = getComputedStyle(image).objectPosition.trim().split(/\s+/);
-  const offsetX = (width - fittedWidth) * objectPositionFactor(position[0], 0.5);
-  const offsetY = (height - fittedHeight) * objectPositionFactor(position[1], 0.5);
-  const mapPoint = (x, y) => ({ x: offsetX + x * fittedWidth, y: offsetY + y * fittedHeight });
-  const mapBounds = (bounds) => {
-    const center = mapPoint((bounds.minX + bounds.maxX) / 2, (bounds.minY + bounds.maxY) / 2);
-    return {
-      ...center,
-      width: (bounds.maxX - bounds.minX) * fittedWidth,
-      height: (bounds.maxY - bounds.minY) * fittedHeight,
-    };
-  };
-
-  const leftEye = mapBounds(features.leftEye);
-  const rightEye = mapBounds(features.rightEye);
-  const lips = mapBounds(features.lips);
-  const mouthX = lips.x + lips.width * 0.26;
-  const mouthY = lips.y;
-  const style = els.portraitAvatar.style;
-  style.setProperty("--left-eye-x", `${leftEye.x}px`);
-  style.setProperty("--left-eye-y", `${leftEye.y}px`);
-  style.setProperty("--right-eye-x", `${rightEye.x}px`);
-  style.setProperty("--right-eye-y", `${rightEye.y}px`);
-  style.setProperty("--eye-width", `${Math.max(3.5, Math.min(36, Math.max(leftEye.width, rightEye.width) * 1.25))}px`);
-  style.setProperty("--eye-height", `${Math.max(4, Math.min(20, Math.max(leftEye.height, rightEye.height) * 2.4))}px`);
-  style.setProperty("--mouth-x", `${mouthX}px`);
-  style.setProperty("--mouth-y", `${mouthY}px`);
-  style.setProperty("--mouth-width", `${Math.max(9, Math.min(60, lips.width * 1.08))}px`);
-  style.setProperty("--mouth-height", `${Math.max(5, Math.min(22, Math.max(lips.height * 1.4, lips.width * 0.28)))}px`);
-  style.setProperty("--portrait-skin", features.skinColor);
-}
-
 async function initPortraitLandmarks() {
-  if (!els.portraitImage || !els.portraitAvatar) return;
+  if (!els.portraitImage || !els.portraitMesh || !els.portraitAvatar) return;
   els.portrait.dataset.landmarks = "loading";
+  els.portrait.dataset.mesh = "loading";
   try {
     state.portraitFeatures = await detectPortraitFeatures(els.portraitImage);
-    applyPortraitFeatureAnchors(state.portraitFeatures);
+    state.portraitAnimator = createPortraitMeshAnimator({
+      canvas: els.portraitMesh,
+      image: els.portraitImage,
+      media: els.portraitAvatar.parentElement,
+      features: state.portraitFeatures,
+    });
+    state.portraitAnimator.start();
+    state.portraitAnimator.setState(els.portrait.dataset.state || "idle");
+    state.portraitAnimator.setViseme(els.portrait.dataset.viseme || "rest");
     els.portrait.dataset.landmarks = state.portraitFeatures.source;
-    state.portraitResizeObserver = new ResizeObserver(() => applyPortraitFeatureAnchors(state.portraitFeatures));
+    els.portrait.dataset.mesh = "texture-warp";
+    state.portraitResizeObserver = new ResizeObserver(() => state.portraitAnimator?.resize());
     state.portraitResizeObserver.observe(els.portraitAvatar.parentElement);
   } catch (error) {
     els.portrait.dataset.landmarks = "unavailable";
+    els.portrait.dataset.mesh = "unavailable";
     console.warn("Portrait landmark detection unavailable:", error.message);
   }
 }

@@ -17,40 +17,6 @@ function boundsForConnections(landmarks, connections) {
   };
 }
 
-function sampleSkinTone(image, eyeBounds) {
-  const canvas = document.createElement("canvas");
-  canvas.width = image.naturalWidth;
-  canvas.height = image.naturalHeight;
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context) return "rgb(240 177 132)";
-  context.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-  const minX = Math.max(0, Math.floor((eyeBounds.minX - 0.018) * canvas.width));
-  const maxX = Math.min(canvas.width, Math.ceil((eyeBounds.maxX + 0.018) * canvas.width));
-  const minY = Math.max(0, Math.floor((eyeBounds.minY - 0.018) * canvas.height));
-  const maxY = Math.min(canvas.height, Math.ceil((eyeBounds.maxY + 0.018) * canvas.height));
-  const pixels = context.getImageData(minX, minY, maxX - minX, maxY - minY).data;
-  let red = 0;
-  let green = 0;
-  let blue = 0;
-  let count = 0;
-
-  for (let index = 0; index < pixels.length; index += 4) {
-    const r = pixels[index];
-    const g = pixels[index + 1];
-    const b = pixels[index + 2];
-    const luminance = r * 0.299 + g * 0.587 + b * 0.114;
-    if (luminance < 120 || r < g || g < b) continue;
-    red += r;
-    green += g;
-    blue += b;
-    count += 1;
-  }
-
-  if (!count) return "rgb(240 177 132)";
-  return `rgb(${Math.round(red / count)} ${Math.round(green / count)} ${Math.round(blue / count)})`;
-}
-
 export async function detectPortraitFeatures(image) {
   await image.decode();
   const { FaceLandmarker, FilesetResolver } = await import(MEDIAPIPE_MODULE);
@@ -79,12 +45,6 @@ export async function detectPortraitFeatures(image) {
       leftEye,
       rightEye,
       lips,
-      skinColor: sampleSkinTone(image, {
-        minX: Math.min(leftEye.minX, rightEye.minX),
-        minY: Math.min(leftEye.minY, rightEye.minY),
-        maxX: Math.max(leftEye.maxX, rightEye.maxX),
-        maxY: Math.max(leftEye.maxY, rightEye.maxY),
-      }),
     };
   } finally {
     landmarker.close();
