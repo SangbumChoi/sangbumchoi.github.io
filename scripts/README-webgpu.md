@@ -103,8 +103,8 @@ GPU/low-memory device, an 8 GB integrated device, and the development Mac.
 
 On 2026-07-20, visible Chromium reported the 32 GB development Mac as an Apple
 Metal 3 adapter with 10 logical CPU cores, `shader-f16`, and a non-fallback
-adapter. The controlled run used the same deterministic prompt after clearing
-conversation state in both tabs:
+adapter. The controlled run audited implementation commit `7370756` and used
+the same deterministic prompt after clearing conversation state in both tabs:
 
 | Measurement | Result |
 | --- | ---: |
