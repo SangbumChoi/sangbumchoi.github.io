@@ -168,7 +168,7 @@ try {
       const status = await page.locator("#model-status").textContent();
       throw new Error(`Profile answer timeout for "${testCase.prompt}"; model status: ${status}; ${error.message}`);
     }
-    const answer = (await answers.last().innerText()).trim();
+    const answer = (await answers.last().locator(".message__body").innerText()).trim();
     const missing = testCase.terms.filter((term) => !answer.toLowerCase().includes(term.toLowerCase()));
     if (missing.length) {
       throw new Error(`Grounded answer for "${testCase.prompt}" is missing ${missing.join(", ")}: ${answer}`);
