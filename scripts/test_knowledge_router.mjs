@@ -64,6 +64,17 @@ test("routes neutral factual questions that are not definitions to search", () =
   assert.equal(externalSearchTerm("Who wrote Pride and Prejudice?"), "Pride and Prejudice");
 });
 
+test("does not treat generic work verbs as Daniel profile references", () => {
+  const route = classifyKnowledgeIntent("Who created Python?", knowledge);
+  assert.equal(route.type, "external_knowledge");
+  assert.equal(externalSearchTerm("Who created Python?"), "Python");
+});
+
+test("routes second-person portfolio questions to Daniel's profile", () => {
+  const route = classifyKnowledgeIntent("What did you build at Toss Bank?", knowledge);
+  assert.equal(route.type, "profile");
+});
+
 test("known aliases are matched case-insensitively", () => {
   assert.equal(findKnownEntity("Explain VIT POSE", knowledge).id, "vitpose");
 });

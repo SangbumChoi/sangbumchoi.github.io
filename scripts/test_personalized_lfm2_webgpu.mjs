@@ -150,6 +150,12 @@ try {
       terms: ["novel", "Jane Austen", "Wikipedia source"],
       forbiddenTerms: ["2005 period romance film", "Daniel"],
     },
+    {
+      prompt: "Who created the Python programming language?",
+      source: "wikipedia-evidence",
+      terms: ["Python", "Guido van Rossum", "Wikipedia source"],
+      forbiddenTerms: ["Daniel", "portfolio"],
+    },
   ];
   const groundedResults = [];
   for (const testCase of groundedCases) {

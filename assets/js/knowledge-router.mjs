@@ -1,6 +1,6 @@
 const PROFILE_NAME_PATTERN = /\b(?:daniel|sangbum|sangbum daniel choi|choi)\b|최상범|상범|다니엘/i;
-const PROFILE_PRONOUN_PATTERN = /\b(?:he|him|his)\b|그가|그의|본인/i;
-const PROFILE_WORK_PATTERN = /\b(?:portfolio|resume|cv|career|experience|contribut(?:e|ed|ion|ions)|work(?:ed)?|role|build|built|create|created|implement(?:ed|ation)?|integrat(?:e|ed|ion)|author|study|studied|attend(?:ed)?|found(?:ed|er)|startup)\b|경력|기여|작업|역할|개발|구현|통합|저자|연구|공부|재학|창업/i;
+const PROFILE_PRONOUN_PATTERN = /\b(?:he|him|his|you|your)\b|그가|그의|본인|당신|너의/i;
+const PROFILE_SCOPE_PATTERN = /\b(?:portfolio|resume|cv|career|experience|publications?|education|startup history|current (?:role|employer)|(?:open.?source|hugging face) contributions?)\b|포트폴리오|이력서|경력|논문|학력|오픈.?소스 기여/i;
 const DEFINITION_PATTERN = /^\s*(?:what|who|where)\s+(?:is|are|was|were)\b|^\s*(?:define|explain)\b|^\s*(?:what does|where does)\b|무엇|뭐야|뭔가요|어디|설명(?:해|해줘|해주세요)/i;
 const PRIVATE_PATTERN = /\b(?:bank account|account number|height|weight|relationship status|girlfriend|boyfriend|spouse|wife|husband|family|home address|phone number|salary|exact birthday|social security|passport)\b|계좌|키|몸무게|연애|여자친구|남자친구|배우자|가족|집 주소|전화번호|연봉|생일|주민등록|여권/i;
 const GENERAL_LOOKUP_PATTERN = /^\s*(?!(?:what|who)\s+should\b)(?:what|who|where|when)\b|^\s*(?:define|explain|tell me about|teach me about)\b|무엇|뭐야|뭔가요|어디|누가|언제|설명(?:해|해줘|해주세요)/i;
@@ -33,7 +33,7 @@ export function findKnownEntity(prompt, knowledge) {
 function asksAboutDaniel(prompt) {
   return PROFILE_NAME_PATTERN.test(prompt)
     || PROFILE_PRONOUN_PATTERN.test(prompt)
-    || PROFILE_WORK_PATTERN.test(prompt);
+    || PROFILE_SCOPE_PATTERN.test(prompt);
 }
 
 function usesEntityPronoun(prompt) {
