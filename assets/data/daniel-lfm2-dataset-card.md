@@ -45,7 +45,7 @@ public retrieval when evidence is absent, and declines private-person requests.
 | `sft` | `train` | 268 | Profile-grounded conversational fine-tuning |
 | `routing_sft` | `train` | 28 | Definition, contribution, and retrieval routing pairs |
 | `behavior_eval` | `validation` | 36 | Training-time behavior gate |
-| `routing_eval` | `validation` | 9 | Entity-held-out evidence and retrieval gate |
+| `routing_eval` | `validation` | 9 | Evidence-condition and lexical retrieval holdouts |
 | `strict_test` | `test` | 51 | Public post-training benchmark |
 
 The strict test is never included in fine-tuning. It covers factual composition,
@@ -86,9 +86,10 @@ fact. `refuse` covers private-person data, unsafe requests, visitor identificati
 and boundary overrides. The final assistant message is the supervised completion.
 
 The routing split uses contrastive pairs such as "What is RT-DETR?" versus
-"What did Daniel contribute to RT-DETR?" DINOv3 and DETA definitions are withheld
-from routing SFT and supplied only as evidence in evaluation. This entity-level
-holdout is stricter than randomly withholding paraphrases of a memorized entity.
+"What did Daniel contribute to RT-DETR?" DINOv3 and DETA appear in routing SFT
+only as no-evidence retrieval requests; their definitions are withheld until
+evaluation supplies them as evidence. CLIP, NeRF, and Carnegie Mellon University
+are lexical holdouts that must trigger retrieval without supplied evidence.
 
 ## Strict test schema
 
@@ -125,8 +126,8 @@ the source URLs and retrieval date when updating them.
 Actions training run. `metrics/strict-evaluation.json`, when present, contains
 post-training results for expected fact-group recall, forbidden-claim avoidance,
 behavior pass rate, Korean response rate, and per-behavior scores.
-Published checkpoint metrics may predate the three-case ZZAZZ strict-test extension
-and should retain their dataset revision when compared with later runs.
+The published metrics correspond to portfolio revision `e54fa04` and the complete
+51-case strict set, including the ZZAZZ product and multi-turn cases.
 
 ## Related model
 
