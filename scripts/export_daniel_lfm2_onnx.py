@@ -31,7 +31,7 @@ def write_model_card(export_dir: Path, source: str) -> None:
     source_reference = (
         source
         if not Path(source).exists()
-        else "SangbumChoi/sangbumchoi.github.io release daniel-lfm2-source-v2"
+        else DEFAULT_SOURCE
     )
     source_link = (
         f"[{source}](https://huggingface.co/{source})"
