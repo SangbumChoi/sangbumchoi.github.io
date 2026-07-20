@@ -113,7 +113,7 @@ The browser executes that request, retrieves evidence, replaces the control toke
 
 The validator checks duplicate prompts, role order, known profile keys, evidence presence, unsupported numeric claims, exact tool-call syntax, bilingual coverage, and minimum behavior counts. Profile and external evidence are separate fields so a number found in one cannot silently justify a claim in the other.
 
-The trainer holds out examples inside each behavior and balances the effective stream differently from the original personalization-only run. Every minority behavior contributes at least 64 examples per epoch, while the 177 profile answers are not multiplied further. This reduces the prior that every question must produce a biography without discarding the broad profile corpus.
+The first trainer held out examples inside each behavior and balanced the effective stream differently from the original personalization-only run. Every minority behavior contributed at least 64 examples per epoch, while the 177 profile answers were not multiplied further. This reduced the prior that every question must produce a biography without discarding the broad profile corpus, but the later loss audit below found that this implementation repeated too many identical minority examples.
 
 Most importantly, evaluation holds out evidence conditions, not just paraphrases. DINOv3 and DETA appear in routing SFT only as no-evidence requests that must trigger public retrieval; their definitions are withheld until evaluation. The evaluation cases then supply that unseen evidence and test whether the model switches from search to grounded synthesis without inventing a relationship to me. CLIP, NeRF, and Carnegie Mellon University provide a separate lexical holdout: none appears in SFT, and each must trigger a search request when no evidence is supplied.
 
@@ -144,6 +144,18 @@ System policy, profile context, retrieved evidence, and visitor tokens are maske
 ![Daniel LFM2 train and validation loss]({{ '/assets/images/daniel-lfm2-loss.png' | relative_url }})
 
 This chart and the committed [raw metrics](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/data/daniel-lfm2-training-metrics.json) come from routing revision `e54fa04`. Validation loss moved from `0.754` at epoch 1 to `0.536` at epoch 2, then rose to `0.620` at epoch 3, so the trainer restored epoch 2 rather than publishing the more overfit final epoch. Reported average training loss was `0.490`. The CPU GitHub runner took 15,045 seconds, about 4 hours 11 minutes, for the balanced three-epoch stream. The merged checkpoint then passed both behavior gates and the untouched strict set before its symmetric-Q4 ONNX export passed a CPU inference smoke test.
+
+### Why the validation curve is not smooth
+
+The curve has only three validation points, and each point was computed from ten examples: at most two from each behavior. The [new diagnostic script](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/analyze_daniel_lfm2_data.py) also reconstructs the effective sampler. Of 431 training slots per epoch, 145, or `33.6%`, were repeated slots. Evidence-grounded definitions were especially concentrated: ten unique training records were cycled to 64 slots, a `6.4x` repeat factor. Training loss continued to fall while the final validation loss rose `15.7%` above the epoch-2 minimum.
+
+That is evidence of post-epoch-2 overfitting, but it is not enough to claim a precisely measured generalization curve. A ten-example validation average has high variance, the behavior groups have very different response lengths, and the training mixture differs sharply from the validation mixture. More generated data alone would not repair those measurement problems.
+
+The retry is based on a narrower reading of synthetic-data research. [Self-Instruct](https://aclanthology.org/2023.acl-long.754/) generates and filters diverse instructions rather than duplicating seeds. [LIMA](https://papers.neurips.cc/paper_files/paper/2023/hash/ac662d74829e4407ce1d126477f4a03a-Abstract-Conference.html) shows that a small carefully curated alignment set can outperform a much larger noisy one. [AlpaGasus](https://arxiv.org/abs/2307.08701) likewise reports better results after filtering 52,000 examples to 9,000 higher-quality examples, and [DEITA](https://proceedings.iclr.cc/paper_files/paper/2024/hash/6091f2bb355e960600f62566ac0e2862-Abstract-Conference.html) frames selection around quality, complexity, and diversity. The practical conclusion here is to expand coverage, not duplicate frequency.
+
+The [Colab GPU notebook](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/notebooks/daniel_lfm2_gpu_retraining.ipynb) therefore uses a 4-bit Qwen3-4B teacher to generate **questions only**. Target answers remain curated, so a teacher hallucination cannot silently become a profile fact. New entity-definition seeds come from the cited entity index, while unrelated public topics target the search-tool protocol rather than memorized world facts. Exact duplicates, near duplicates, wrong-language prompts, and meta-instructions are rejected. Every variation from one seed or scenario family remains entirely in train or validation.
+
+The target experiment uses roughly 1,820 training records and 300 validation records across the five behaviors, with equal-size behavior slices for checkpoint selection and full per-behavior loss diagnostics. It evaluates every 25 optimizer steps, applies two-evaluation early stopping, and sweeps `5e-5`, `1e-4`, and `2e-4` on both LFM2-350M and [LFM2.5-350M](https://huggingface.co/LiquidAI/LFM2.5-350M). This is an experiment plan, not a reported result: the deployed checkpoint and its metrics remain unchanged until a Colab run meets or exceeds every frozen strict baseline gate.
 
 ```text
 profile SFT + routing SFT
@@ -256,6 +268,9 @@ The complete implementation is reproducible from the repository:
 - [Dataset validators](https://github.com/SangbumChoi/sangbumchoi.github.io/tree/master/scripts)
 - [Strict evaluator](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/evaluate_daniel_lfm2_test.py)
 - [Loss plotting script](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/plot_daniel_lfm2_metrics.py)
+- [GPU data-generation and ablation notebook](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/notebooks/daniel_lfm2_gpu_retraining.ipynb)
+- [Synthetic prompt generator](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/generate_daniel_lfm2_synthetic.py)
+- [Loss and leakage diagnostic](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/analyze_daniel_lfm2_data.py)
 - [Merged LFM2 checkpoint](https://huggingface.co/danelcsb/daniel-lfm2-350m)
 - [Q4 browser model on Hugging Face](https://huggingface.co/danelcsb/daniel-lfm2-350m-ONNX)
 - [Q4 browser model release](https://github.com/SangbumChoi/sangbumchoi.github.io/releases/tag/daniel-lfm2-onnx-v1)

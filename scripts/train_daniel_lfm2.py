@@ -29,7 +29,7 @@ import torch
 from datasets import Dataset
 from huggingface_hub import HfApi
 from peft import LoraConfig, PeftModel
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, EarlyStoppingCallback
 from trl import SFTConfig, SFTTrainer
 
 
@@ -55,6 +55,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", default="LiquidAI/LFM2-350M")
     parser.add_argument("--dataset", default="assets/data/daniel-lfm2-sft.jsonl")
     parser.add_argument("--routing-dataset", default="assets/data/daniel-lfm2-routing-sft.jsonl")
+    parser.add_argument("--prepared-train")
+    parser.add_argument("--prepared-validation")
     parser.add_argument("--profile", default="assets/data/daniel-profile.json")
     parser.add_argument("--eval-cases", default="assets/data/daniel-lfm2-eval.jsonl")
     parser.add_argument("--routing-eval", default="assets/data/daniel-lfm2-routing-eval.jsonl")
@@ -66,6 +68,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", default="artifacts/daniel-lfm2-350m")
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--max-length", type=int, default=1152)
+    parser.add_argument("--learning-rate", type=float, default=2e-4)
+    parser.add_argument("--batch-size", type=int, default=1)
+    parser.add_argument("--eval-batch-size", type=int, default=1)
+    parser.add_argument("--gradient-accumulation-steps", type=int, default=4)
+    parser.add_argument("--warmup-ratio", type=float, default=0.1)
+    parser.add_argument("--weight-decay", type=float, default=0.0)
+    parser.add_argument("--eval-steps", type=int, default=0)
+    parser.add_argument("--early-stopping-patience", type=int, default=0)
+    parser.add_argument("--lora-rank", type=int, default=16)
+    parser.add_argument("--lora-alpha", type=int, default=32)
+    parser.add_argument("--lora-dropout", type=float, default=0.05)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--merge-only", action="store_true")
     parser.add_argument("--skip-behavior-eval", action="store_true")
@@ -204,7 +217,67 @@ def load_training_records(
     return Dataset.from_list(train_records), Dataset.from_list(eval_records), counts
 
 
+def normalized_training_record(record: dict, profile: dict) -> dict:
+    history, completion = split_training_messages(record["messages"], record["id"])
+    return {
+        "prompt": [
+            {
+                "role": "system",
+                "content": system_prompt(
+                    profile, record["context_keys"], record.get("evidence")
+                ),
+            },
+            *history,
+        ],
+        "completion": [completion],
+        "behavior": record["behavior"],
+    }
+
+
+def load_prepared_training_records(
+    train_path: Path,
+    validation_path: Path,
+    profile: dict,
+    tokenizer: AutoTokenizer,
+    max_length: int,
+) -> tuple[Dataset, dict[str, Dataset], Counter]:
+    train_source = read_jsonl(train_path)
+    validation_source = read_jsonl(validation_path)
+    if not train_source or not validation_source:
+        raise ValueError("Prepared train and validation files must both contain records.")
+    validate_training_token_budget(
+        train_source + validation_source, profile, tokenizer, max_length
+    )
+    train_records = [normalized_training_record(record, profile) for record in train_source]
+    validation_records = [
+        normalized_training_record(record, profile) for record in validation_source
+    ]
+    grouped: dict[str, list[dict]] = {
+        behavior: [
+            {key: value for key, value in record.items() if key != "behavior"}
+            for record in validation_records
+            if record["behavior"] == behavior
+        ]
+        for behavior in sorted({record["behavior"] for record in validation_records})
+    }
+    if set(grouped) != {record["behavior"] for record in train_records}:
+        raise ValueError("Prepared validation must cover every training behavior.")
+    macro_size = min(len(records) for records in grouped.values())
+    macro_records = [record for records in grouped.values() for record in records[:macro_size]]
+    eval_datasets = {"macro": Dataset.from_list(macro_records)}
+    eval_datasets.update(
+        {behavior: Dataset.from_list(records) for behavior, records in grouped.items()}
+    )
+    counts = Counter(record["behavior"] for record in train_records)
+    train_dataset = Dataset.from_list(
+        [{key: value for key, value in record.items() if key != "behavior"} for record in train_records]
+    )
+    return train_dataset, eval_datasets, counts
+
+
 def model_dtype() -> torch.dtype:
+    if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+        return torch.bfloat16
     if torch.cuda.is_available() or torch.backends.mps.is_available():
         return torch.float16
     return torch.float32
@@ -399,24 +472,44 @@ def write_training_metrics(
                     if key in entry
                 }
             )
-        if "eval_loss" in entry:
-            eval_loss = entry["eval_loss"]
+        loss_keys = [
+            key
+            for key in entry
+            if key == "eval_loss" or (key.startswith("eval_") and key.endswith("_loss"))
+        ]
+        for loss_key in loss_keys:
+            eval_loss = entry[loss_key]
+            dataset_name = (
+                "legacy" if loss_key == "eval_loss" else loss_key[len("eval_") : -len("_loss")]
+            )
             point = {
                 "epoch": entry.get("epoch"),
+                "step": entry.get("step"),
+                "dataset": dataset_name,
                 "loss": eval_loss if is_finite_number(eval_loss) else None,
             }
-            if "eval_mean_token_accuracy" in entry:
-                point["mean_token_accuracy"] = entry["eval_mean_token_accuracy"]
+            accuracy_key = (
+                "eval_mean_token_accuracy"
+                if loss_key == "eval_loss"
+                else f"eval_{dataset_name}_mean_token_accuracy"
+            )
+            if accuracy_key in entry:
+                point["mean_token_accuracy"] = entry[accuracy_key]
             validation.append(point)
     finite_validation = [point for point in validation if point["loss"] is not None]
-    best = min(finite_validation, key=lambda point: point["loss"]) if finite_validation else None
+    selection_points = [
+        point for point in finite_validation if point["dataset"] in {"macro", "legacy"}
+    ]
+    best = min(selection_points, key=lambda point: point["loss"]) if selection_points else None
     payload = {
         "source": {
             "training_revision": training_revision,
             "epochs": epochs,
             "max_length": max_length,
             "best_checkpoint_epoch": best["epoch"] if best else None,
-            "selection_metric": "eval_loss",
+            "selection_metric": "eval_macro_loss" if any(
+                point["dataset"] == "macro" for point in validation
+            ) else "eval_loss",
         },
         "train": train,
         "validation": validation,
@@ -437,11 +530,16 @@ def is_finite_number(value: object) -> bool:
 
 
 def require_finite_validation_loss(log_history: list[dict]) -> None:
-    validation = [entry for entry in log_history if "eval_loss" in entry]
+    validation = [
+        {"epoch": entry.get("epoch"), "loss": value}
+        for entry in log_history
+        for key, value in entry.items()
+        if key == "eval_loss" or key == "eval_macro_loss"
+    ]
     invalid_epochs = [
         entry.get("epoch")
         for entry in validation
-        if not is_finite_number(entry["eval_loss"])
+        if not is_finite_number(entry["loss"])
     ]
     if not validation or invalid_epochs:
         raise RuntimeError(
@@ -474,44 +572,70 @@ def main() -> None:
     dtype = model_dtype()
     behavior_counts: Counter
     if not args.merge_only:
-        train_data, loss_eval_data, behavior_counts = load_training_records(
-            [dataset_path, routing_dataset_path],
-            profile,
-            tokenizer,
-            args.max_length,
-            args.seed,
-        )
+        if bool(args.prepared_train) != bool(args.prepared_validation):
+            raise ValueError("Use --prepared-train and --prepared-validation together.")
+        if args.prepared_train:
+            train_data, loss_eval_data, behavior_counts = load_prepared_training_records(
+                Path(args.prepared_train),
+                Path(args.prepared_validation),
+                profile,
+                tokenizer,
+                args.max_length,
+            )
+            selection_metric = "eval_macro_loss"
+        else:
+            train_data, loss_eval_data, behavior_counts = load_training_records(
+                [dataset_path, routing_dataset_path],
+                profile,
+                tokenizer,
+                args.max_length,
+                args.seed,
+            )
+            selection_metric = "eval_loss"
         model = AutoModelForCausalLM.from_pretrained(args.model, dtype=dtype)
         model.config.use_cache = False
+        use_step_evaluation = args.eval_steps > 0
         config = SFTConfig(
             output_dir=str(adapter_dir),
             num_train_epochs=args.epochs,
-            per_device_train_batch_size=1,
-            per_device_eval_batch_size=1,
-            gradient_accumulation_steps=4,
-            learning_rate=2e-4,
-            warmup_ratio=0.1,
-            logging_steps=2,
-            eval_strategy="epoch",
-            save_strategy="epoch",
+            per_device_train_batch_size=args.batch_size,
+            per_device_eval_batch_size=args.eval_batch_size,
+            gradient_accumulation_steps=args.gradient_accumulation_steps,
+            learning_rate=args.learning_rate,
+            warmup_ratio=args.warmup_ratio,
+            weight_decay=args.weight_decay,
+            logging_steps=5 if use_step_evaluation else 2,
+            eval_on_start=bool(args.prepared_train),
+            eval_strategy="steps" if use_step_evaluation else "epoch",
+            eval_steps=args.eval_steps if use_step_evaluation else None,
+            save_strategy="steps" if use_step_evaluation else "epoch",
+            save_steps=args.eval_steps if use_step_evaluation else 500,
             save_total_limit=2,
             load_best_model_at_end=True,
-            metric_for_best_model="eval_loss",
+            metric_for_best_model=selection_metric,
             greater_is_better=False,
             max_length=args.max_length,
             completion_only_loss=True,
-            bf16=False,
-            fp16=torch.cuda.is_available(),
+            bf16=dtype == torch.bfloat16,
+            fp16=dtype == torch.float16 and torch.cuda.is_available(),
+            group_by_length=True,
             report_to="none",
             seed=args.seed,
         )
         lora = LoraConfig(
-            r=16,
-            lora_alpha=32,
-            lora_dropout=0.05,
+            r=args.lora_rank,
+            lora_alpha=args.lora_alpha,
+            lora_dropout=args.lora_dropout,
             target_modules="all-linear",
             task_type="CAUSAL_LM",
         )
+        callbacks = []
+        if args.early_stopping_patience > 0:
+            callbacks.append(
+                EarlyStoppingCallback(
+                    early_stopping_patience=args.early_stopping_patience
+                )
+            )
         trainer = SFTTrainer(
             model=model,
             args=config,
@@ -519,6 +643,7 @@ def main() -> None:
             eval_dataset=loss_eval_data,
             processing_class=tokenizer,
             peft_config=lora,
+            callbacks=callbacks,
         )
         train_result = trainer.train()
         write_training_metrics(

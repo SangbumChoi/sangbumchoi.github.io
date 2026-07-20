@@ -1,0 +1,43 @@
+{
+  "version": 3,
+  "teacher_model": "Qwen/Qwen3-4B-Instruct-2507",
+  "student_candidates": [
+    "LiquidAI/LFM2-350M",
+    "LiquidAI/LFM2.5-350M"
+  ],
+  "target_train_records": {
+    "answer": 700,
+    "ground_external": 280,
+    "retrieve": 280,
+    "unknown": 280,
+    "refuse": 280
+  },
+  "target_validation_records": {
+    "answer": 60,
+    "ground_external": 60,
+    "retrieve": 60,
+    "unknown": 60,
+    "refuse": 60
+  },
+  "validation_seed_fraction": 0.15,
+  "minimum_validation_seeds_per_behavior": 3,
+  "maximum_prompt_token_jaccard": 0.82,
+  "maximum_generation_attempts_per_seed": 12,
+  "generation_rounds": 3,
+  "minimum_target_fraction": 0.9,
+  "language_target": {
+    "en": 0.7,
+    "ko": 0.3
+  },
+  "learning_rate_sweep": [
+    0.00005,
+    0.0001,
+    0.0002
+  ],
+  "selection_order": [
+    "strict_pass_rate",
+    "macro_behavior_pass_rate",
+    "macro_validation_loss",
+    "hallucination_guard_rate"
+  ]
+}

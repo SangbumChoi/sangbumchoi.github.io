@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -64,14 +65,20 @@ def main() -> None:
     args = parse_args()
     metrics = json.loads(args.metrics.read_text(encoding="utf-8"))
     train = metrics["train"]
-    validation = metrics["validation"]
+    validation = [
+        point
+        for point in metrics["validation"]
+        if point.get("dataset", "legacy") in {"macro", "legacy"}
+    ]
+    if not train or not validation:
+        raise ValueError("Metrics need finite train and macro/legacy validation points")
     train_smoothed = moving_average([point["loss"] for point in train])
 
     image = Image.new("RGB", (WIDTH, HEIGHT), BACKGROUND)
     draw = ImageDraw.Draw(image)
     left, top, right, bottom = PLOT
-    x_max = 3.0
-    y_max = 2.0
+    x_max = max(float(point["epoch"]) for point in train + validation)
+    y_max = max(2.0, max(float(point["loss"]) for point in train + validation) * 1.05)
 
     def xy(epoch: float, loss: float) -> tuple[int, int]:
         x = left + int((epoch / x_max) * (right - left))
@@ -90,7 +97,7 @@ def main() -> None:
         _, y = xy(0, tick)
         draw.line((left, y, right, y), fill=GRID, width=2)
         draw.text((65, y - 13), f"{tick:.1f}", fill=MUTED, font=font(22))
-    for epoch in (0, 1, 2, 3):
+    for epoch in range(math.ceil(x_max) + 1):
         x, _ = xy(epoch, 0)
         draw.line((x, top, x, bottom), fill=GRID, width=2)
         draw.text((x - 8, bottom + 20), str(epoch), fill=MUTED, font=font(22))

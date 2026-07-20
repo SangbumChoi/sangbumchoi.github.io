@@ -15,9 +15,12 @@ definitions grounded in supplied external evidence, public-search tool requests,
 missing Daniel-specific facts, and privacy or safety refusals. Contrastive pairs
 separate questions such as "What is RT-DETR?" from "What did Daniel contribute
 to RT-DETR?" DINOv3 and DETA are held out by entity for the evidence-synthesis
-gate. Small behavior groups are repeated to at least 64 examples per epoch so
-the much larger profile corpus does not teach that every noun is about Daniel.
-Loss is computed only on the assistant completion.
+gate. The first evaluated run repeated small behavior groups to at least 64
+examples per epoch. A later audit found that 145 of 431 effective slots per
+epoch were repeats, including a 6.4x repeat factor for evidence-grounded
+definitions. The v3 generator replaces cyclic oversampling with distinct
+prompts while keeping curated answers fixed. Loss is computed only on the
+assistant completion.
 
 ```sh
 python3 scripts/validate_daniel_lfm2_data.py
@@ -51,10 +54,51 @@ both paths. It writes both the adapter
 and a merged Transformers checkpoint. Generated artifacts are intentionally
 excluded from Git.
 
+## Colab GPU data generation and ablation
+
+Open
+[`notebooks/daniel_lfm2_gpu_retraining.ipynb`](../notebooks/daniel_lfm2_gpu_retraining.ipynb)
+in Colab with a GPU runtime. The notebook performs five stages:
+
+1. reconstruct the old sampling mixture and loss diagnostics;
+2. refresh source availability without automatically trusting scraped text;
+3. use a 4-bit Qwen3-4B teacher to paraphrase prompts only;
+4. build scenario-family-disjoint train and validation sets and compare
+   LFM2-350M with LFM2.5-350M at `5e-5`, `1e-4`, and `2e-4`;
+5. rank candidates against the currently deployed frozen strict-test baseline.
+
+The teacher never writes a target answer. Every answer, evidence object,
+profile key, retrieval token, and behavior comes from curated seed data.
+Generated prompts are filtered for language, length, exact duplicates, and
+token overlap. Every variation from one seed remains in the same split.
+
+Run the local, model-free parts before allocating a GPU:
+
+```sh
+python3 scripts/analyze_daniel_lfm2_data.py
+python3 scripts/generate_daniel_lfm2_synthetic.py --seed-only
+```
+
+The prepared-data trainer uses a balanced validation pool for checkpoint
+selection, also logs full per-behavior loss, evaluates every configured number
+of optimizer steps, and supports early stopping:
+
+```sh
+python3 scripts/train_daniel_lfm2.py \
+  --model LiquidAI/LFM2.5-350M \
+  --prepared-train artifacts/daniel-lfm2-v3/train.jsonl \
+  --prepared-validation artifacts/daniel-lfm2-v3/validation.jsonl \
+  --batch-size 8 --gradient-accumulation-steps 4 \
+  --learning-rate 1e-4 --eval-steps 25 --early-stopping-patience 2
+```
+
 ## Train and publish without using local memory
 
-Push changes to the dataset, profile, trainer, validator, exporter, or
-`.github/workflows/train-publish-daniel-lfm2.yml` on `master`. The workflow:
+The GitHub Actions CPU workflow is manual because the first three-epoch run took
+about four hours and should not be repeated for every data-pipeline edit. The
+Colab notebook is the primary experiment path. Dispatch
+`.github/workflows/train-publish-daniel-lfm2.yml` only for the legacy release
+path after reviewing a candidate. The workflow:
 
 1. validates every training and held-out record against the profile schema;
 2. trains and merges LFM2-350M on a GitHub-hosted runner;

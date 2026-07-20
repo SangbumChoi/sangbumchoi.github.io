@@ -153,6 +153,38 @@ def validate_eval(records: list[dict], profile: dict, training_prompts: set[str]
     return counts
 
 
+def scenario_family(record: dict) -> str:
+    return record.get("generation", {}).get("scenario_family", f"seed:{record['id']}")
+
+
+def validate_prepared_split(train: list[dict], validation: list[dict], profile: dict) -> dict:
+    train_counts = validate_training(train, profile)
+    validation_counts = validate_training(validation, profile)
+    train_ids = {record["id"] for record in train}
+    validation_ids = {record["id"] for record in validation}
+    overlapping_ids = sorted(train_ids & validation_ids)
+    train_prompts = {final_user_prompt(record).strip().lower() for record in train}
+    validation_prompts = {final_user_prompt(record).strip().lower() for record in validation}
+    overlapping_prompts = sorted(train_prompts & validation_prompts)
+    train_families = {scenario_family(record) for record in train}
+    validation_families = {scenario_family(record) for record in validation}
+    overlapping_families = sorted(train_families & validation_families)
+    if overlapping_ids or overlapping_prompts or overlapping_families:
+        raise ValueError(
+            "Prepared split leakage: "
+            f"ids={overlapping_ids[:5]}, prompts={overlapping_prompts[:5]}, "
+            f"scenario_families={overlapping_families[:5]}"
+        )
+    return {
+        "train_records": len(train),
+        "train_behaviors": dict(train_counts),
+        "validation_records": len(validation),
+        "validation_behaviors": dict(validation_counts),
+        "scenario_family_overlap": 0,
+        "exact_prompt_overlap": 0,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=Path, default=Path("assets/data/daniel-lfm2-sft.jsonl"))
@@ -168,8 +200,20 @@ def main() -> None:
         default=Path("assets/data/daniel-lfm2-routing-eval.jsonl"),
     )
     parser.add_argument("--profile", type=Path, default=Path("assets/data/daniel-profile.json"))
+    parser.add_argument("--prepared-train", type=Path)
+    parser.add_argument("--prepared-validation", type=Path)
     args = parser.parse_args()
     profile = json.loads(args.profile.read_text(encoding="utf-8"))
+    if bool(args.prepared_train) != bool(args.prepared_validation):
+        raise ValueError("Use --prepared-train and --prepared-validation together")
+    if args.prepared_train:
+        summary = validate_prepared_split(
+            load_jsonl(args.prepared_train),
+            load_jsonl(args.prepared_validation),
+            profile,
+        )
+        print(json.dumps(summary, indent=2, sort_keys=True))
+        return
     training = load_jsonl(args.dataset) + load_jsonl(args.routing_dataset)
     evaluation = load_jsonl(args.eval) + load_jsonl(args.routing_eval)
     training_prompts = {

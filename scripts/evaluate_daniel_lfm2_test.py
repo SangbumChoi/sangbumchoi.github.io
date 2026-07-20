@@ -45,6 +45,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--test", type=Path, default=Path("assets/data/daniel-lfm2-test.jsonl"))
     parser.add_argument("--output", type=Path, default=Path("artifacts/daniel-lfm2-strict-evaluation.json"))
     parser.add_argument("--max-new-tokens", type=int, default=100)
+    parser.add_argument("--device", choices=("auto", "cpu", "cuda", "mps"), default="auto")
     parser.add_argument("--minimum-strict-score", type=float, default=0.0)
     parser.add_argument("--minimum-answer-score", type=float, default=0.0)
     parser.add_argument("--minimum-retrieve-score", type=float, default=0.0)
@@ -70,8 +71,26 @@ def rate(numerator: int, denominator: int) -> float:
     return numerator / denominator if denominator else 0.0
 
 
+def evaluation_device(requested: str) -> torch.device:
+    if requested != "auto":
+        return torch.device(requested)
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
 def main() -> None:
     args = parse_args()
+    device = evaluation_device(args.device)
+    dtype = (
+        torch.bfloat16
+        if device.type == "cuda" and torch.cuda.is_bf16_supported()
+        else torch.float16
+        if device.type in {"cuda", "mps"}
+        else torch.float32
+    )
     profile = json.loads(args.profile.read_text(encoding="utf-8"))
     cases = read_jsonl(args.test)
     tokenizer = AutoTokenizer.from_pretrained(args.model)
@@ -79,9 +98,9 @@ def main() -> None:
         tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
-        dtype=torch.float32,
+        dtype=dtype,
         low_cpu_mem_usage=True,
-    ).eval()
+    ).to(device).eval()
 
     results = []
     behavior_totals: Counter = Counter()
@@ -112,7 +131,7 @@ def main() -> None:
             return_dict=True,
             truncation=True,
             max_length=1536,
-        )
+        ).to(device)
         with torch.inference_mode():
             generated = model.generate(
                 **inputs,
