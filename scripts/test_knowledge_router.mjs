@@ -75,6 +75,28 @@ test("routes second-person portfolio questions to Daniel's profile", () => {
   assert.equal(route.type, "profile");
 });
 
+test("keeps visitor identity questions on the identity-safe model path", () => {
+  const route = classifyKnowledgeIntent("Who am I?", knowledge);
+  assert.equal(route.type, "profile");
+});
+
+test("routes how-does-it-work questions to public knowledge", () => {
+  const route = classifyKnowledgeIntent("How does DHT work?", knowledge);
+  assert.equal(route.type, "external_knowledge");
+  assert.equal(externalSearchTerm("How does DHT work?"), "DHT");
+});
+
+test("routes polite explanation requests to public knowledge", () => {
+  const route = classifyKnowledgeIntent("Could you explain federated learning?", knowledge);
+  assert.equal(route.type, "external_knowledge");
+  assert.equal(externalSearchTerm("Could you explain federated learning?"), "federated learning");
+});
+
+test("keeps polite requests about your work on the profile path", () => {
+  const route = classifyKnowledgeIntent("Could you explain your work?", knowledge);
+  assert.equal(route.type, "profile");
+});
+
 test("known aliases are matched case-insensitively", () => {
   assert.equal(findKnownEntity("Explain VIT POSE", knowledge).id, "vitpose");
 });

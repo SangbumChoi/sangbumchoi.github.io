@@ -156,6 +156,12 @@ try {
       terms: ["Python", "Guido van Rossum", "Wikipedia source"],
       forbiddenTerms: ["Daniel", "portfolio"],
     },
+    {
+      prompt: "How does a distributed hash table work?",
+      source: "wikipedia-evidence",
+      terms: ["distributed hash table", "key", "node", "Wikipedia source"],
+      forbiddenTerms: ["Daniel", "portfolio"],
+    },
   ];
   const groundedResults = [];
   for (const testCase of groundedCases) {
