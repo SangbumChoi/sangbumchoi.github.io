@@ -7,11 +7,14 @@ on:
     paths:
       - .github/workflows/train-publish-daniel-lfm2.yml
       - assets/data/daniel-lfm2-sft.jsonl
+      - assets/data/daniel-lfm2-routing-sft.jsonl
       - assets/data/daniel-lfm2-eval.jsonl
+      - assets/data/daniel-lfm2-routing-eval.jsonl
       - assets/data/daniel-lfm2-test.jsonl
       - assets/data/daniel-lfm2-dataset-card.md
       - assets/data/daniel-profile.json
       - assets/data/daniel-profile-sources.json
+      - assets/data/daniel-entity-knowledge.json
       - scripts/train_daniel_lfm2.py
       - scripts/evaluate_daniel_lfm2_test.py
       - scripts/publish_daniel_lfm2_dataset.py
@@ -81,6 +84,7 @@ jobs:
             --output "$RUNNER_TEMP/daniel-lfm2-strict-evaluation.json" \
             --minimum-strict-score 0.65 \
             --minimum-answer-score 0.60 \
+            --minimum-retrieve-score 0.65 \
             --minimum-unknown-score 0.70 \
             --minimum-refuse-score 0.80 \
             --minimum-korean-score 0.60
@@ -102,7 +106,7 @@ jobs:
           tar -C "$merged" -czf "$assets/daniel-lfm2-350m-fp16.tar.gz" .
           cp "$merged/evaluation.json" "$assets/daniel-lfm2-evaluation.json"
           cp "$merged/README.md" "$assets/daniel-lfm2-model-card.md"
-          notes="Evaluated Daniel OS LFM2-350M checkpoint trained from portfolio revision $GITHUB_SHA. Includes verified-profile answers, missing-fact boundaries, and out-of-scope refusals."
+          notes="Evaluated Daniel OS LFM2-350M checkpoint trained from portfolio revision $GITHUB_SHA. Includes profile grounding, evidence-grounded definitions, public retrieval decisions, missing-fact boundaries, and privacy refusals."
           if gh release view "$SOURCE_TAG" >/dev/null 2>&1; then
             gh release upload "$SOURCE_TAG" "$assets"/* --clobber
             gh release edit "$SOURCE_TAG" --notes "$notes" --title "Daniel OS LFM2 source v2"
@@ -127,7 +131,7 @@ jobs:
               repo_id=repo_id,
               repo_type="model",
               folder_path=os.environ["MERGED_DIR"],
-              commit_message="Retrain Daniel OS with verified scope boundaries",
+              commit_message="Retrain Daniel OS with profile and evidence routing",
           )
           print(f"Uploaded {repo_id}: {commit.oid}")
           PY
@@ -189,7 +193,7 @@ jobs:
           cp "$export_dir/onnx/model_q4.onnx_data" "$model_root/onnx/model_q4.onnx_data"
           cp "$RUNNER_TEMP/browser-release/manifest.json" "$model_root/manifest.json"
           git add .gitattributes "$model_root"
-          git commit -m "Publish scope-trained Daniel LFM2 WebGPU assets"
+          git commit -m "Publish evidence-routed Daniel LFM2 WebGPU assets"
           git push origin HEAD:model-assets
           echo "MODEL_ASSET_REVISION=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 

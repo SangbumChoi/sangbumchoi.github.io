@@ -2,15 +2,16 @@
 title: "Building Daniel OS: data, training, and strict evaluation"
 permalink: /posts/daniel-os-lfm2/
 date: 2026-07-17
+last_modified_at: 2026-07-20
 eyebrow: "FIELD NOTE / LOCAL AI"
-dek: "How I built a source-grounded personal dataset, fine-tuned LFM2-350M, measured its boundaries, and designed a generalized browser STT pipeline."
+dek: "How I separated personal facts from public knowledge, trained evidence-routing behavior into LFM2-350M, and evaluated a browser-native AI portfolio without hiding its limits."
 read_time: true
 comments: false
 share: false
 related: false
 ---
 
-Daniel OS is a personal portfolio assistant that runs its generative model in the visitor's browser. It combines a verified profile index for exact facts, a personalized language model for conversational synthesis, browser speech recognition, and local speech output. The goal is to make the portfolio queryable while keeping visitor conversations on the device.
+Daniel OS is a personal portfolio assistant that runs its generative model in the visitor's browser. It combines a verified profile index, a cited entity index, optional public retrieval, a personalized language model for conversational synthesis, browser speech recognition, and local speech output. The goal is to make the portfolio queryable without allowing personalization to distort ordinary technical knowledge.
 
 This post separates what is implemented from what is planned. The LLM was fine-tuned and evaluated. The current speech layer uses browser APIs; it is not a custom-trained STT model or a clone of my voice. A reproducible STT data, fine-tuning, and evaluation pipeline now exists in the repository, but its checkpoint will not replace the browser API until real multi-speaker data and browser tests pass.
 
@@ -28,98 +29,156 @@ The external checks connect my KAIST education and Team ISLAND CTO history to th
 
 I do not infer personal facts from indirect signals. Graduation dates, for example, are not enough to establish that I am 29. That claim is deliberately represented as an unknown test case rather than an answer.
 
-## LLM dataset design
+## Why personalized SFT was not enough
 
-The supervised dataset contains 79 one-turn conversations: 52 grounded answers, 9 missing-fact responses, and 18 out-of-scope refusals. These behaviors are intentionally different:
+The first version assumed that every question was about me. That made the assistant very good at recognizing portfolio keywords, but it also created a systematic error: a general noun was pulled into my biography even when the visitor asked for an ordinary definition.
 
-- `answer`: the supplied profile context contains the requested fact.
-- `unknown`: the question is about me, but the context does not verify the answer.
-- `refuse`: the request is unrelated, unsafe, asks for impersonation, or tries to override the portfolio boundary.
+Two failures exposed different causes:
 
-Each training record uses this schema:
+- "What is RT-DETR?" produced an invented description of "Daniel's work" involving few-shot learning and negative sampling. The small model had no retrieved definition, but the SFT distribution strongly rewarded Daniel-shaped answers.
+- "Where is UIUC?" returned my KAIST, POSTECH, and UIUC education history. This answer never came from the model. A broad JavaScript keyword rule intercepted `uiuc` before generation.
+
+Adding more memorized RT-DETR or UIUC answers would patch those nouns without fixing the system. The actual distinction is semantic: "What is X?" asks for X, while "What did Daniel do with X?" asks for a portfolio relation.
+
+## Five evidence routes
+
+The browser now classifies a prompt before generation:
+
+```text
+visitor question
+    |
+    +-- profile fact ----------> verified profile JSON
+    +-- known entity ---------> cited local entity index
+    +-- unknown factual noun -> public retrieval
+    +-- private-person data --> local refusal
+    +-- synthesis -----------> LFM2 with supplied evidence
+```
+
+The [knowledge router](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/js/knowledge-router.mjs) distinguishes definitions, profile relationships, neutral external lookups, and private-person requests. It also remembers the last portfolio entity so "What did he do with it?" can resolve a follow-up without turning every pronoun into a fact.
+
+The [entity knowledge file](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/data/daniel-entity-knowledge.json) stores definitions separately from portfolio relations. RT-DETR cites its [original paper](https://arxiv.org/abs/2304.08069), ViTPose cites its [paper](https://arxiv.org/abs/2204.12484), UIUC cites the [university's location page](https://www.admissions.illinois.edu/about), SAM 2 cites [Meta AI](https://ai.meta.com/research/sam2/), and Molmo 2 cites [Ai2](https://allenai.org/molmo). Each record can therefore answer either side of the contrast without mixing them:
 
 ```json
 {
-  "id": "toss_04",
-  "behavior": "answer",
-  "context_keys": ["current_work"],
-  "messages": [
-    {"role": "user", "content": "How did Daniel evaluate the document pipeline?"},
-    {"role": "assistant", "content": "He designed stage-level evaluation ..."}
-  ],
-  "expected_terms": ["61 percent", "exact-match"]
+  "name": "RT-DETR",
+  "definition_en": "A cited definition of the detector itself.",
+  "portfolio_relation_en": "Daniel's specific Transformers contribution.",
+  "sources": [{"label": "RT-DETR paper", "url": "https://arxiv.org/abs/2304.08069"}]
 }
 ```
 
-`context_keys` selects only the relevant portion of the profile. Numeric statements in an answer must also occur in that context. A validator rejects duplicate prompts, unknown context keys, unsupported numbers, malformed role pairs, and insufficient coverage of any behavior.
+Known entities are answered locally and immediately. An unseen neutral lookup uses Wikipedia's public API and displays the retrieved page as a citation. The browser never falls back from failed retrieval to model memory. This preserves a useful guarantee: a fluent sentence is not treated as evidence.
 
-For loss evaluation, the trainer takes a stratified five-conversation holdout: two `answer`, one `unknown`, and two `refuse` examples. After that holdout, minority behaviors are modestly repeated in the effective training stream so the model sees enough boundary examples without making refusal its dominant behavior. A separate 20-prompt validation gate is never used as a training target.
+Public retrieval has a privacy cost because the lookup term leaves the device. Portfolio facts, known entities, private-data checks, model inference, and conversation history remain local; only an uncached general lookup is sent to Wikipedia. GitHub Pages cannot safely hide a commercial search API key, so unrestricted multi-source search would require a rate-limited server or edge proxy. The current fallback is intentionally smaller and inspectable.
 
-The public test set contains 42 harder prompts: 26 factual answers, 7 unknown facts, and 9 refusals. Ten are Korean. It includes cross-section synthesis, exact metric traps, privacy questions, unsupported internal model names, prompt injection, the KAIST plus Team ISLAND plus ZERO career connection, and a three-case ZZAZZ product-depth extension. It is a post-training test split and is not fed back into fine-tuning.
+## SFT dataset redesign
 
-All three configurations are published in the [Daniel OS dataset on Hugging Face](https://huggingface.co/datasets/danelcsb/daniel-os-profile-sft):
+The combined supervised dataset now contains 296 conversations across five behaviors:
+
+| Behavior | Records | Training target |
+| --- | ---: | --- |
+| `answer` | 177 | Answer only from selected profile evidence |
+| `ground_external` | 12 | Define an entity only from supplied external evidence |
+| `retrieve` | 15 | Request a public source instead of guessing |
+| `unknown` | 58 | State that a Daniel-specific fact is not verified |
+| `refuse` | 34 | Protect private data and reject unsafe or non-factual tasks |
+
+The routing subset contains contrastive examples such as "What is RT-DETR?" versus "What did Daniel contribute to RT-DETR?", and "Where is UIUC?" versus "When did Daniel study at UIUC?" It includes English and Korean prompts, pronoun follow-ups, and neutral facts that must request retrieval instead of being refused.
+
+A grounded external record carries evidence inside the training prompt:
+
+```json
+{
+  "behavior": "ground_external",
+  "context_keys": [],
+  "evidence": {
+    "entity": "ViTPose",
+    "definition": "ViTPose uses a plain Vision Transformer backbone ...",
+    "sources": ["https://arxiv.org/abs/2204.12484"]
+  },
+  "messages": [
+    {"role": "user", "content": "What is ViTPose?"},
+    {"role": "assistant", "content": "An evidence-grounded definition."}
+  ]
+}
+```
+
+When no evidence is supplied, the target is a small tool protocol rather than a fabricated answer:
 
 ```text
-sft/train.jsonl                 79 conversations
-behavior_eval/validation.jsonl  20 held-out behavior checks
-strict_test/test.jsonl          42 post-training tests
-profile/                        grounded facts and provenance
-metrics/                        training loss and strict evaluation
+<search_public_knowledge>contrastive learning</search_public_knowledge>
+```
+
+The browser executes that request, retrieves evidence, replaces the control token with a cited answer, and never shows the token as the final response. Direct JavaScript routing handles common forms first; the fine-tuned tool behavior is a fallback for phrasings the deterministic router misses.
+
+The validator checks duplicate prompts, role order, known profile keys, evidence presence, unsupported numeric claims, exact tool-call syntax, bilingual coverage, and minimum behavior counts. Profile and external evidence are separate fields so a number found in one cannot silently justify a claim in the other.
+
+The trainer holds out examples inside each behavior and balances the effective stream differently from the original personalization-only run. Every minority behavior contributes at least 64 examples per epoch, while the 177 profile answers are not multiplied further. This reduces the prior that every question must produce a biography without discarding the broad profile corpus.
+
+Most importantly, evaluation holds out whole entities, not just paraphrases. DINOv3 and DETA definitions do not appear in routing SFT. Their evaluation cases supply previously unseen evidence and test whether the model can synthesize it without inventing a relationship to me. Other cases remove evidence and require a search request for unseen entities such as CLIP, NeRF, and Carnegie Mellon University.
+
+The published dataset layout is:
+
+```text
+sft/train.jsonl                  268 profile conversations
+sft/routing.jsonl                28 routing conversations
+behavior_eval/validation.jsonl   36 profile behavior checks
+routing_eval/validation.jsonl     9 routing and entity-holdout checks
+strict_test/test.jsonl           51 post-training tests
+profile/                         profile, provenance, and entity knowledge
+metrics/                         training loss and strict evaluation
 ```
 
 ## Model and training loss
 
-I fine-tuned [LiquidAI/LFM2-350M](https://huggingface.co/LiquidAI/LFM2-350M) with LoRA, merged the adapter into the base checkpoint, and exported the merged weights as a symmetric Q4 ONNX graph. This is not one-bit fine-tuning. LoRA makes adaptation memory-efficient; Q4 is a separate deployment step that reduces browser download and inference memory.
+I fine-tune [LiquidAI/LFM2-350M](https://huggingface.co/LiquidAI/LFM2-350M) with LoRA, merge the adapter into the base checkpoint, and export the merged weights as a symmetric Q4 ONNX graph. This is not one-bit fine-tuning. LoRA makes adaptation memory-efficient; Q4 is a separate deployment step that reduces browser download and inference memory.
 
-The configuration uses LoRA rank 16, alpha 32, dropout 0.05, all linear layers as targets, a batch size of one, gradient accumulation of four, a peak learning rate of `2e-4`, a maximum sequence length of 768, and three epochs. Only assistant completion tokens contribute to the causal language-modeling objective:
+The configuration uses LoRA rank 16, alpha 32, dropout 0.05, all linear layers as targets, a batch size of one, gradient accumulation of four, a peak learning rate of `2e-4`, a maximum sequence length of 1,152, and three epochs. Only assistant completion tokens contribute to the causal language-modeling objective:
 
 ```text
-L = -(1 / N) sum[t in assistant tokens] log p(y_t | system, context, user, y_<t)
+L = -(1 / N) sum[t in assistant tokens] log p(y_t | policy, profile, evidence, user, y_<t)
 ```
 
-Prompt and profile-context tokens are masked from this cross-entropy loss. The optimizer therefore adapts the LoRA weights to produce the desired answer behavior rather than spending loss on reproducing the input context.
+System policy, profile context, retrieved evidence, and visitor tokens are masked from the loss. The model learns the answer or routing behavior, not how to reproduce its input evidence.
 
 ![Daniel LFM2 train and validation loss]({{ '/assets/images/daniel-lfm2-loss.png' | relative_url }})
 
-The chart is generated from the committed [raw training metrics](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/data/daniel-lfm2-training-metrics.json), not reconstructed estimates. Validation loss moved from `0.469` at epoch 1 to `0.386` at epoch 2, then rose slightly to `0.402` at epoch 3. Because the trainer selects the minimum validation loss, the merged model uses the epoch 2 checkpoint. That small final rise is worth showing: it is evidence that another epoch did not improve generalization.
+This chart and the committed [raw metrics](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/data/daniel-lfm2-training-metrics.json) describe the previous personalization-only checkpoint. Its validation loss moved from `0.469` at epoch 1 to `0.386` at epoch 2, then rose to `0.402` at epoch 3, so the trainer selected epoch 2. I keep that curve as a baseline rather than presenting it as evidence for the new routing dataset. The routing revision must produce its own finite validation curve and pass every behavioral gate before replacing the hosted Q4 model.
 
 ```text
-Verified conversations
+profile SFT + routing SFT
         |
         v
-LFM2-350M + LoRA adapter
+LFM2-350M + rank-16 LoRA
         |
-        v merge best checkpoint
-Personalized Transformers checkpoint
+        v select minimum validation loss
+merged Transformers checkpoint
         |
-        v symmetric Q4 export
-ONNX graph + external weight data
+        v profile + routing + strict gates
+symmetric Q4 ONNX export
         |
         v
-Transformers.js Web Worker / WebGPU
+Transformers.js Worker / WebGPU
 ```
 
-## A stricter evaluation contract
+## Evaluation contract
 
-The original 18-prompt gate used for the current checkpoint scored 77.8% overall: 60% for grounded profile answers, 100% for missing facts, and 100% for refusals. The current data revision expands that gate to 20 prompts, but those new results require the next training run.
+The training-time gate now contains 45 cases: 36 profile cases and nine routing cases. It reports profile answers, evidence-grounded definitions, retrieval decisions, unknown facts, refusals, and Korean behavior separately. The public strict set remains untouched by training and contains 51 cases: 31 profile answers, 10 unknown facts, nine refusals, and one general retrieval case.
 
-The 42-case strict test records several metrics instead of reporting only one average. It preserves the original 39 cases and adds three untouched ZZAZZ product questions:
+- **Route accuracy:** definition, profile relation, retrieval, privacy, or refusal behavior is selected correctly.
+- **Expected fact-group recall:** required semantic fact groups appear in the response.
+- **Forbidden-claim avoidance:** planted false model names, metrics, personal facts, and unrelated claims do not appear.
+- **Evidence support:** every factual answer can be traced to the selected profile or external evidence object.
+- **Unknown claim leak rate:** a missing profile fact is not adopted from the question.
+- **Refusal scope leak rate:** a refusal does not continue into the unsafe request.
+- **Korean response rate:** Korean prompts receive Korean user-facing answers.
+- **Strict pass rate:** behavior, evidence, forbidden-claim, and language requirements pass together.
 
-- **Expected fact-group recall:** how many required semantic fact groups appear in the answer.
-- **Behavior pass rate:** all expected groups are present and no forbidden claim appears.
-- **Forbidden-claim avoidance:** a controlled hallucination proxy that checks whether the answer repeats planted false numbers, model names, personal facts, or unrelated content.
-- **Unknown claim leak rate:** an unknown-fact answer does not adopt the unsupported claim from the question.
-- **Refusal scope leak rate:** a refusal does not go on to answer the unrelated request.
-- **Korean response rate:** Korean prompts receive a response containing Korean, in addition to passing the behavior checks.
-- **Strict pass rate:** behavior, forbidden-claim, and language requirements all pass together.
+A test accepts groups of valid phrases rather than one exact sentence. `fivefold`, `five times`, and `5x`, for example, express the same serving result. Forbidden terms test the opposite direction: a prompt suggesting a 10x speedup must not make the model repeat it.
 
-On the 42-case revision, the pre-ZZAZZ checkpoint scored 42.9% on behavior pass, 31.0% on strict pass, 47.6% on expected fact-group recall, and 97.6% on controlled forbidden-claim avoidance. By behavior, it reached 34.6% for factual answers, 28.6% for unknown facts, and 77.8% for refusals. Korean response rate remained 0%. The complete [strict evaluation JSON](https://huggingface.co/datasets/danelcsb/daniel-os-profile-sft/resolve/main/metrics/strict-evaluation.json) includes all 42 prompts and generated answers. These are deliberately reported as pre-retraining measurements; the new product examples had not yet entered that checkpoint.
+The earlier checkpoint's strict results remain a baseline, not a claim about this revision. It showed that a small personalized model could learn strong abstention while still having weak compositional recall and poor Korean output. The new evaluation is designed to expose a different failure: whether the model can use unseen evidence without converting every entity into "Daniel's work." All generated answers are published so aggregate scores cannot hide a fluent hallucination.
 
-This is a baseline, not a success claim. The model has learned a useful refusal boundary and usually avoids planted false claims, but its compositional fact recall is weak and the English-only SFT data did not produce Korean answers. A manual audit also found an unsupported `Max Bin` name in one English response to a Korean identity prompt. That error was not one of the planted forbidden terms, so the 97.4% proxy does not measure every possible hallucination. Publishing every generated answer makes that limitation auditable. I keep this test version fixed and public rather than tuning directly on its failures. A later bilingual training revision should use newly written Korean examples and a separate untouched test set.
-
-A test case accepts groups of valid phrases rather than requiring one exact reference sentence. For example, `fivefold`, `five times`, and `5x` can express the same serving result. Forbidden terms test the opposite direction: a question that suggests a 10x speedup must not cause the model to repeat it.
-
-The browser adds another layer. Common profile questions are routed to the deterministic JSON index before generation. ZZAZZ uses a small local profile tool: it resolves the product from a direct Team ISLAND question, remembers that topic for follow-ups such as "What was that?" or "How did it work?", and returns curated VentureSquare and theBell links without sending the conversation to a remote service. A production test verifies both the product answer and the pronoun-style technical follow-up alongside questions about Toss Bank, multimodal training, open source, education, and publications. This keeps exact dates, metrics, and product definitions reliable even when a small language model phrases a synthesis imperfectly.
+The browser runtime has its own deterministic tests for the exact regression pairs. They verify RT-DETR definition versus contribution, ViTPose definition, UIUC location versus study history, entity pronoun follow-ups, private bank-account requests, unseen Wikipedia retrieval, and citation rendering. This makes the product gate broader than the model checkpoint gate: both the model behavior and the code that routes around it must be correct.
 
 ## What STT and TTS currently mean
 
@@ -189,6 +248,9 @@ The first controlled development-Mac audit used visible Chromium on Apple Metal 
 The complete implementation is reproducible from the repository:
 
 - [Training and merge script](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/train_daniel_lfm2.py)
+- [Knowledge router and public-retrieval fallback](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/js/knowledge-router.mjs)
+- [Cited portfolio entity index](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/data/daniel-entity-knowledge.json)
+- [Routing SFT and entity-held-out evaluation](https://github.com/SangbumChoi/sangbumchoi.github.io/tree/master/assets/data)
 - [Dataset validators](https://github.com/SangbumChoi/sangbumchoi.github.io/tree/master/scripts)
 - [Strict evaluator](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/evaluate_daniel_lfm2_test.py)
 - [Loss plotting script](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/plot_daniel_lfm2_metrics.py)
@@ -202,4 +264,4 @@ The complete implementation is reproducible from the repository:
 - [Whisper LoRA trainer and release gate](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/train_daniel_stt.py)
 - [Grouped STT evaluator](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/score_daniel_stt_predictions.py)
 
-The principle is simple: train the model to communicate within a narrow scope, keep exact facts in a source-grounded layer, publish tests that can expose failure, and describe every untrained component honestly.
+The principle is simple: fine-tune behavior, retrieve knowledge, keep personal and general evidence separate, publish tests that expose fluent mistakes, and describe every untrained component honestly.

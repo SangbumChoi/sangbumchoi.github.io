@@ -1,14 +1,24 @@
-import { detectPortraitFeatures } from "./portrait-landmarks.js?v=23";
-import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=23";
+import { detectPortraitFeatures } from "./portrait-landmarks.js?v=28";
+import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=28";
 import {
   chooseRuntimePolicy,
   formatWeightSize,
   modelResidencyCoordinator,
   probeRuntimeCapabilities,
-} from "./runtime-policy.mjs?v=23";
+} from "./runtime-policy.mjs?v=28";
+import {
+  buildEntityAnswer,
+  buildExternalEvidenceAnswer,
+  classifyKnowledgeIntent,
+  detectAnswerLanguage,
+  externalSearchTerm,
+  fetchWikipediaEvidence,
+  privateInformationResponse,
+} from "./knowledge-router.mjs?v=28";
 
-const ASSET_VERSION = "23";
+const ASSET_VERSION = "28";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
+const ENTITY_KNOWLEDGE_URL = `/assets/data/daniel-entity-knowledge.json?v=${ASSET_VERSION}`;
 
 const els = {
   runtimePill: document.querySelector("#runtime-pill"),
@@ -39,11 +49,14 @@ const els = {
 const state = {
   worker: null,
   profile: null,
+  entityKnowledge: null,
+  lastEntityId: null,
   systemPrompt: "",
   modelReady: false,
   modelLoading: false,
   modelFailed: false,
   generating: false,
+  searching: false,
   pendingPrompt: null,
   assistantNode: null,
   streamedText: "",
@@ -227,17 +240,21 @@ function selectProfileContext(profile, prompt = "", conversation = []) {
   return context;
 }
 
-function buildSystemPrompt(profile, prompt = "", conversation = state.conversation) {
+function buildSystemPrompt(profile, prompt = "", conversation = state.conversation, externalEvidence = null) {
   const focusedContext = selectProfileContext(profile, prompt, conversation);
   return [
     "You are Daniel OS, the personal AI portfolio of Sangbum Daniel Choi.",
     "Answer in the same language as the visitor, in at most 100 words.",
-    "Use only the verified facts below. Never infer industries, adoption, impact, definitions, or acronym expansions.",
-    "Inspect all verified facts before answering. If they contain the requested fact, answer directly and never claim it is missing.",
+    "Classify the request as Daniel-specific, a definition of a portfolio-linked entity, external knowledge requiring retrieval, or sensitive personal information.",
+    "For Daniel-specific claims, use only the verified profile facts below. For general definitions, use only supplied external evidence.",
+    "Never blend a general definition with a claim about Daniel unless the question explicitly asks for Daniel's relationship to the entity.",
+    "Inspect all supplied evidence before answering. If it contains the requested fact, answer directly and never claim it is missing.",
     "Preserve names, dates, metrics, and capitalization exactly as provided. Never translate, mutate, or invent a company, product, model, vendor, or version name.",
     "Treat a task description or parameter count as a description, not a model name. If an exact model, checkpoint, vendor, product, or version name is absent, say it is not provided instead of constructing one.",
-    "Your entire scope is Daniel. If a request is unrelated to Daniel, say it is outside this portfolio's scope and do not answer it.",
-    "Do not provide general knowledge, coding assistance, medical, legal, financial, political, or other external advice.",
+    "A neutral factual question about a technology, paper, organization, or place may be answered when external evidence is supplied. Never treat model memory as evidence.",
+    "If a neutral external question has no supplied evidence, output exactly <search_public_knowledge>SEARCH TERM</search_public_knowledge> with the shortest useful search term and no other text.",
+    "If a request is neither Daniel-specific nor a neutral factual lookup, politely state that it is outside this portfolio's scope.",
+    "Do not provide medical, legal, financial, political, or other high-stakes advice.",
     "If a question is about Daniel but a requested fact is missing, say that the portfolio does not contain verified information about it.",
     "Never identify the visitor, claim the visitor is Daniel's relative, or treat a visitor's statement about their identity as verified.",
     "For private financial details, physical measurements, family or relationship details, exact birthday, and exact current age, refuse to guess or disclose them.",
@@ -247,13 +264,20 @@ function buildSystemPrompt(profile, prompt = "", conversation = state.conversati
     "Do not pretend to be the real Daniel. Say you are his browser-native portfolio assistant.",
     "Verified facts for this question:",
     JSON.stringify(focusedContext),
+    "Retrieved external evidence for this question:",
+    externalEvidence ? JSON.stringify(externalEvidence) : "None supplied.",
   ].join("\n");
 }
 
 async function loadProfile() {
-  const response = await fetch(PROFILE_URL);
-  if (!response.ok) throw new Error("Could not load profile context.");
-  state.profile = await response.json();
+  const [profileResponse, knowledgeResponse] = await Promise.all([
+    fetch(PROFILE_URL),
+    fetch(ENTITY_KNOWLEDGE_URL),
+  ]);
+  if (!profileResponse.ok) throw new Error("Could not load profile context.");
+  if (!knowledgeResponse.ok) throw new Error("Could not load entity knowledge.");
+  state.profile = await profileResponse.json();
+  state.entityKnowledge = await knowledgeResponse.json();
   state.systemPrompt = buildSystemPrompt(state.profile);
 }
 
@@ -355,13 +379,88 @@ function groundedAnswer(prompt) {
   return null;
 }
 
-function deliverGroundedAnswer(answer) {
+function deliverGroundedAnswer(answer, options = {}) {
+  const source = options.source || "profile-index";
+  const label = options.label || "PROFILE INDEX";
   const node = createMessage("assistant", answer);
-  node.dataset.source = "profile-index";
+  node.dataset.source = source;
   state.conversation.push({ role: "assistant", content: answer });
-  els.latency.textContent = "PROFILE INDEX · grounded · local";
+  els.latency.textContent = `${label} · grounded`;
   setPortraitState("idle", state.modelReady ? "LOCAL MODEL READY" : "PROFILE INDEX READY");
   if (els.voiceOutput.checked) speak(answer);
+}
+
+async function retrievePublicKnowledge(term, language) {
+  try {
+    const evidence = await fetchWikipediaEvidence(term, language);
+    if (evidence) {
+      return {
+        answer: buildExternalEvidenceAnswer(evidence, language),
+        source: "wikipedia-evidence",
+        label: "PUBLIC KNOWLEDGE · Wikipedia",
+      };
+    }
+    return {
+      answer: language === "ko"
+        ? "이 질문에 답할 수 있는 신뢰할 만한 공개 근거를 찾지 못했습니다. 추측해서 답하지 않겠습니다."
+        : "I could not retrieve reliable public evidence for that question, so I will not guess.",
+      source: "retrieval-miss",
+      label: "PUBLIC KNOWLEDGE · no evidence",
+    };
+  } catch (error) {
+    console.warn("Public knowledge retrieval failed:", error.message);
+    return {
+      answer: language === "ko"
+        ? "현재 공개 지식 출처에 연결할 수 없어 검증된 답을 제공할 수 없습니다."
+        : "The public knowledge source is currently unavailable, so I cannot provide a verified answer.",
+      source: "retrieval-error",
+      label: "PUBLIC KNOWLEDGE · unavailable",
+    };
+  }
+}
+
+async function routeKnowledgeAnswer(prompt) {
+  const language = detectAnswerLanguage(prompt);
+  const route = classifyKnowledgeIntent(prompt, state.entityKnowledge, {
+    lastEntityId: state.lastEntityId,
+  });
+
+  if (route.type === "sensitive_personal") {
+    deliverGroundedAnswer(privateInformationResponse(language), {
+      source: "privacy-policy",
+      label: "PRIVACY POLICY · local",
+    });
+    return true;
+  }
+
+  if (route.type === "entity_definition" || route.type === "profile_entity") {
+    state.lastEntityId = route.entity.id;
+    const relation = route.type === "profile_entity";
+    deliverGroundedAnswer(buildEntityAnswer(route.entity, language, relation), {
+      source: relation ? "profile-entity-index" : "entity-index",
+      label: relation ? "PROFILE + ENTITY INDEX · local" : "ENTITY INDEX · local",
+    });
+    return true;
+  }
+
+  if (route.type === "external_knowledge") {
+    const term = externalSearchTerm(prompt);
+    if (!term) return false;
+    state.searching = true;
+    els.sendButton.disabled = true;
+    setPortraitState("thinking", "CHECKING A PUBLIC SOURCE");
+    els.latency.textContent = "PUBLIC KNOWLEDGE · retrieving";
+    try {
+      const result = await retrievePublicKnowledge(term, language);
+      deliverGroundedAnswer(result.answer, result);
+    } finally {
+      state.searching = false;
+      els.sendButton.disabled = false;
+    }
+    return true;
+  }
+
+  return false;
 }
 
 function updateProgress(payload = {}) {
@@ -589,7 +688,15 @@ function mockSynthesisAnswer(prompt) {
 }
 
 function completeGeneration(data) {
-  const answer = guardModelIdentity(data.text || state.streamedText || "I could not generate a response.");
+  const rawAnswer = data.text || state.streamedText || "I could not generate a response.";
+  const searchRequest = rawAnswer.trim().match(
+    /^<search_public_knowledge>([^<>]+)<\/search_public_knowledge>$/i,
+  );
+  if (searchRequest) {
+    completeModelRequestedSearch(searchRequest[1].trim(), data);
+    return;
+  }
+  const answer = guardModelIdentity(rawAnswer);
   state.generating = false;
   els.sendButton.disabled = false;
   if (state.assistantNode) {
@@ -604,21 +711,49 @@ function completeGeneration(data) {
   scheduleIdleModelRelease();
 }
 
+async function completeModelRequestedSearch(term, data) {
+  const latestUserPrompt = [...state.conversation]
+    .reverse()
+    .find((message) => message.role === "user")?.content || term;
+  const language = detectAnswerLanguage(latestUserPrompt);
+  state.generating = false;
+  state.searching = true;
+  els.sendButton.disabled = true;
+  if (state.assistantNode) {
+    state.assistantNode.classList.remove("is-streaming");
+    renderMessage(state.assistantNode.querySelector(".message__body"), "Checking a public source…");
+  }
+  setPortraitState("thinking", "CHECKING A PUBLIC SOURCE");
+  const result = await retrievePublicKnowledge(term, language);
+  if (state.assistantNode) {
+    state.assistantNode.dataset.source = result.source;
+    renderMessage(state.assistantNode.querySelector(".message__body"), result.answer);
+  }
+  state.conversation.push({ role: "assistant", content: result.answer });
+  state.searching = false;
+  els.sendButton.disabled = false;
+  els.latency.textContent = `${result.label} · model-routed · ${(data.elapsed / 1000).toFixed(1)}s`;
+  setPortraitState("idle", "LOCAL MODEL READY");
+  if (els.voiceOutput.checked) speak(result.answer);
+  scheduleIdleModelRelease();
+}
+
 function guardModelIdentity(text) {
   return text.trim()
     .replace(/^As (?:Sangbum )?Daniel Choi,?\s*/i, "As Daniel's browser-native portfolio assistant, ")
     .replace(/^I am (?:Sangbum )?Daniel Choi[,.]?\s*/i, "I am Daniel's browser-native portfolio assistant. ");
 }
 
-function submitPrompt(rawPrompt) {
+async function submitPrompt(rawPrompt) {
   const prompt = rawPrompt.trim();
-  if (!prompt || state.generating) return;
+  if (!prompt || state.generating || state.searching) return;
   if (routeCommand(prompt)) return;
   cancelSpeechOutput();
   createMessage("user", prompt);
   state.conversation.push({ role: "user", content: prompt });
   els.input.value = "";
   resizeComposer();
+  if (await routeKnowledgeAnswer(prompt)) return;
   const grounded = groundedAnswer(prompt);
   if (grounded) {
     deliverGroundedAnswer(grounded);

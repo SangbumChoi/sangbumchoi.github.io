@@ -1,0 +1,334 @@
+{
+  "version": 1,
+  "description": "Curated definitions for entities that appear in Daniel's portfolio. Definitions come from primary or official sources and are kept separate from Daniel-specific claims.",
+  "entities": [
+    {
+      "id": "rt-detr",
+      "name": "RT-DETR",
+      "aliases": ["rt-detr", "rt detr", "real-time detection transformer"],
+      "kind": "computer vision model",
+      "definition_en": "RT-DETR stands for Real-Time DEtection TRansformer. It is an end-to-end transformer-based object detector designed for real-time inference without a non-maximum suppression post-processing step.",
+      "definition_ko": "RT-DETR은 Real-Time DEtection TRansformer의 약자로, non-maximum suppression 후처리 없이 실시간 추론을 목표로 설계된 end-to-end Transformer 기반 객체 탐지 모델입니다.",
+      "portfolio_relation_en": "Daniel contributed RT-DETR support to Hugging Face Transformers, including model implementation and training-related integration work.",
+      "portfolio_relation_ko": "Daniel은 모델 구현과 학습 관련 통합을 포함해 Hugging Face Transformers의 RT-DETR 지원에 기여했습니다.",
+      "sources": [
+        {
+          "label": "RT-DETR paper",
+          "url": "https://arxiv.org/abs/2304.08069"
+        },
+        {
+          "label": "Hugging Face documentation",
+          "url": "https://huggingface.co/docs/transformers/model_doc/rt_detr"
+        }
+      ]
+    },
+    {
+      "id": "vitpose",
+      "name": "ViTPose",
+      "aliases": ["vitpose", "vit pose"],
+      "kind": "computer vision model",
+      "definition_en": "ViTPose is a simple human-pose-estimation baseline that uses a plain Vision Transformer as its backbone and a lightweight decoder to predict body keypoints.",
+      "definition_ko": "ViTPose는 plain Vision Transformer를 backbone으로 사용하고 가벼운 decoder로 신체 keypoint를 예측하는 human pose estimation 모델입니다.",
+      "portfolio_relation_en": "Daniel contributed ViTPose support and training-related improvements to Hugging Face Transformers.",
+      "portfolio_relation_ko": "Daniel은 Hugging Face Transformers의 ViTPose 지원과 학습 관련 개선에 기여했습니다.",
+      "sources": [
+        {
+          "label": "ViTPose paper",
+          "url": "https://arxiv.org/abs/2204.12484"
+        },
+        {
+          "label": "Official repository",
+          "url": "https://github.com/ViTAE-Transformer/ViTPose"
+        }
+      ]
+    },
+    {
+      "id": "uiuc",
+      "name": "UIUC",
+      "aliases": ["uiuc", "university of illinois urbana-champaign", "university of illinois at urbana-champaign"],
+      "kind": "university",
+      "definition_en": "UIUC is the University of Illinois Urbana-Champaign, a university located in the Champaign-Urbana community in Illinois, United States.",
+      "definition_ko": "UIUC는 미국 일리노이주의 Champaign-Urbana 지역에 있는 University of Illinois Urbana-Champaign입니다.",
+      "portfolio_relation_en": "Daniel studied at UIUC as an exchange student and worked there as an undergraduate researcher from August to December 2018 on direction-of-arrival estimation with irregular microphone arrays.",
+      "portfolio_relation_ko": "Daniel은 UIUC에서 교환학생으로 공부했으며 2018년 8월부터 12월까지 irregular microphone array를 이용한 direction-of-arrival estimation을 연구했습니다.",
+      "sources": [
+        {
+          "label": "University of Illinois",
+          "url": "https://www.admissions.illinois.edu/about"
+        }
+      ]
+    },
+    {
+      "id": "sam2",
+      "name": "SAM 2",
+      "aliases": ["sam2", "sam 2", "segment anything model 2", "segment anything 2"],
+      "kind": "computer vision model",
+      "definition_en": "SAM 2 is Meta's unified promptable segmentation model for images and videos. It can select and track an object from prompts such as points, boxes, or masks.",
+      "definition_ko": "SAM 2는 이미지와 비디오를 위한 Meta의 통합 promptable segmentation 모델로, point, box, mask 등의 prompt로 객체를 선택하고 추적할 수 있습니다.",
+      "portfolio_relation_en": "Daniel led the integration of SAM 2 into Hugging Face Transformers, covering image and video processing, checkpoint conversion, documentation, and integration tests.",
+      "portfolio_relation_ko": "Daniel은 image/video processing, checkpoint conversion, 문서화와 integration test를 포함한 Hugging Face Transformers의 SAM 2 통합을 주도했습니다.",
+      "sources": [
+        {
+          "label": "Meta AI SAM 2",
+          "url": "https://ai.meta.com/research/sam2/"
+        },
+        {
+          "label": "Hugging Face documentation",
+          "url": "https://huggingface.co/docs/transformers/model_doc/sam2"
+        }
+      ]
+    },
+    {
+      "id": "molmo2",
+      "name": "Molmo 2",
+      "aliases": ["molmo2", "molmo 2"],
+      "kind": "vision-language model",
+      "definition_en": "Molmo 2 is Ai2's family of vision-language models for image and video understanding and grounding, with variants built around openly inspectable components.",
+      "definition_ko": "Molmo 2는 image/video understanding과 grounding을 위한 Ai2의 vision-language model family이며, 공개적으로 살펴보고 수정할 수 있는 구성 요소를 중심으로 만들어졌습니다.",
+      "portfolio_relation_en": "Daniel opened Molmo 2 support in Hugging Face Transformers and published the danelcsb/Molmo2-4B checkpoint on the Hugging Face Hub.",
+      "portfolio_relation_ko": "Daniel은 Hugging Face Transformers에서 Molmo 2 지원을 시작했고 Hugging Face Hub에 danelcsb/Molmo2-4B checkpoint를 공개했습니다.",
+      "sources": [
+        {
+          "label": "Ai2 Molmo",
+          "url": "https://allenai.org/molmo"
+        },
+        {
+          "label": "Molmo2-4B model",
+          "url": "https://huggingface.co/allenai/Molmo2-4B"
+        }
+      ]
+    },
+    {
+      "id": "deta",
+      "name": "DETA",
+      "aliases": ["deta", "detection transformers with assignment"],
+      "kind": "computer vision model",
+      "definition_en": "DETA is an object detector from the NMS Strikes Back study that trains Deformable DETR with traditional one-to-many IoU-based label assignment and non-maximum suppression.",
+      "definition_ko": "DETA는 NMS Strikes Back 연구에서 제안된 객체 탐지 모델로, Deformable DETR을 traditional one-to-many IoU-based label assignment와 non-maximum suppression으로 학습합니다.",
+      "portfolio_relation_en": "Daniel contributed training-related DETA support to Hugging Face Transformers.",
+      "portfolio_relation_ko": "Daniel은 Hugging Face Transformers의 DETA 학습 지원에 기여했습니다.",
+      "sources": [
+        {
+          "label": "NMS Strikes Back paper",
+          "url": "https://arxiv.org/abs/2212.06137"
+        },
+        {
+          "label": "Official repository",
+          "url": "https://github.com/jozhang97/DETA"
+        }
+      ]
+    },
+    {
+      "id": "dinov3",
+      "name": "DINOv3",
+      "aliases": ["dinov3", "dino v3", "dino 3"],
+      "kind": "vision foundation model",
+      "definition_en": "DINOv3 is Meta's self-supervised vision-model family for learning general-purpose image representations and dense visual features without human labels.",
+      "definition_ko": "DINOv3는 사람의 label 없이 general-purpose image representation과 dense visual feature를 학습하는 Meta의 self-supervised vision model family입니다.",
+      "portfolio_relation_en": "Daniel contributed DINOv3 utilities to the Hugging Face Transformers ecosystem.",
+      "portfolio_relation_ko": "Daniel은 Hugging Face Transformers 생태계의 DINOv3 utility에 기여했습니다.",
+      "sources": [
+        {
+          "label": "Meta AI DINOv3",
+          "url": "https://ai.meta.com/research/dinov3/"
+        },
+        {
+          "label": "DINOv3 paper",
+          "url": "https://arxiv.org/abs/2508.10104"
+        }
+      ]
+    },
+    {
+      "id": "lfm2",
+      "name": "LFM2",
+      "aliases": ["lfm2", "liquid foundation model 2"],
+      "kind": "language model",
+      "definition_en": "LFM2 is Liquid AI's family of efficient hybrid foundation models designed for fast inference and deployment on resource-constrained and on-device environments.",
+      "definition_ko": "LFM2는 빠른 추론과 resource-constrained 및 on-device 환경의 배포를 위해 설계된 Liquid AI의 efficient hybrid foundation model family입니다.",
+      "portfolio_relation_en": "Daniel OS uses a fine-tuned LFM2-350M checkpoint for browser-native conversational synthesis.",
+      "portfolio_relation_ko": "Daniel OS는 browser-native conversational synthesis를 위해 fine-tuned LFM2-350M checkpoint를 사용합니다.",
+      "sources": [
+        {
+          "label": "Liquid AI documentation",
+          "url": "https://docs.liquid.ai/lfm/getting-started/welcome"
+        }
+      ]
+    },
+    {
+      "id": "webgpu",
+      "name": "WebGPU",
+      "aliases": ["webgpu", "web gpu"],
+      "kind": "web API",
+      "definition_en": "WebGPU is a web API that exposes modern GPU capabilities for rendering and general-purpose computation in the browser.",
+      "definition_ko": "WebGPU는 browser에서 rendering과 general-purpose computation을 위해 modern GPU 기능을 사용할 수 있게 하는 web API입니다.",
+      "portfolio_relation_en": "Daniel OS uses WebGPU as the preferred backend for running its local language model in the visitor's browser.",
+      "portfolio_relation_ko": "Daniel OS는 방문자의 browser에서 local language model을 실행하기 위한 우선 backend로 WebGPU를 사용합니다.",
+      "sources": [
+        {
+          "label": "WebGPU specification",
+          "url": "https://gpuweb.github.io/gpuweb/"
+        }
+      ]
+    },
+    {
+      "id": "contrastive-learning",
+      "name": "Contrastive learning",
+      "aliases": ["contrastive learning", "contrastive loss"],
+      "kind": "machine-learning method",
+      "definition_en": "Contrastive learning trains representations by making related examples similar and unrelated examples dissimilar in an embedding space. Frameworks such as SimCLR construct positive pairs from augmented views of the same example.",
+      "definition_ko": "Contrastive learning은 embedding space에서 관련된 example의 representation은 가깝게, 관련 없는 example은 멀어지게 학습하는 방법입니다. SimCLR 같은 framework는 같은 example의 augmentation을 positive pair로 사용합니다.",
+      "portfolio_relation_en": "Daniel used contrastive objectives during staged text-image alignment for visual-grounding pre-training at SuperbAI.",
+      "portfolio_relation_ko": "Daniel은 SuperbAI의 visual-grounding pre-training에서 staged text-image alignment를 위해 contrastive objective를 사용했습니다.",
+      "sources": [
+        {
+          "label": "SimCLR paper",
+          "url": "https://arxiv.org/abs/2002.05709"
+        }
+      ]
+    },
+    {
+      "id": "lora",
+      "name": "LoRA",
+      "aliases": ["lora", "low-rank adaptation"],
+      "kind": "fine-tuning method",
+      "definition_en": "LoRA, or Low-Rank Adaptation, freezes a pre-trained model's original weights and learns small low-rank update matrices, reducing the number of trainable parameters needed for adaptation.",
+      "definition_ko": "LoRA(Low-Rank Adaptation)는 pre-trained model의 원래 weight를 고정하고 작은 low-rank update matrix를 학습해 adaptation에 필요한 trainable parameter 수를 줄이는 방법입니다.",
+      "portfolio_relation_en": "Daniel used LoRA in production model adaptation at SuperbAI and for the browser-native Daniel OS LFM2 checkpoint.",
+      "portfolio_relation_ko": "Daniel은 SuperbAI의 production model adaptation과 browser-native Daniel OS LFM2 checkpoint에 LoRA를 사용했습니다.",
+      "sources": [
+        {
+          "label": "LoRA paper",
+          "url": "https://arxiv.org/abs/2106.09685"
+        }
+      ]
+    },
+    {
+      "id": "onnx",
+      "name": "ONNX",
+      "aliases": ["onnx", "open neural network exchange"],
+      "kind": "model representation",
+      "definition_en": "ONNX is an open specification for representing machine-learning computation graphs, standard data types, and operators so models can move between compatible frameworks and runtimes.",
+      "definition_ko": "ONNX는 machine-learning computation graph, standard data type, operator를 표현하는 open specification으로, compatible framework와 runtime 사이에서 model을 이동할 수 있게 합니다.",
+      "portfolio_relation_en": "Daniel OS exports its fine-tuned LFM2 checkpoint to a Q4 ONNX graph for browser inference with Transformers.js and ONNX Runtime Web.",
+      "portfolio_relation_ko": "Daniel OS는 fine-tuned LFM2 checkpoint를 Q4 ONNX graph로 export해 Transformers.js와 ONNX Runtime Web에서 browser inference를 수행합니다.",
+      "sources": [
+        {
+          "label": "ONNX specification",
+          "url": "https://onnx.ai/onnx/repo-docs/IR.html"
+        }
+      ]
+    },
+    {
+      "id": "webassembly",
+      "name": "WebAssembly",
+      "aliases": ["webassembly", "wasm", "web assembly"],
+      "kind": "portable code format",
+      "definition_en": "WebAssembly, abbreviated Wasm, is a safe, portable low-level code format designed for compact representation and efficient execution on the web and in other host environments.",
+      "definition_ko": "WebAssembly(Wasm)는 compact representation과 efficient execution을 위해 설계된 safe하고 portable한 low-level code format으로, web과 다른 host environment에서 실행할 수 있습니다.",
+      "portfolio_relation_en": "Daniel OS uses WebAssembly as an on-demand compatibility backend when WebGPU is unavailable.",
+      "portfolio_relation_ko": "Daniel OS는 WebGPU를 사용할 수 없을 때 WebAssembly를 on-demand compatibility backend로 사용합니다.",
+      "sources": [
+        {
+          "label": "WebAssembly specification",
+          "url": "https://webassembly.github.io/spec/core/intro/introduction.html"
+        }
+      ]
+    },
+    {
+      "id": "model-quantization",
+      "name": "Model quantization",
+      "aliases": ["model quantization", "quantization", "int8 quantization", "4-bit quantization", "q4"],
+      "kind": "model optimization",
+      "definition_en": "Model quantization represents weights or activations with lower-precision values to reduce model size and memory use, with accuracy and speed tradeoffs that depend on the model, operators, and hardware backend.",
+      "definition_ko": "Model quantization은 weight나 activation을 lower-precision value로 표현해 model size와 memory use를 줄이는 방법이며, accuracy와 speed tradeoff는 model, operator, hardware backend에 따라 달라집니다.",
+      "portfolio_relation_en": "Daniel has used INT8-style mobile optimization and deploys Daniel OS with Q4 weights, while treating speed and quality as hardware-dependent measurements rather than universal guarantees.",
+      "portfolio_relation_ko": "Daniel은 mobile optimization에서 INT8 계열 방법을 사용했고 Daniel OS에는 Q4 weight를 배포하지만, speed와 quality는 hardware-dependent measurement로 평가합니다.",
+      "sources": [
+        {
+          "label": "Transformers.js dtype guide",
+          "url": "https://huggingface.co/docs/transformers.js/guides/dtypes"
+        }
+      ]
+    },
+    {
+      "id": "ocr",
+      "name": "OCR",
+      "aliases": ["ocr", "optical character recognition"],
+      "kind": "document AI task",
+      "definition_en": "OCR, or optical character recognition, converts text visible in images or scanned documents into machine-readable text.",
+      "definition_ko": "OCR(Optical Character Recognition)은 image나 scanned document에 보이는 문자를 machine-readable text로 변환하는 기술입니다.",
+      "portfolio_relation_en": "Daniel leads OCR and table-understanding stages inside Toss Bank's end-to-end VLM-based document extraction pipeline.",
+      "portfolio_relation_ko": "Daniel은 Toss Bank의 end-to-end VLM-based document extraction pipeline에서 OCR과 table-understanding 단계를 이끌고 있습니다.",
+      "sources": [
+        {
+          "label": "Google Cloud OCR overview",
+          "url": "https://cloud.google.com/use-cases/ocr"
+        }
+      ]
+    },
+    {
+      "id": "visual-grounding",
+      "name": "Visual grounding",
+      "aliases": ["visual grounding", "phrase grounding"],
+      "kind": "multimodal vision task",
+      "definition_en": "Visual grounding connects a language or visual prompt to the corresponding object or region in an image, commonly producing bounding boxes, masks, or points.",
+      "definition_ko": "Visual grounding은 language 또는 visual prompt를 이미지의 대응하는 object나 region과 연결하는 task로, 일반적으로 bounding box, mask, point를 출력합니다.",
+      "portfolio_relation_en": "Daniel led visual-grounding pre-training at SuperbAI and authored ZERO: Multi-modal Prompt-based Visual Grounding.",
+      "portfolio_relation_ko": "Daniel은 SuperbAI에서 visual-grounding pre-training을 주도했고 ZERO: Multi-modal Prompt-based Visual Grounding의 저자입니다.",
+      "sources": [
+        {
+          "label": "ZERO paper",
+          "url": "https://arxiv.org/abs/2507.04270"
+        }
+      ]
+    },
+    {
+      "id": "zero-grounding",
+      "name": "ZERO",
+      "aliases": ["zero visual grounding", "zero multimodal grounding", "zero multi-modal prompt-based visual grounding"],
+      "kind": "research paper",
+      "definition_en": "ZERO is a multimodal prompt-based visual-grounding method that accepts textual or visual prompts and localizes the corresponding objects in an image.",
+      "definition_ko": "ZERO는 textual 또는 visual prompt를 입력받아 이미지에서 해당 객체를 찾는 multimodal prompt-based visual-grounding 방법입니다.",
+      "portfolio_relation_en": "Daniel is an author of ZERO: Multi-modal Prompt-based Visual Grounding, published on arXiv in 2025.",
+      "portfolio_relation_ko": "Daniel은 2025년 arXiv에 공개된 ZERO: Multi-modal Prompt-based Visual Grounding의 저자입니다.",
+      "sources": [
+        {
+          "label": "ZERO paper",
+          "url": "https://arxiv.org/abs/2507.04270"
+        }
+      ]
+    },
+    {
+      "id": "mobilehumanpose",
+      "name": "MobileHumanPose",
+      "aliases": ["mobilehumanpose", "mobile human pose"],
+      "kind": "research paper",
+      "definition_en": "MobileHumanPose is a real-time monocular 3D human-pose-estimation method designed for mobile devices, using a lightweight 2D detector followed by a 2D-to-3D lifting network.",
+      "definition_ko": "MobileHumanPose는 lightweight 2D detector와 2D-to-3D lifting network를 사용해 mobile device에서 실시간으로 동작하도록 설계된 monocular 3D human pose estimation 방법입니다.",
+      "portfolio_relation_en": "Daniel is the first author of MobileHumanPose, published at an IEEE/CVF CVPR Workshop in 2021.",
+      "portfolio_relation_ko": "Daniel은 2021년 IEEE/CVF CVPR Workshop에 발표된 MobileHumanPose의 제1저자입니다.",
+      "sources": [
+        {
+          "label": "CVPR Open Access",
+          "url": "https://openaccess.thecvf.com/content/CVPR2021W/MAI/html/Choi_MobileHumanPose_Toward_Real-Time_3D_Human_Pose_Estimation_in_Mobile_Devices_CVPRW_2021_paper.html"
+        }
+      ]
+    },
+    {
+      "id": "zzazz",
+      "name": "ZZAZZ",
+      "aliases": ["zzazz", "째즈"],
+      "kind": "mobile application",
+      "definition_en": "ZZAZZ was Team ISLAND's mobile video-editing application for adding and combining motion effects around subjects in videos.",
+      "definition_ko": "ZZAZZ(째즈)는 영상 속 피사체 주변에 motion effect를 추가하고 조합하는 Team ISLAND의 mobile video-editing application이었습니다.",
+      "portfolio_relation_en": "As Team ISLAND's co-founder and CTO, Daniel led five developers and worked on ZZAZZ's mobile vision and on-device inference pipeline.",
+      "portfolio_relation_ko": "Team ISLAND의 co-founder이자 CTO로서 Daniel은 5명의 개발자를 이끌고 ZZAZZ의 mobile vision과 on-device inference pipeline을 개발했습니다.",
+      "sources": [
+        {
+          "label": "VentureSquare",
+          "url": "https://www.venturesquare.net/821623"
+        }
+      ]
+    }
+  ]
+}

@@ -23,7 +23,7 @@
     "title": "Machine Learning Engineer",
     "dates": "September 2021 to January 2026",
     "highlights": [
-      "Led two ML engineers through multimodal pre-training and staged text-image alignment for a visual-grounding model.",
+      "Led two ML engineers through multimodal pre-training and staged text-image alignment with a contrastive objective for a visual-grounding model.",
       "Curated a 1.1-million-image dataset with captions, noun phrases, bounding boxes, and segmentation masks.",
       "Placed second in the CVPR 2025 Incremental Object Detection challenge and fourth in the Few-Shot Object Detection challenge.",
       "Built AWS Batch multi-GPU training and TensorRT/Triton serving infrastructure, improving throughput fivefold over pure PyTorch serving.",

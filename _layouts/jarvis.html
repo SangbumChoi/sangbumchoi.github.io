@@ -9,7 +9,7 @@ layout: compress
     {% include seo.html %}
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#0b0d0f">
-    <meta name="description" content="Talk with Sangbum Daniel Choi's private, browser-native AI portfolio.">
+    <meta name="description" content="Talk with Sangbum Daniel Choi's local-first, browser-native AI portfolio.">
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://media.githubusercontent.com" crossorigin>
     <link rel="stylesheet" href="{{ base_path }}/assets/css/jarvis.css?v={{ site.jarvis_asset_version }}">
@@ -57,7 +57,7 @@ layout: compress
           <h1 id="identity-title">Sangbum Daniel Choi</h1>
           <p class="identity-copy__intro">
             I build multimodal models, production AI systems, and open-source tools.
-            Ask this private profile assistant about my work, research, or the decisions behind it.
+            Ask this local-first profile assistant about my work, research, or the technology behind it.
           </p>
         </div>
 
@@ -99,7 +99,7 @@ layout: compress
           <article class="message message--assistant">
             <div class="message__meta"><span>DANIEL AI</span><time>NOW</time></div>
             <div class="message__body">
-              Hi, I am Daniel's browser-native portfolio assistant. Ask about Toss Bank, multimodal research, Hugging Face contributions, or profile links. Personalized LFM2 runs locally when a free-form answer needs it.
+              Hi, I am Daniel's browser-native portfolio assistant. Ask about my work or a technical topic connected to the portfolio. Known facts stay local; uncached general lookups show their public source.
             </div>
           </article>
         </div>
@@ -113,7 +113,7 @@ layout: compress
 
         <form class="composer" id="prompt-form">
           <label class="sr-only" for="prompt-input">Ask Daniel a question</label>
-          <textarea id="prompt-input" rows="1" maxlength="2000" placeholder="Ask about Daniel's work, research, or open source…"></textarea>
+          <textarea id="prompt-input" rows="1" maxlength="2000" placeholder="Ask about Daniel or a topic in his portfolio…"></textarea>
           <div class="composer__actions">
             <button class="icon-button icon-button--mic" id="mic-button" type="button" title="Start voice input; click again to stop and send" aria-label="Start voice input" aria-pressed="false">
               <i data-lucide="mic" aria-hidden="true"></i>
@@ -130,7 +130,7 @@ layout: compress
             <span aria-hidden="true"></span>
             Read replies aloud
           </label>
-          <span id="latency-label">DEMO · grounded · private</span>
+          <span id="latency-label">DEMO · grounded · local-first</span>
         </div>
       </section>
     </main>

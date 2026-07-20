@@ -41,10 +41,13 @@ def main() -> None:
         root = Path(directory)
         copy("assets/data/daniel-lfm2-dataset-card.md", root / "README.md")
         copy("assets/data/daniel-lfm2-sft.jsonl", root / "sft/train.jsonl")
+        copy("assets/data/daniel-lfm2-routing-sft.jsonl", root / "sft/routing.jsonl")
         copy("assets/data/daniel-lfm2-eval.jsonl", root / "behavior_eval/validation.jsonl")
+        copy("assets/data/daniel-lfm2-routing-eval.jsonl", root / "routing_eval/validation.jsonl")
         copy("assets/data/daniel-lfm2-test.jsonl", root / "strict_test/test.jsonl")
         copy("assets/data/daniel-profile.json", root / "profile/profile.json")
         copy("assets/data/daniel-profile-sources.json", root / "profile/profile-sources.json")
+        copy("assets/data/daniel-entity-knowledge.json", root / "profile/entity-knowledge.json")
         copy(args.training_metrics, root / "metrics/training.json")
         if args.evaluation and args.evaluation.exists():
             copy(args.evaluation, root / "metrics/strict-evaluation.json")
@@ -55,7 +58,7 @@ def main() -> None:
             repo_id=args.repo_id,
             repo_type="dataset",
             folder_path=root,
-            commit_message="Publish sourced profile SFT and strict behavior benchmark",
+            commit_message="Publish profile, routing SFT, and held-out evidence benchmark",
         )
         print(f"Uploaded {args.repo_id}: {commit.oid}")
 

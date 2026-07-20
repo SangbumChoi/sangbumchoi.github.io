@@ -13,10 +13,18 @@ configs:
   data_files:
   - split: train
     path: sft/train.jsonl
+- config_name: routing_sft
+  data_files:
+  - split: train
+    path: sft/routing.jsonl
 - config_name: behavior_eval
   data_files:
   - split: validation
     path: behavior_eval/validation.jsonl
+- config_name: routing_eval
+  data_files:
+  - split: validation
+    path: routing_eval/validation.jsonl
 - config_name: strict_test
   data_files:
   - split: test
@@ -26,16 +34,18 @@ configs:
 # Daniel OS Profile SFT and Behavior Tests
 
 Small, source-grounded datasets used to adapt and evaluate the browser-native
-Daniel OS portfolio assistant. The model is intentionally narrow: it answers
-questions about Sangbum Daniel Choi from supplied verified context, states when
-a Daniel-specific fact is not verified, and declines unrelated requests.
+Daniel OS portfolio assistant. The model separates Daniel-specific claims from
+general definitions, synthesizes definitions from retrieved evidence, requests
+public retrieval when evidence is absent, and declines private-person requests.
 
 ## Splits
 
 | Configuration | Split | Records | Purpose |
 | --- | --- | ---: | --- |
-| `sft` | `train` | 142 | Conversational supervised fine-tuning |
+| `sft` | `train` | 268 | Profile-grounded conversational fine-tuning |
+| `routing_sft` | `train` | 28 | Definition, contribution, and retrieval routing pairs |
 | `behavior_eval` | `validation` | 36 | Training-time behavior gate |
+| `routing_eval` | `validation` | 9 | Entity-held-out evidence and retrieval gate |
 | `strict_test` | `test` | 51 | Public post-training benchmark |
 
 The strict test is never included in fine-tuning. It covers factual composition,
@@ -51,25 +61,34 @@ versus exact age, the 6+ versus 8+ experience counts, and Daniel's 2018 records.
 
 ```json
 {
-  "id": "toss_01",
-  "behavior": "answer",
-  "context_keys": ["current_work"],
+  "id": "route_rt_detr_definition_en",
+  "behavior": "ground_external",
+  "context_keys": [],
+  "evidence": {
+    "entity": "RT-DETR",
+    "definition": "A definition copied from a cited primary source.",
+    "sources": ["https://arxiv.org/abs/2304.08069"]
+  },
   "messages": [
-    {"role": "user", "content": "Did Daniel co-found a company?"},
-    {"role": "assistant", "content": "Yes, Team ISLAND."},
-    {"role": "user", "content": "What did it build?"},
-    {"role": "assistant", "content": "A concise grounded answer about ZZAZZ."}
+    {"role": "user", "content": "What is RT-DETR?"},
+    {"role": "assistant", "content": "A concise answer using only the supplied definition."}
   ],
-  "expected_terms": ["Toss Bank"]
+  "expected_terms": ["Real-Time DEtection TRansformer"]
 }
 ```
 
-`behavior` is one of `answer`, `unknown`, or `refuse`. `unknown` means the
-question is about Daniel but the verified context does not contain the fact.
-`refuse` means the request is unrelated to the portfolio, attempts to identify
-the visitor, or attempts to override its boundaries. Messages alternate between
-user and assistant; the final assistant message is the supervised completion,
-while earlier turns are retained as conversational context.
+`behavior` is one of `answer`, `ground_external`, `retrieve`, `unknown`, or
+`refuse`. A `ground_external` item supplies an `evidence` object and teaches the
+model to state only what that object supports. A `retrieve` item has no external
+evidence and targets `<search_public_knowledge>TERM</search_public_knowledge>`.
+`unknown` means the question is about Daniel but the verified profile lacks the
+fact. `refuse` covers private-person data, unsafe requests, visitor identification,
+and boundary overrides. The final assistant message is the supervised completion.
+
+The routing split uses contrastive pairs such as "What is RT-DETR?" versus
+"What did Daniel contribute to RT-DETR?" DINOv3 and DETA definitions are withheld
+from routing SFT and supplied only as evidence in evaluation. This entity-level
+holdout is stricter than randomly withholding paraphrases of a memorized entity.
 
 ## Strict test schema
 

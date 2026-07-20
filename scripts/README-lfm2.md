@@ -1,22 +1,23 @@
 # Daniel OS LFM2 pipeline
 
-The website supplies a focused slice of the verified profile and recent chat
-history to LFM2-350M for local generation. A small profile index remains for
-navigation and a few common exact facts, but privacy boundaries, visitor
-identity, career chronology, and contextual product follow-ups are learned by
-the checkpoint rather than returned as fixed JavaScript strings. Production
-loads the Q4 model in a Web Worker on entry; `_config.dev.yml` disables that
-automatic load so responsive UI work does not consume local memory.
+The website routes each prompt between a verified profile index, a curated
+entity index, public retrieval, a privacy boundary, and LFM2-350M synthesis.
+Definitions and Daniel-specific claims are kept as separate evidence types.
+Wikipedia is a fallback only for neutral definitions not present in the local
+entity index; the answer includes its source, and a retrieval failure never
+falls through to unsupported model memory. Production loads the Q4 model in a
+Web Worker; `_config.dev.yml` disables eager loading for local UI work.
 
 ## Train and evaluate
 
-The supervised dataset separates three behaviors: answers grounded in selected
-profile sections, explicit statements that a Daniel-related fact is absent,
-and refusals for requests outside the portfolio scope. Training maintains a
-minimum representation for both boundary behaviors while preserving a larger
-share of factual answers. It computes loss only on the assistant completion,
-not on the verified context supplied in the prompt. Validate the source data
-before starting a job:
+The combined supervised dataset separates five behaviors: profile answers,
+definitions grounded in supplied external evidence, public-search tool requests,
+missing Daniel-specific facts, and privacy or safety refusals. Contrastive pairs
+separate questions such as "What is RT-DETR?" from "What did Daniel contribute
+to RT-DETR?" DINOv3 and DETA are held out by entity for the evidence-synthesis
+gate. Small behavior groups are repeated to at least 64 examples per epoch so
+the much larger profile corpus does not teach that every noun is about Daniel.
+Loss is computed only on the assistant completion.
 
 ```sh
 python3 scripts/validate_daniel_lfm2_data.py
@@ -57,8 +58,8 @@ Push changes to the dataset, profile, trainer, validator, exporter, or
 
 1. validates every training and held-out record against the profile schema;
 2. trains and merges LFM2-350M on a GitHub-hosted runner;
-3. requires separate pass thresholds for verified answers, missing facts,
-   out-of-scope refusals, Korean responses, and the public strict test;
+3. requires separate pass thresholds for profile answers, grounded definitions,
+   retrieval decisions, missing facts, refusals, Korean responses, and the public strict test;
 4. publishes the evaluated FP16 checkpoint and matching SFT dataset to Hugging
    Face, and publishes the source under `daniel-lfm2-source-v2`;
 5. exports and smoke-tests symmetric Q4 ONNX before updating the public ONNX
@@ -69,9 +70,11 @@ After the remote job passes, pin the emitted Hugging Face model revision and
 bump the browser cache version with
 `python3 scripts/pin_daniel_lfm2_model.py <revision>`.
 
-The merged model gate requires at least 70% overall, 60% verified-profile
-answers, two-thirds of missing-fact answers, and 80% of out-of-scope refusals.
-The separate 51-case strict gate also checks privacy, chronology, Korean output,
+The merged model gate requires at least 70% overall, 60% profile answers and
+grounded definitions, two-thirds of retrieval and missing-fact decisions, and
+80% of privacy or safety refusals. Nine routing cases add held-out-entity
+evidence, definition-versus-contribution contrasts, and unseen retrieval terms.
+The separate 51-case strict gate checks privacy, chronology, Korean output,
 hallucination traps, and genuine multi-turn follow-ups before ONNX export.
 
 ## Export only
@@ -104,9 +107,12 @@ Face's CORS-enabled resolve endpoint and an immutable commit so the browser
 cache and every model file stay tied to the evaluated export. The GitHub release
 remains a downloadable backup rather than the browser's primary model origin.
 
-The browser still retrieves verified JSON context before generation. The model
-learns how to apply that context and when to decline, while source data remains
-the authority for dates, metrics, private-fact absence, and links.
+The browser still retrieves JSON evidence before generation. The model learns
+how to apply evidence and can emit
+`<search_public_knowledge>TERM</search_public_knowledge>` when evidence is absent.
+The browser executes that request and replaces the control token with a cited
+answer. Source data remains authoritative for dates, metrics, definitions,
+private-fact absence, and links.
 
 As an alternative to GitHub Actions, submit the single-file trainer to Hugging
 Face Jobs with the dataset, held-out evaluation cases, and profile pinned to
@@ -121,8 +127,10 @@ hf jobs uv run \
   --detach \
   scripts/train_daniel_lfm2.py \
   --dataset-url https://raw.githubusercontent.com/SangbumChoi/sangbumchoi.github.io/<revision>/assets/data/daniel-lfm2-sft.jsonl \
+  --routing-dataset-url https://raw.githubusercontent.com/SangbumChoi/sangbumchoi.github.io/<revision>/assets/data/daniel-lfm2-routing-sft.jsonl \
   --profile-url https://raw.githubusercontent.com/SangbumChoi/sangbumchoi.github.io/<revision>/assets/data/daniel-profile.json \
   --eval-url https://raw.githubusercontent.com/SangbumChoi/sangbumchoi.github.io/<revision>/assets/data/daniel-lfm2-eval.jsonl \
+  --routing-eval-url https://raw.githubusercontent.com/SangbumChoi/sangbumchoi.github.io/<revision>/assets/data/daniel-lfm2-routing-eval.jsonl \
   --training-revision <revision> \
   --push-to-hub
 ```

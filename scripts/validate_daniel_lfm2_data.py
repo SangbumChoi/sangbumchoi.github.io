@@ -10,7 +10,7 @@ from collections import Counter
 from pathlib import Path
 
 
-BEHAVIORS = {"answer", "unknown", "refuse"}
+BEHAVIORS = {"answer", "ground_external", "retrieve", "unknown", "refuse"}
 
 
 def validate_messages(messages: list[dict], record_id: str, ending_role: str) -> None:
@@ -65,7 +65,7 @@ def validate_training(records: list[dict], profile: dict) -> Counter:
         if record.get("language", "en") not in {"en", "ko"}:
             raise ValueError(f"{record_id}: invalid language {record.get('language')}")
         context_keys = record.get("context_keys")
-        if not context_keys or any(key not in profile for key in context_keys):
+        if not isinstance(context_keys, list) or any(key not in profile for key in context_keys):
             raise ValueError(f"{record_id}: invalid context keys {context_keys}")
         messages = record.get("messages", [])
         validate_messages(messages, record_id, "assistant")
@@ -89,12 +89,29 @@ def validate_training(records: list[dict], profile: dict) -> Counter:
             for marker in ("outside this portfolio's scope", "cannot pretend", "cannot identify", "범위 밖", "식별할 수")
         ):
             raise ValueError(f"{record_id}: refusal boundary is missing")
-        if behavior == "answer":
-            context = flatten({key: profile[key] for key in context_keys})
+        if behavior == "retrieve" and not re.fullmatch(
+            r"<search_public_knowledge>[^<>]+</search_public_knowledge>", answer
+        ):
+            raise ValueError(f"{record_id}: retrieval answer must be a search tool request")
+        if behavior == "ground_external" and not record.get("evidence"):
+            raise ValueError(f"{record_id}: external answer requires evidence")
+        if behavior in {"answer", "ground_external"}:
+            context = flatten(
+                {
+                    "profile": {key: profile[key] for key in context_keys},
+                    "evidence": record.get("evidence"),
+                }
+            )
             for number in re.findall(r"\b\d[\d.,]*[A-Za-z+]*\b", answer):
                 if number.lower().rstrip(".,") not in context.lower():
                     raise ValueError(f"{record_id}: numeric claim is absent from context: {number}")
-    if counts["answer"] < 30 or counts["unknown"] < 6 or counts["refuse"] < 12:
+    if (
+        counts["answer"] < 30
+        or counts["ground_external"] < 6
+        or counts["retrieve"] < 6
+        or counts["unknown"] < 6
+        or counts["refuse"] < 12
+    ):
         raise ValueError(f"Insufficient behavior coverage: {dict(counts)}")
     return counts
 
@@ -123,8 +140,13 @@ def validate_eval(records: list[dict], profile: dict, training_prompts: set[str]
         prompt = final_user_prompt(record).strip().lower()
         if prompt in training_prompts:
             raise ValueError(f"{record_id}: evaluation prompt is present in training data")
-        if behavior == "answer":
-            context = flatten({key: profile[key] for key in record["context_keys"]}).lower()
+        if behavior in {"answer", "ground_external"}:
+            context = flatten(
+                {
+                    "profile": {key: profile[key] for key in record["context_keys"]},
+                    "evidence": record.get("evidence"),
+                }
+            ).lower()
             for group in record["expected_groups"]:
                 if not any(term.lower() in context for term in group):
                     raise ValueError(f"{record_id}: expected group is absent from context: {group}")
@@ -134,12 +156,22 @@ def validate_eval(records: list[dict], profile: dict, training_prompts: set[str]
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=Path, default=Path("assets/data/daniel-lfm2-sft.jsonl"))
+    parser.add_argument(
+        "--routing-dataset",
+        type=Path,
+        default=Path("assets/data/daniel-lfm2-routing-sft.jsonl"),
+    )
     parser.add_argument("--eval", type=Path, default=Path("assets/data/daniel-lfm2-eval.jsonl"))
+    parser.add_argument(
+        "--routing-eval",
+        type=Path,
+        default=Path("assets/data/daniel-lfm2-routing-eval.jsonl"),
+    )
     parser.add_argument("--profile", type=Path, default=Path("assets/data/daniel-profile.json"))
     args = parser.parse_args()
     profile = json.loads(args.profile.read_text(encoding="utf-8"))
-    training = load_jsonl(args.dataset)
-    evaluation = load_jsonl(args.eval)
+    training = load_jsonl(args.dataset) + load_jsonl(args.routing_dataset)
+    evaluation = load_jsonl(args.eval) + load_jsonl(args.routing_eval)
     training_prompts = {
         message["content"].strip().lower()
         for record in training

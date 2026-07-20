@@ -9,7 +9,7 @@ from collections import Counter
 from pathlib import Path
 
 
-BEHAVIORS = {"answer", "unknown", "refuse"}
+BEHAVIORS = {"answer", "retrieve", "unknown", "refuse"}
 LANGUAGES = {"en", "ko"}
 SOURCE_STATUSES = {"externally_verified", "public_self_report", "not_verified"}
 
@@ -96,7 +96,7 @@ def validate_test(
         behavior_counts[behavior] += 1
         language_counts[language] += 1
         context_keys = record.get("context_keys", [])
-        if not context_keys or any(key not in profile for key in context_keys):
+        if not isinstance(context_keys, list) or any(key not in profile for key in context_keys):
             raise ValueError(f"{record_id}: invalid context keys {context_keys}")
         messages = record.get("messages")
         if messages:
@@ -125,7 +125,7 @@ def validate_test(
                 if not any(term.lower() in context for term in group):
                     raise ValueError(f"{record_id}: expected group is absent from context: {group}")
 
-    minimums = {"answer": 20, "unknown": 6, "refuse": 8}
+    minimums = {"answer": 20, "retrieve": 1, "unknown": 6, "refuse": 7}
     for behavior, minimum in minimums.items():
         if behavior_counts[behavior] < minimum:
             raise ValueError(f"Strict test needs at least {minimum} {behavior} cases")
@@ -137,7 +137,17 @@ def validate_test(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--train", type=Path, default=Path("assets/data/daniel-lfm2-sft.jsonl"))
+    parser.add_argument(
+        "--routing-train",
+        type=Path,
+        default=Path("assets/data/daniel-lfm2-routing-sft.jsonl"),
+    )
     parser.add_argument("--validation", type=Path, default=Path("assets/data/daniel-lfm2-eval.jsonl"))
+    parser.add_argument(
+        "--routing-validation",
+        type=Path,
+        default=Path("assets/data/daniel-lfm2-routing-eval.jsonl"),
+    )
     parser.add_argument("--test", type=Path, default=Path("assets/data/daniel-lfm2-test.jsonl"))
     parser.add_argument("--profile", type=Path, default=Path("assets/data/daniel-profile.json"))
     parser.add_argument(
@@ -145,8 +155,8 @@ def main() -> None:
     )
     args = parser.parse_args()
     profile = json.loads(args.profile.read_text(encoding="utf-8"))
-    train = read_jsonl(args.train)
-    validation = read_jsonl(args.validation)
+    train = read_jsonl(args.train) + read_jsonl(args.routing_train)
+    validation = read_jsonl(args.validation) + read_jsonl(args.routing_validation)
     excluded_prompts = {
         message["content"].strip().lower()
         for record in train
