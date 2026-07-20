@@ -5,14 +5,20 @@ import test from "node:test";
 import {
   buildEntityAnswer,
   buildExternalEvidenceAnswer,
+  buildProfileWorkAnswer,
   classifyKnowledgeIntent,
   externalSearchTerm,
   fetchWikipediaEvidence,
   findKnownEntity,
+  privateInformationResponse,
+  profileWorkClarificationResponse,
 } from "../assets/js/knowledge-router.mjs";
 
 const knowledge = JSON.parse(
   await readFile(new URL("../assets/data/daniel-entity-knowledge.json", import.meta.url), "utf8"),
+);
+const profile = JSON.parse(
+  await readFile(new URL("../assets/data/daniel-profile.json", import.meta.url), "utf8"),
 );
 
 test("routes a model definition to external entity knowledge", () => {
@@ -50,6 +56,25 @@ test("resolves portfolio entity follow-ups", () => {
 test("routes private-person requests before retrieval", () => {
   const route = classifyKnowledgeIntent("What is his bank account number?", knowledge);
   assert.equal(route.type, "sensitive_personal");
+});
+
+test("treats height wording as private without confusing it with experience", () => {
+  const prompt = "How tall is he?";
+  const route = classifyKnowledgeIntent(prompt, knowledge);
+  const answer = privateInformationResponse("en", prompt);
+  assert.equal(route.type, "sensitive_personal");
+  assert.match(answer, /verified information about Daniel's height/);
+  assert.doesNotMatch(answer, /six|6\+|years old/i);
+});
+
+test("keeps exact-age questions separate from years of experience", () => {
+  const prompt = "How old is he?";
+  const route = classifyKnowledgeIntent(prompt, knowledge);
+  const answer = privateInformationResponse("en", prompt);
+  assert.equal(route.type, "sensitive_personal");
+  assert.match(answer, /1997/);
+  assert.match(answer, /exact birthday is not published/);
+  assert.doesNotMatch(answer, /6\+|years of experience/i);
 });
 
 test("routes unseen definitions to external search", () => {
@@ -92,9 +117,27 @@ test("routes polite explanation requests to public knowledge", () => {
   assert.equal(externalSearchTerm("Could you explain federated learning?"), "federated learning");
 });
 
-test("keeps polite requests about your work on the profile path", () => {
+test("routes broad company-work questions to the complete work index", () => {
   const route = classifyKnowledgeIntent("Could you explain your work?", knowledge);
-  assert.equal(route.type, "profile");
+  const answer = buildProfileWorkAnswer(profile);
+  assert.equal(route.type, "profile_work");
+  assert.match(answer, /Toss Bank/);
+  assert.match(answer, /SuperbAI/);
+  assert.match(answer, /Team ISLAND/);
+});
+
+test("handles ungrammatical company-work questions as profile work", () => {
+  const route = classifyKnowledgeIntent("what did he did in his company", knowledge);
+  assert.equal(route.type, "profile_work");
+});
+
+test("asks for clarification instead of searching an ambiguous work follow-up", () => {
+  const prompt = "how about in the work";
+  const route = classifyKnowledgeIntent(prompt, knowledge);
+  assert.equal(route.type, "profile_clarification");
+  assert.equal(externalSearchTerm(prompt), "");
+  assert.match(profileWorkClarificationResponse("en"), /Toss Bank/);
+  assert.match(profileWorkClarificationResponse("en"), /SuperbAI/);
 });
 
 test("routes indirect primer requests to public knowledge", () => {

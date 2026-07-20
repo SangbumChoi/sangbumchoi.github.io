@@ -46,9 +46,13 @@ class DanielLfm2DataPipelineTest(unittest.TestCase):
     def test_legacy_sampler_reconstructs_repeat_inflation(self) -> None:
         counts = Counter(record["behavior"] for record in self.records)
         sampling = ANALYZE.legacy_sampling(counts, 64, 2)
+        expected_unique = sum(count - 2 for count in counts.values())
+        expected_effective = sum(max(count - 2, 64) for count in counts.values())
         self.assertEqual(sampling["loss_holdout_total"], 10)
-        self.assertEqual(sampling["effective_training_total_per_epoch"], 431)
-        self.assertEqual(sampling["repeated_slots_per_epoch"], 145)
+        self.assertEqual(sampling["effective_training_total_per_epoch"], expected_effective)
+        self.assertEqual(
+            sampling["repeated_slots_per_epoch"], expected_effective - expected_unique
+        )
         self.assertEqual(sampling["by_behavior"]["ground_external"]["repeat_factor"], 6.4)
 
     def test_scenario_families_do_not_cross_splits(self) -> None:

@@ -1,22 +1,24 @@
-import { detectPortraitFeatures } from "./portrait-landmarks.js?v=32";
-import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=32";
+import { detectPortraitFeatures } from "./portrait-landmarks.js?v=33";
+import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=33";
 import {
   chooseRuntimePolicy,
   formatWeightSize,
   modelResidencyCoordinator,
   probeRuntimeCapabilities,
-} from "./runtime-policy.mjs?v=32";
+} from "./runtime-policy.mjs?v=33";
 import {
   buildEntityAnswer,
   buildExternalEvidenceAnswer,
+  buildProfileWorkAnswer,
   classifyKnowledgeIntent,
   detectAnswerLanguage,
   externalSearchTerm,
   fetchWikipediaEvidence,
   privateInformationResponse,
-} from "./knowledge-router.mjs?v=32";
+  profileWorkClarificationResponse,
+} from "./knowledge-router.mjs?v=33";
 
-const ASSET_VERSION = "32";
+const ASSET_VERSION = "33";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 const ENTITY_KNOWLEDGE_URL = `/assets/data/daniel-entity-knowledge.json?v=${ASSET_VERSION}`;
 
@@ -200,12 +202,8 @@ async function initPortraitLandmarks() {
   }
 }
 
-function selectProfileContext(profile, prompt = "", conversation = []) {
-  const recentContext = conversation
-    .slice(-6)
-    .map((message) => message.content)
-    .join("\n");
-  const query = `${recentContext}\n${prompt}`.toLowerCase();
+function selectProfileContext(profile, prompt = "") {
+  const query = prompt.toLowerCase();
   const context = { identity: profile.identity, links: profile.links };
 
   if (/how long|years? (?:of )?(?:experience|work)|worked? in ai|ai experience|career length|경력.*(?:몇|얼마나)|ai.*경력|몇 년/.test(query)) {
@@ -217,13 +215,19 @@ function selectProfileContext(profile, prompt = "", conversation = []) {
   } else if (/2018|seerslab|uiuc|early career|earlier work|2018년|초기 경력/.test(query)) {
     context.career_timeline = profile.career_timeline;
     context.other_experience = profile.other_experience;
+  } else if (/toss\s*bank|tossbank|document|authentication|agent|토스\s*뱅크|토스은행|문서|인증|에이전트/.test(query)) {
+    context.current_work = profile.current_work;
+  } else if (/\b(?:(?:his|your|daniel(?:'s)?)\s+(?:work|job|company|role|employer)|work experience|company experience|current job)\b|\b(?:at|in|for)\s+(?:his|your|the)\s+compan(?:y|ies)\b|회사|직장|업무/.test(query)) {
+    context.current_work = profile.current_work;
+    context.previous_work = profile.previous_work;
+    context.career_timeline = profile.career_timeline;
+    context.other_experience = profile.other_experience;
+    context.products = profile.products;
   } else if (/open.?source|hugging|sam2|molmo|transformers|오픈.?소스/.test(query)) {
     context.open_source = profile.open_source;
   } else if (/zzazz|째즈|team\s*island|팀\s*아일랜드/.test(query)) {
     context.other_experience = profile.other_experience;
     context.products = profile.products;
-  } else if (/toss\s*bank|tossbank|document|authentication|agent|토스\s*뱅크|토스은행|문서|인증|에이전트/.test(query)) {
-    context.current_work = profile.current_work;
   } else if (/superb|multimodal|ground|training|gpu|dataset|cvpr|멀티모달|학습|데이터/.test(query)) {
     context.previous_work = profile.previous_work;
   } else if (/paper|publication|research|mobilehuman|zero|논문|연구/.test(query)) {
@@ -240,8 +244,8 @@ function selectProfileContext(profile, prompt = "", conversation = []) {
   return context;
 }
 
-function buildSystemPrompt(profile, prompt = "", conversation = state.conversation, externalEvidence = null) {
-  const focusedContext = selectProfileContext(profile, prompt, conversation);
+function buildSystemPrompt(profile, prompt = "", externalEvidence = null) {
+  const focusedContext = selectProfileContext(profile, prompt);
   return [
     "You are Daniel OS, the personal AI portfolio of Sangbum Daniel Choi.",
     "Answer in the same language as the visitor, in at most 100 words.",
@@ -426,9 +430,25 @@ async function routeKnowledgeAnswer(prompt) {
   });
 
   if (route.type === "sensitive_personal") {
-    deliverGroundedAnswer(privateInformationResponse(language), {
+    deliverGroundedAnswer(privateInformationResponse(language, prompt), {
       source: "privacy-policy",
       label: "PRIVACY POLICY · local",
+    });
+    return true;
+  }
+
+  if (route.type === "profile_clarification") {
+    deliverGroundedAnswer(profileWorkClarificationResponse(language), {
+      source: "profile-clarification",
+      label: "PROFILE CLARIFICATION · local",
+    });
+    return true;
+  }
+
+  if (route.type === "profile_work") {
+    deliverGroundedAnswer(buildProfileWorkAnswer(state.profile, language), {
+      source: "profile-work-index",
+      label: "PROFILE WORK INDEX · local",
     });
     return true;
   }

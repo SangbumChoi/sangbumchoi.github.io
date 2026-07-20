@@ -139,6 +139,30 @@ try {
       forbiddenTerms: ["Daniel created RT-DETR", "negative sampling"],
     },
     {
+      prompt: "What is ZERO?",
+      source: "entity-index",
+      terms: ["multimodal", "visual-grounding"],
+      forbiddenTerms: ["romantic comedy", "few-shot learning"],
+    },
+    {
+      prompt: "how about in the work",
+      source: "profile-clarification",
+      terms: ["Toss Bank", "SuperbAI", "Team ISLAND"],
+      forbiddenTerms: ["Wikipedia", "How to Lose a Guy", "romantic comedy"],
+    },
+    {
+      prompt: "what did he did in his company",
+      source: "profile-work-index",
+      terms: ["Toss Bank", "SuperbAI", "Team ISLAND", "ZZAZZ"],
+      forbiddenTerms: ["only open-source", "only Hugging Face"],
+    },
+    {
+      prompt: "how tall is he",
+      source: "privacy-policy",
+      terms: ["verified information", "height", "professional experience"],
+      forbiddenTerms: ["six-plus years old", "6+ years old", "35 years old"],
+    },
+    {
       prompt: "What is his bank account number?",
       source: "privacy-policy",
       terms: ["does not disclose", "private personal information"],
