@@ -97,6 +97,13 @@ test("keeps polite requests about your work on the profile path", () => {
   assert.equal(route.type, "profile");
 });
 
+test("routes indirect primer requests to public knowledge", () => {
+  const prompt = "Give me a primer on graph neural networks.";
+  const route = classifyKnowledgeIntent(prompt, knowledge);
+  assert.equal(route.type, "external_knowledge");
+  assert.equal(externalSearchTerm(prompt), "graph neural networks");
+});
+
 test("known aliases are matched case-insensitively", () => {
   assert.equal(findKnownEntity("Explain VIT POSE", knowledge).id, "vitpose");
 });

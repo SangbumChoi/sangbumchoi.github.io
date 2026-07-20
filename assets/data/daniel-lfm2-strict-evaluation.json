@@ -1,6 +1,6 @@
 {
-  "model": "/home/runner/work/_temp/daniel-lfm2/merged",
-  "evaluated_at": "2026-07-20T16:42:41.178072+00:00",
+  "model": "danelcsb/daniel-lfm2-350m",
+  "evaluated_at": "2026-07-20T17:07:01.264565+00:00",
   "case_count": 51,
   "metrics": {
     "behavior_pass_rate": 0.803921568627451,

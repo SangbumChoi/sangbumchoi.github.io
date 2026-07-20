@@ -4,7 +4,7 @@ const PROFILE_SCOPE_PATTERN = /\b(?:portfolio|resume|cv|career|experience|public
 const DEFINITION_PATTERN = /^\s*(?:what|who|where)\s+(?:is|are|was|were)\b|^\s*(?:define|explain)\b|^\s*(?:what does|where does)\b|무엇|뭐야|뭔가요|어디|설명(?:해|해줘|해주세요)/i;
 const PRIVATE_PATTERN = /\b(?:bank account|account number|height|weight|relationship status|girlfriend|boyfriend|spouse|wife|husband|family|home address|phone number|salary|exact birthday|social security|passport)\b|계좌|키|몸무게|연애|여자친구|남자친구|배우자|가족|집 주소|전화번호|연봉|생일|주민등록|여권/i;
 const VISITOR_IDENTITY_PATTERN = /^\s*(?:who am i|do you know who i am)\b|나는 누구|내가 누구/i;
-const GENERAL_LOOKUP_PATTERN = /^\s*(?!(?:what|who)\s+should\b)(?:what|who|where|when|how|why)\b|^\s*(?:(?:can|could|would) you )?(?:define|explain|tell me about|teach me about)\b|무엇|뭐야|뭔가요|어디|누가|언제|어떻게|왜|설명(?:해|해줘|해주세요)/i;
+const GENERAL_LOOKUP_PATTERN = /^\s*(?!(?:what|who)\s+should\b)(?:what|who|where|when|how|why)\b|^\s*(?:(?:can|could|would) you )?(?:define|explain|tell me about|teach me about)\b|^\s*(?:give|provide) me (?:an? )?(?:primer|overview|introduction|definition|explanation) (?:of|on|to)\b|^\s*i (?:want|need|would like) to (?:know|learn) about\b|무엇|뭐야|뭔가요|어디|누가|언제|어떻게|왜|설명(?:해|해줘|해주세요)/i;
 
 function normalize(value = "") {
   return value.toLowerCase().replace(/[–—_]/g, "-").replace(/\s+/g, " ").trim();
@@ -93,6 +93,8 @@ export function externalSearchTerm(prompt) {
     .replace(/^\s*who\s+(?:wrote|created|invented|founded|painted|developed|discovered)\s+/i, "")
     .replace(/^\s*(?:what|who|where)\s+(?:is|are|was|were)\s+/i, "")
     .replace(/^\s*(?:(?:can|could|would) you )?(?:define|explain|tell me about|teach me about)\s+/i, "")
+    .replace(/^\s*(?:give|provide) me (?:an? )?(?:primer|overview|introduction|definition|explanation) (?:of|on|to)\s+/i, "")
+    .replace(/^\s*i (?:want|need|would like) to (?:know|learn) about\s+/i, "")
     .replace(/^\s*(?:무엇이|무엇은|뭐야|뭔가요|어디에|어디야|설명해줘|설명해주세요)\s*/i, "")
     .replace(/^\s*(?:a|an|the)\s+/i, "")
     .replace(/[?.!]+$/g, "")

@@ -162,6 +162,12 @@ try {
       terms: ["distributed hash table", "key", "node", "Wikipedia source"],
       forbiddenTerms: ["Daniel", "portfolio"],
     },
+    {
+      prompt: "Give me a primer on graph neural networks.",
+      source: "wikipedia-evidence",
+      terms: ["Graph neural networks", "graphs", "Wikipedia source"],
+      forbiddenTerms: ["Daniel", "portfolio"],
+    },
   ];
   const groundedResults = [];
   for (const testCase of groundedCases) {
