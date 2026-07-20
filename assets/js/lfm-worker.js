@@ -1,7 +1,7 @@
 import { env, pipeline, TextStreamer } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0";
 
 const MODEL_ID = "danelcsb/daniel-lfm2-350m-ONNX";
-const MODEL_REVISION = "0fe52b4df839310194e4de6ad9dbda2c4f395eac";
+const MODEL_REVISION = "1f7e797b18fbffe712ef829f9460b29e3591450b";
 
 env.allowLocalModels = false;
 env.allowRemoteModels = true;

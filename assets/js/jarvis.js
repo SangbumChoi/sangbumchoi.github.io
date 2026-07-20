@@ -1,11 +1,11 @@
-import { detectPortraitFeatures } from "./portrait-landmarks.js?v=30";
-import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=30";
+import { detectPortraitFeatures } from "./portrait-landmarks.js?v=31";
+import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=31";
 import {
   chooseRuntimePolicy,
   formatWeightSize,
   modelResidencyCoordinator,
   probeRuntimeCapabilities,
-} from "./runtime-policy.mjs?v=30";
+} from "./runtime-policy.mjs?v=31";
 import {
   buildEntityAnswer,
   buildExternalEvidenceAnswer,
@@ -14,9 +14,9 @@ import {
   externalSearchTerm,
   fetchWikipediaEvidence,
   privateInformationResponse,
-} from "./knowledge-router.mjs?v=30";
+} from "./knowledge-router.mjs?v=31";
 
-const ASSET_VERSION = "30";
+const ASSET_VERSION = "31";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 const ENTITY_KNOWLEDGE_URL = `/assets/data/daniel-entity-knowledge.json?v=${ASSET_VERSION}`;
 

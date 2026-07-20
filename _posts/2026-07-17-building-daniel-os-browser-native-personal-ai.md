@@ -2,7 +2,7 @@
 title: "Building Daniel OS: data, training, and strict evaluation"
 permalink: /posts/daniel-os-lfm2/
 date: 2026-07-17
-last_modified_at: 2026-07-20
+last_modified_at: 2026-07-21
 eyebrow: "FIELD NOTE / LOCAL AI"
 dek: "How I separated personal facts from public knowledge, trained evidence-routing behavior into LFM2-350M, and evaluated a browser-native AI portfolio without hiding its limits."
 read_time: true
@@ -115,7 +115,7 @@ The validator checks duplicate prompts, role order, known profile keys, evidence
 
 The trainer holds out examples inside each behavior and balances the effective stream differently from the original personalization-only run. Every minority behavior contributes at least 64 examples per epoch, while the 177 profile answers are not multiplied further. This reduces the prior that every question must produce a biography without discarding the broad profile corpus.
 
-Most importantly, evaluation holds out whole entities, not just paraphrases. DINOv3 and DETA definitions do not appear in routing SFT. Their evaluation cases supply previously unseen evidence and test whether the model can synthesize it without inventing a relationship to me. Other cases remove evidence and require a search request for unseen entities such as CLIP, NeRF, and Carnegie Mellon University.
+Most importantly, evaluation holds out evidence conditions, not just paraphrases. DINOv3 and DETA appear in routing SFT only as no-evidence requests that must trigger public retrieval; their definitions are withheld until evaluation. The evaluation cases then supply that unseen evidence and test whether the model switches from search to grounded synthesis without inventing a relationship to me. CLIP, NeRF, and Carnegie Mellon University provide a separate lexical holdout: none appears in SFT, and each must trigger a search request when no evidence is supplied.
 
 The published dataset layout is:
 
@@ -123,7 +123,7 @@ The published dataset layout is:
 sft/train.jsonl                  268 profile conversations
 sft/routing.jsonl                28 routing conversations
 behavior_eval/validation.jsonl   36 profile behavior checks
-routing_eval/validation.jsonl     9 routing and entity-holdout checks
+routing_eval/validation.jsonl     9 routing and evidence-holdout checks
 strict_test/test.jsonl           51 post-training tests
 profile/                         profile, provenance, and entity knowledge
 metrics/                         training loss and strict evaluation
@@ -143,7 +143,7 @@ System policy, profile context, retrieved evidence, and visitor tokens are maske
 
 ![Daniel LFM2 train and validation loss]({{ '/assets/images/daniel-lfm2-loss.png' | relative_url }})
 
-This chart and the committed [raw metrics](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/data/daniel-lfm2-training-metrics.json) describe the previous personalization-only checkpoint. Its validation loss moved from `0.469` at epoch 1 to `0.386` at epoch 2, then rose to `0.402` at epoch 3, so the trainer selected epoch 2. I keep that curve as a baseline rather than presenting it as evidence for the new routing dataset. The routing revision must produce its own finite validation curve and pass every behavioral gate before replacing the hosted Q4 model.
+This chart and the committed [raw metrics](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/data/daniel-lfm2-training-metrics.json) come from routing revision `e54fa04`. Validation loss moved from `0.754` at epoch 1 to `0.536` at epoch 2, then rose to `0.620` at epoch 3, so the trainer restored epoch 2 rather than publishing the more overfit final epoch. Reported average training loss was `0.490`. The CPU GitHub runner took 15,045 seconds, about 4 hours 11 minutes, for the balanced three-epoch stream. The merged checkpoint then passed both behavior gates and the untouched strict set before its symmetric-Q4 ONNX export passed a CPU inference smoke test.
 
 ```text
 profile SFT + routing SFT
@@ -176,9 +176,11 @@ The training-time gate now contains 45 cases: 36 profile cases and nine routing 
 
 A test accepts groups of valid phrases rather than one exact sentence. `fivefold`, `five times`, and `5x`, for example, express the same serving result. Forbidden terms test the opposite direction: a prompt suggesting a 10x speedup must not make the model repeat it.
 
-The earlier checkpoint's strict results remain a baseline, not a claim about this revision. It showed that a small personalized model could learn strong abstention while still having weak compositional recall and poor Korean output. The new evaluation is designed to expose a different failure: whether the model can use unseen evidence without converting every entity into "Daniel's work." All generated answers are published so aggregate scores cannot hide a fluent hallucination.
+The 45-case behavior gate reached `84.4%` overall. Evidence-grounded definitions and refusals scored `100%`, profile answers `81.8%`, unknown facts and retrieval decisions `75%` each. The separate 51-case [strict result](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/data/daniel-lfm2-strict-evaluation.json) reached `80.4%`: retrieval and refusals scored `100%`, unknown facts `90%`, and profile answers `71.0%`. Korean prompts received Korean responses in every case. Unknown-claim leak, refusal-scope leak, and answer-hallucination rates were all `0%`. The lower strict profile-answer score is the remaining weakness; routing is substantially more reliable than long-tail compositional recall in this 350M checkpoint.
 
-The browser runtime has its own deterministic tests for the exact regression pairs. They verify RT-DETR definition versus contribution, ViTPose definition, UIUC location versus study history, entity pronoun follow-ups, private bank-account requests, unseen Wikipedia retrieval, and citation rendering. This makes the product gate broader than the model checkpoint gate: both the model behavior and the code that routes around it must be correct.
+The committed [behavior evaluation](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/data/daniel-lfm2-behavior-evaluation.json) and strict JSON include every generated answer, so aggregate scores cannot hide a fluent hallucination. DINOv3 and DETA specifically verify the switch from no-evidence retrieval to evidence-grounded synthesis without converting either entity into "Daniel's work."
+
+The browser runtime has its own tests for the exact regression pairs. They verify RT-DETR definition versus contribution, ViTPose definition, UIUC location versus study history, entity pronoun follow-ups, visitor identity, private bank-account requests, and cited Wikipedia retrieval for unrelated questions such as Python's creator and distributed hash tables. This makes the product gate broader than the model checkpoint gate: both the model behavior and the code that routes around it must be correct.
 
 ## What STT and TTS currently mean
 
@@ -250,7 +252,7 @@ The complete implementation is reproducible from the repository:
 - [Training and merge script](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/train_daniel_lfm2.py)
 - [Knowledge router and public-retrieval fallback](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/js/knowledge-router.mjs)
 - [Cited portfolio entity index](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/data/daniel-entity-knowledge.json)
-- [Routing SFT and entity-held-out evaluation](https://github.com/SangbumChoi/sangbumchoi.github.io/tree/master/assets/data)
+- [Routing SFT and evidence-condition holdouts](https://github.com/SangbumChoi/sangbumchoi.github.io/tree/master/assets/data)
 - [Dataset validators](https://github.com/SangbumChoi/sangbumchoi.github.io/tree/master/scripts)
 - [Strict evaluator](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/evaluate_daniel_lfm2_test.py)
 - [Loss plotting script](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/plot_daniel_lfm2_metrics.py)
