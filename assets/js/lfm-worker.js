@@ -1,16 +1,14 @@
 import { env, pipeline, TextStreamer } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0";
 
-const MODEL_ID = "SangbumChoi/sangbumchoi.github.io";
-const MODEL_REVISION = "3c17b3ab590bc854df861310adc7a54d6ac96e4d";
-const MODEL_PATH = "models/daniel-lfm2-350m-ONNX";
+const MODEL_ID = "danelcsb/daniel-lfm2-350m-ONNX";
+const MODEL_REVISION = "0fe52b4df839310194e4de6ad9dbda2c4f395eac";
 
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
-env.remoteHost = "https://media.githubusercontent.com/media/";
-env.remotePathTemplate = `{model}/${MODEL_REVISION}/${MODEL_PATH}/`;
 
 let generator = null;
 let runtime = null;
+let runtimeDtype = null;
 let loadingPromise = null;
 
 function serializeError(error) {
@@ -30,9 +28,19 @@ function serializeError(error) {
   };
 }
 
-async function createGenerator(device = "webgpu") {
+async function disposeGenerator() {
+  const activeGenerator = generator;
+  generator = null;
+  runtime = null;
+  runtimeDtype = null;
+  loadingPromise = null;
+  if (activeGenerator?.dispose) await activeGenerator.dispose();
+}
+
+async function createGenerator(device = "webgpu", dtype = "q4") {
+  const startedAt = performance.now();
   const options = {
-    dtype: "q4",
+    dtype,
     device,
     revision: MODEL_REVISION,
     progress_callback: (payload) => self.postMessage({ type: "progress", payload }),
@@ -41,22 +49,44 @@ async function createGenerator(device = "webgpu") {
   self.postMessage({ type: "stage", stage: "initializing", device });
   generator = await pipeline("text-generation", MODEL_ID, options);
   runtime = device;
+  runtimeDtype = dtype;
 
-  self.postMessage({ type: "ready", runtime, model: MODEL_ID });
+  self.postMessage({
+    type: "ready",
+    runtime,
+    dtype: runtimeDtype,
+    model: MODEL_ID,
+    initElapsed: Math.round(performance.now() - startedAt),
+  });
 }
 
-function ensureGenerator(device) {
-  if (generator) return Promise.resolve();
-  if (!loadingPromise) loadingPromise = createGenerator(device);
+async function ensureGenerator(device, dtype) {
+  if (generator && runtime === device && runtimeDtype === dtype) return Promise.resolve();
+  if (generator) await disposeGenerator();
+  if (!loadingPromise) {
+    loadingPromise = createGenerator(device, dtype).finally(() => {
+      loadingPromise = null;
+    });
+  }
   return loadingPromise;
 }
 
 self.addEventListener("message", async (event) => {
-  const { type, messages, device } = event.data || {};
+  const { type, messages, device, dtype } = event.data || {};
+
+  if (type === "dispose") {
+    try {
+      await disposeGenerator();
+      self.postMessage({ type: "disposed" });
+    } catch (error) {
+      self.postMessage({ type: "error", phase: "dispose", error: serializeError(error) });
+    }
+    return;
+  }
 
   if (type === "load") {
     try {
-      await ensureGenerator(device || "webgpu");
+      await ensureGenerator(device || "webgpu", dtype || "q4");
     } catch (error) {
       self.postMessage({
         type: "error",
@@ -71,7 +101,7 @@ self.addEventListener("message", async (event) => {
   if (type !== "generate") return;
 
   try {
-    await ensureGenerator(device || "webgpu");
+    await ensureGenerator(device || "webgpu", dtype || "q4");
     const startedAt = performance.now();
     let streamedText = "";
     const streamer = new TextStreamer(generator.tokenizer, {

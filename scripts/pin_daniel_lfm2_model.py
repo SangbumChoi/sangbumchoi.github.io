@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pin a published model-assets revision and invalidate browser caches."""
+"""Pin a published Hugging Face model revision and invalidate browser caches."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def replace_once(text: str, pattern: str, replacement: str, label: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("revision", help="40-character model-assets Git commit")
+    parser.add_argument("revision", help="40-character Hugging Face model commit")
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9a-f]{40}", args.revision):
         raise ValueError("revision must be a lowercase 40-character Git SHA")
@@ -57,6 +57,13 @@ def main() -> None:
         f'const ASSET_VERSION = "{next_version}";',
         "ASSET_VERSION",
     )
+    jarvis, import_count = re.subn(
+        r'((?:portrait-landmarks\.js|portrait-mesh\.js|runtime-policy\.mjs)\?v=)\d+',
+        rf"\g<1>{next_version}",
+        jarvis,
+    )
+    if import_count != 3:
+        raise RuntimeError("Could not update all versioned Jarvis module imports")
     config = replace_once(
         config,
         r"^(jarvis_asset_version\s*:\s*)\d+\s*$",

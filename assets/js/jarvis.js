@@ -1,7 +1,13 @@
-import { detectPortraitFeatures } from "./portrait-landmarks.js?v=22";
-import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=22";
+import { detectPortraitFeatures } from "./portrait-landmarks.js?v=23";
+import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=23";
+import {
+  chooseRuntimePolicy,
+  formatWeightSize,
+  modelResidencyCoordinator,
+  probeRuntimeCapabilities,
+} from "./runtime-policy.mjs?v=23";
 
-const ASSET_VERSION = "22";
+const ASSET_VERSION = "23";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 
 const els = {
@@ -56,6 +62,10 @@ const state = {
   lipFallbackTimer: null,
   lastLipBoundaryAt: 0,
   backend: "webgpu",
+  runtimeCapabilities: null,
+  runtimePolicy: null,
+  runtimeDiagnostics: null,
+  modelIdleTimer: null,
   fallbackAttempted: false,
   webgpuError: "",
   portraitFeatures: null,
@@ -369,7 +379,9 @@ async function initWorker(forcedBackend = null) {
   if (state.modelReady || state.modelLoading) return;
   state.modelLoading = true;
   state.modelFailed = false;
-  state.backend = forcedBackend || ("gpu" in navigator ? "webgpu" : "wasm");
+  state.backend = forcedBackend || state.runtimePolicy?.backend || (navigator.gpu ? "webgpu" : "wasm");
+  window.clearTimeout(state.modelIdleTimer);
+  await modelResidencyCoordinator.acquire("personalized-lfm2", disposeModelWorker);
   try {
     await navigator.storage?.persist?.();
   } catch (_) {
@@ -378,13 +390,65 @@ async function initWorker(forcedBackend = null) {
   els.loadButton.disabled = true;
   els.loadButton.innerHTML = '<i data-lucide="loader-circle" aria-hidden="true"></i><span>Loading</span>';
   els.modelStatus.textContent = "Loading personalized LFM2";
-  els.modelDetail.textContent = state.backend === "webgpu" ? "q4 · WebGPU · ~294 MB · cached" : "q4 · WASM fallback · ~294 MB · cached";
+  const dtype = state.runtimePolicy?.llm.dtype || "q4";
+  const weightSize = formatWeightSize(state.runtimePolicy?.llm.weightBytes);
+  els.modelDetail.textContent = state.backend === "webgpu"
+    ? `${dtype} · WebGPU · ${weightSize} · cached`
+    : `${dtype} · WASM fallback · ${weightSize} · cached`;
   setRuntime(`LLM ${state.backend} / loading`);
 
   state.worker = new Worker(`/assets/js/lfm-worker.js?v=${ASSET_VERSION}`, { type: "module" });
   state.worker.addEventListener("message", handleWorkerMessage);
   state.worker.addEventListener("error", (event) => handleModelError(event.message));
-  state.worker.postMessage({ type: "load", device: state.backend });
+  state.worker.postMessage({ type: "load", device: state.backend, dtype });
+}
+
+async function disposeModelWorker() {
+  const worker = state.worker;
+  state.worker = null;
+  if (!worker) return;
+  await new Promise((resolve) => {
+    const timeout = window.setTimeout(resolve, 300);
+    const onMessage = (event) => {
+      if (event.data?.type !== "disposed") return;
+      window.clearTimeout(timeout);
+      worker.removeEventListener("message", onMessage);
+      resolve();
+    };
+    worker.addEventListener("message", onMessage);
+    worker.postMessage({ type: "dispose" });
+  });
+  worker.terminate();
+}
+
+function configureOnDemandModel(development = false) {
+  const dtype = state.runtimePolicy?.llm.dtype || "q4";
+  const backend = state.runtimePolicy?.backend || "wasm";
+  const weightSize = formatWeightSize(state.runtimePolicy?.llm.weightBytes);
+  els.modelStatus.textContent = development ? "Development mock ready" : "Personalized LFM2 available";
+  els.modelDetail.textContent = `${dtype} · ${backend.toUpperCase()} · ${weightSize} · on demand`;
+  els.modelProgress.style.width = "0%";
+  els.progressTrack.setAttribute("aria-valuenow", "0");
+  els.loadButton.disabled = false;
+  els.loadButton.innerHTML = '<i data-lucide="cpu" aria-hidden="true"></i><span>Load model</span>';
+  setRuntime(development ? "mock / private" : `LLM ${backend} / on demand`, true);
+  setPortraitState("idle", "STANDING BY");
+  initializeIcons();
+}
+
+function scheduleIdleModelRelease() {
+  window.clearTimeout(state.modelIdleTimer);
+  const delay = state.runtimePolicy?.releaseAfterIdleMs || 0;
+  if (!delay || !state.modelReady) return;
+  state.modelIdleTimer = window.setTimeout(async () => {
+    if (state.generating || state.modelLoading) {
+      scheduleIdleModelRelease();
+      return;
+    }
+    state.modelReady = false;
+    await modelResidencyCoordinator.release("personalized-lfm2");
+    configureOnDemandModel(false);
+  }, delay);
 }
 
 function handleWorkerMessage(event) {
@@ -401,16 +465,26 @@ function handleWorkerMessage(event) {
     els.modelProgress.style.width = "100%";
     els.progressTrack.setAttribute("aria-valuenow", "100");
     els.modelStatus.textContent = "Personalized LFM2 ready";
-    els.modelDetail.textContent = `q4 · ${data.runtime.toUpperCase()} · runs locally`;
+    const initTime = Number.isFinite(data.initElapsed) ? ` · init ${(data.initElapsed / 1000).toFixed(1)}s` : "";
+    els.modelDetail.textContent = `${data.dtype || "q4"} · ${data.runtime.toUpperCase()} · runs locally${initTime}`;
     els.loadButton.innerHTML = '<i data-lucide="check" aria-hidden="true"></i><span>Ready</span>';
     els.loadButton.disabled = true;
     setRuntime(`LLM ${data.runtime} / private`, true);
     setPortraitState("idle", "LOCAL MODEL READY");
     initializeIcons();
+    if (state.runtimeDiagnostics) {
+      state.runtimeDiagnostics.session = {
+        backend: data.runtime,
+        dtype: data.dtype || "q4",
+        initElapsed: data.initElapsed || null,
+      };
+    }
     if (state.pendingPrompt) {
       const queued = state.pendingPrompt;
       state.pendingPrompt = null;
       generateAnswer(queued);
+    } else {
+      scheduleIdleModelRelease();
     }
   }
   if (data.type === "token") {
@@ -487,6 +561,7 @@ function generateAnswer(prompt) {
   }
 
   state.generating = true;
+  window.clearTimeout(state.modelIdleTimer);
   els.chatLog.querySelectorAll('[data-loading-notice="true"]').forEach((node) => node.remove());
   state.streamedText = "";
   els.sendButton.disabled = true;
@@ -498,6 +573,7 @@ function generateAnswer(prompt) {
   state.worker.postMessage({
     type: "generate",
     device: state.backend,
+    dtype: state.runtimePolicy?.llm.dtype || "q4",
     messages: [
       { role: "system", content: buildSystemPrompt(state.profile, prompt) },
       ...recent,
@@ -522,8 +598,10 @@ function completeGeneration(data) {
   }
   state.conversation.push({ role: "assistant", content: answer });
   els.latency.textContent = `LLM: ${data.runtime.toUpperCase()} · ${(data.elapsed / 1000).toFixed(1)}s · local`;
+  if (state.runtimeDiagnostics) state.runtimeDiagnostics.session.lastGenerationElapsed = data.elapsed;
   setPortraitState("idle", "LOCAL MODEL READY");
   if (els.voiceOutput.checked) speak(answer);
+  scheduleIdleModelRelease();
 }
 
 function guardModelIdentity(text) {
@@ -784,29 +862,36 @@ async function boot() {
   bindEvents();
   window.setTimeout(initPortraitLandmarks, 250);
 
-  state.backend = "gpu" in navigator ? "webgpu" : "wasm";
+  state.runtimeCapabilities = await probeRuntimeCapabilities();
+  state.runtimePolicy = chooseRuntimePolicy(state.runtimeCapabilities);
+  state.backend = state.runtimePolicy.backend;
+  state.runtimeDiagnostics = {
+    capabilities: state.runtimeCapabilities,
+    policy: state.runtimePolicy,
+    session: {},
+  };
+  window.__DANIEL_RUNTIME__ = state.runtimeDiagnostics;
   setRuntime(`LLM ${state.backend} / starting`);
   els.modelStatus.textContent = "Preparing personalized LFM2";
-  els.modelDetail.textContent = state.backend === "webgpu"
-    ? "q4 · WebGPU · ~294 MB · automatic browser cache"
-    : "q4 · WASM fallback · ~294 MB · automatic browser cache";
+  els.modelDetail.textContent = `${state.runtimePolicy.llm.dtype} · ${state.backend.toUpperCase()} · ${formatWeightSize()} · checking device`;
 
   try {
     await loadProfile();
-    if (document.body.dataset.autoLoadModel === "true") {
+    const productionAutoLoad = document.body.dataset.autoLoadModel === "true";
+    if (productionAutoLoad && state.runtimePolicy.autoLoadModel) {
       initWorker();
     } else {
-      els.modelStatus.textContent = "Development mock ready";
-      els.modelDetail.textContent = "production automatically loads personalized Q4 LFM2";
-      els.loadButton.disabled = false;
-      els.loadButton.innerHTML = '<i data-lucide="cpu" aria-hidden="true"></i><span>Load model</span>';
-      setRuntime("mock / private", true);
-      initializeIcons();
+      configureOnDemandModel(!productionAutoLoad);
     }
   } catch (error) {
     els.modelDetail.textContent = error.message;
     els.modelStatus.textContent = "Profile context unavailable";
   }
 }
+
+window.addEventListener("pagehide", () => {
+  window.clearTimeout(state.modelIdleTimer);
+  modelResidencyCoordinator.release("personalized-lfm2");
+});
 
 boot();

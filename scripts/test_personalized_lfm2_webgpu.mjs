@@ -1,13 +1,22 @@
-import { chromium } from "@playwright/test";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+let chromium;
+try {
+  ({ chromium } = require("@playwright/test"));
+} catch (_) {
+  ({ chromium } = require("playwright"));
+}
 
 const targetUrl = process.env.TARGET_URL || "https://sangbumchoi.github.io/";
 const timeout = Number(process.env.MODEL_TIMEOUT_MS || 120_000);
 const requireFullInference = process.env.REQUIRE_FULL_INFERENCE === "1";
 const consoleMessages = [];
 const workerSource = await (await fetch(new URL(`/assets/js/lfm-worker.js?smoke=${Date.now()}`, targetUrl))).text();
+const modelId = workerSource.match(/const MODEL_ID = "([^"]+)"/)?.[1];
 const modelRevision = workerSource.match(/const MODEL_REVISION = "([0-9a-f]{40})"/)?.[1];
-if (!modelRevision) throw new Error("Could not read the deployed model revision from lfm-worker.js.");
-const modelAssetUrl = `https://media.githubusercontent.com/media/SangbumChoi/sangbumchoi.github.io/${modelRevision}/models/daniel-lfm2-350m-ONNX/onnx/model_q4.onnx_data`;
+if (!modelId || !modelRevision) throw new Error("Could not read the deployed model identity from lfm-worker.js.");
+const modelAssetUrl = `https://huggingface.co/${modelId}/resolve/${modelRevision}/onnx/model_q4.onnx_data`;
 
 function logEvent(event, details = {}) {
   console.log(JSON.stringify({ event, at: new Date().toISOString(), ...details }));
@@ -47,7 +56,7 @@ try {
     logEvent("request-failed", { message: entry });
   });
   page.on("response", (response) => {
-    if (response.url().includes("models/daniel-lfm2-350m-ONNX")) {
+    if (response.url().includes(modelId) && response.url().includes("model_q4")) {
       if (response.ok()) resolveModelResponse({ url: response.url(), status: response.status() });
       else rejectModelResponse(new Error(`Model asset request failed: ${response.status()} ${response.url()}`));
     }
@@ -64,10 +73,25 @@ try {
 
   await page.locator('label[for="voice-output"]').click();
   await page.waitForFunction(
-    () => ["Loading personalized LFM2", "Personalized LFM2 ready", "Local model unavailable"].includes(document.querySelector("#model-status")?.textContent),
+    () => ["Loading personalized LFM2", "Personalized LFM2 ready", "Personalized LFM2 available", "Development mock ready", "Local model unavailable"].includes(document.querySelector("#model-status")?.textContent),
     undefined,
     { timeout },
   );
+
+  const runtimePolicy = await page.evaluate(() => window.__DANIEL_RUNTIME__?.policy);
+  if (!runtimePolicy || runtimePolicy.maxResidentGpuModels !== 1) {
+    throw new Error(`Missing single-residency runtime policy: ${JSON.stringify(runtimePolicy)}`);
+  }
+  const onDemandStatus = ["Personalized LFM2 available", "Development mock ready"]
+    .includes(await page.locator("#model-status").textContent());
+  if (onDemandStatus && requireFullInference) {
+    await page.locator("#load-model").click();
+    await page.waitForFunction(
+      () => ["Loading personalized LFM2", "Personalized LFM2 ready", "Local model unavailable"].includes(document.querySelector("#model-status")?.textContent),
+      undefined,
+      { timeout },
+    );
+  }
 
   const loadingState = await page.evaluate(() => ({
     runtime: document.querySelector("#runtime-label")?.textContent,
@@ -75,8 +99,12 @@ try {
     detail: document.querySelector("#model-detail")?.textContent,
     progress: document.querySelector(".progress-track")?.getAttribute("aria-valuenow"),
   }));
-  if (!loadingState.runtime?.startsWith("LLM webgpu /")) {
+  const expectedRuntime = runtimePolicy.autoLoadModel ? "LLM webgpu /" : null;
+  if (expectedRuntime && !loadingState.runtime?.startsWith(expectedRuntime)) {
     throw new Error(`Expected WebGPU autoload, received ${loadingState.runtime}: ${loadingState.detail}`);
+  }
+  if (!runtimePolicy.autoLoadModel && !onDemandStatus) {
+    throw new Error(`Expected an on-demand model on constrained WebGPU, received ${loadingState.status}: ${loadingState.detail}`);
   }
 
   const groundedCases = [
@@ -224,7 +252,9 @@ try {
     readyState,
     generatedAnswers,
     modelRevision,
+    modelId,
     requireFullInference,
+    runtimePolicy,
     consoleMessages,
   });
   if (!requireFullInference) {

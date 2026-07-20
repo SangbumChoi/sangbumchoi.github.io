@@ -23,6 +23,7 @@ jobs:
       RELEASE_TAG: ${{ inputs.release_tag }}
       SOURCE_MODEL: ${{ inputs.source_model }}
       GH_TOKEN: ${{ github.token }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
 
     steps:
       - name: Check out portfolio
@@ -37,7 +38,8 @@ jobs:
         run: |
           uv run scripts/export_daniel_lfm2_onnx.py \
             --source "$SOURCE_MODEL" \
-            --output-dir "$RUNNER_TEMP/daniel-export"
+            --output-dir "$RUNNER_TEMP/daniel-export" \
+            --upload-hf
 
       - name: Prepare browser release assets
         run: |

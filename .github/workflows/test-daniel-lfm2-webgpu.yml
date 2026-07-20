@@ -13,6 +13,8 @@ on:
       - _config.yml
       - assets/js/jarvis.js
       - assets/js/lfm-worker.js
+      - assets/js/runtime-policy.mjs
+      - scripts/test_runtime_policy.mjs
       - scripts/test_personalized_lfm2_webgpu.mjs
   workflow_dispatch:
     inputs:
@@ -33,6 +35,9 @@ jobs:
     steps:
       - name: Check out portfolio
         uses: actions/checkout@v4
+
+      - name: Verify adaptive runtime policy
+        run: node --test scripts/test_runtime_policy.mjs
 
       - name: Install Playwright in an isolated directory
         run: |

@@ -168,9 +168,23 @@ Voice data is more sensitive than profile text. The [dataset publisher](https://
 
 ## Browser runtime and reproducibility
 
-The model runs in a module Web Worker so model download, ONNX session creation, and token generation do not block the interface. Recent Chromium browsers use WebGPU; unsupported environments fall back to WASM. The browser artifact is about 294 MB, pinned to an immutable Git LFS revision, and cached after the first successful load.
+The model runs in a module Web Worker so model download, ONNX session creation, and token generation do not block the interface. Recent Chromium browsers use WebGPU; unsupported environments fall back to WASM. The pinned Q4 external weight file is exactly 289,140,736 bytes, plus the graph, tokenizer, and configuration files, and it is cached after the first successful load.
+
+WebGPU does not give each model independent hardware. A page can create multiple logical `GPUDevice` objects, but GPU memory and compute are machine-global resources shared with other workers, tabs, pages, and applications. More resident models therefore add weight and intermediate-buffer memory and compete for command execution. Under enough pressure an allocation can fail or the browser can lose a device. This follows the [WebGPU specification](https://gpuweb.github.io/gpuweb/) and its [design explainer](https://gpuweb.github.io/gpuweb/explainer/), rather than an assumption based on one fast development computer.
+
+The deployed runtime now probes a WebGPU adapter without requesting an extra device, then assigns a conservative compatibility, low, balanced, or high tier. A software adapter, at most 4 GB of reported device memory, or at most four logical CPU cores disables eager loading. The Q4 LLM then loads only for a free-form request and is released after 90 seconds idle. No WebGPU adapter means an on-demand WASM fallback. These are hints, not a VRAM measurement: `navigator.deviceMemory` is coarse and optional, while adapter limits report legal buffer sizes rather than currently free memory.
+
+Only one heavyweight model may be resident inside Daniel OS. When local STT and personal TTS are eventually promoted, the execution order will be `STT -> LLM -> TTS`, releasing one session before acquiring the next instead of keeping all three on the GPU. The current speech APIs use no WebGPU model, so today the Q4 LLM is the only GPU session. Separate tabs can still instantiate separate copies; the reproducible benchmark includes an explicit two-tab contention mode so that cost can be measured rather than hidden.
+
+Q4 is the default for LFM2 because the first download and resident weights dominate on a portfolio page. It is not declared universally fastest: dequantization can make Q8 or FP16 faster on some GPUs. The [Transformers.js dtype guide](https://huggingface.co/docs/transformers.js/guides/dtypes) also warns that encoder-decoder models such as Whisper can be especially sensitive to quantization. The future STT gate therefore compares Q8 and a Q8-encoder/Q4-decoder build, with FP16 encoder experiments on `shader-f16` hardware; an all-Q4 build ships only if WER, worst-group WER, keyword recall, memory, and browser real-time factor all pass. Personal TTS will compare Q8 and FP16 against intelligibility, speaker-similarity, and listening tests. One-bit inference is not part of the current ONNX/Transformers.js path.
+
+I also do not begin by writing custom WGSL kernels. ONNX Runtime already supplies WebGPU operators and recommends profiling, minimizing CPU/GPU transfers, and using I/O binding where recurrent tensors stay on the GPU. A supported export, ORT-format or reduced-operator build, and graph-level fusion come first. A custom kernel becomes reasonable only if the [ONNX Runtime Web profiler](https://onnxruntime.ai/docs/tutorials/web/performance-diagnosis.html) identifies one stable dominant unsupported or slow operator and the replacement passes correctness tests across GPU vendors.
 
 The local 32 GB Mac handles source changes, mock interaction, and responsive browser checks. Existing LLM remote jobs perform training, Q4 export, CPU inference smoke testing, strict behavior evaluation, Hugging Face publication, and WebGPU browser checks. The STT workflow is wired to a remote A10G job, but it has not been dispatched because the required consented multi-speaker corpus does not yet exist.
+
+The [runtime policy and benchmark protocol](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/README-webgpu.md) records the device matrix and commands. It deliberately labels a 4 GB/four-core browser override as policy emulation, not a low-end speed result. Actual first-load, warm-generation, and optional two-tab timings must be collected on the development Mac and real 4 GB and 8 GB integrated-GPU devices before a speech model is promoted.
+
+The first controlled development-Mac audit used visible Chromium on Apple Metal 3 with the same prompt and cleared context. Q4 initialization took 30.0 seconds and one warm generation took 3.22 seconds inside the worker. With two independently initialized tabs generating simultaneously, the same completion took 6.58 and 6.84 seconds, or 2.04x and 2.12x the single-session time. That is a single-machine audit rather than a universal benchmark, but it confirms that logical sessions contend and supports sequential residency. Headless Chromium exposed SwiftShader and was conservatively placed in the low, on-demand tier.
 
 The complete implementation is reproducible from the repository:
 
@@ -179,8 +193,11 @@ The complete implementation is reproducible from the repository:
 - [Strict evaluator](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/evaluate_daniel_lfm2_test.py)
 - [Loss plotting script](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/plot_daniel_lfm2_metrics.py)
 - [Merged LFM2 checkpoint](https://huggingface.co/danelcsb/daniel-lfm2-350m)
+- [Q4 browser model on Hugging Face](https://huggingface.co/danelcsb/daniel-lfm2-350m-ONNX)
 - [Q4 browser model release](https://github.com/SangbumChoi/sangbumchoi.github.io/releases/tag/daniel-lfm2-onnx-v1)
 - [Browser worker](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/js/lfm-worker.js)
+- [Adaptive WebGPU runtime policy](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/assets/js/runtime-policy.mjs)
+- [WebGPU benchmark protocol](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/README-webgpu.md)
 - [Speaker-disjoint STT preparer](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/prepare_daniel_stt_dataset.py)
 - [Whisper LoRA trainer and release gate](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/train_daniel_stt.py)
 - [Grouped STT evaluator](https://github.com/SangbumChoi/sangbumchoi.github.io/blob/master/scripts/score_daniel_stt_predictions.py)

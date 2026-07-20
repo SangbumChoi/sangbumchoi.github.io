@@ -142,7 +142,8 @@ jobs:
         run: |
           uv run scripts/export_daniel_lfm2_onnx.py \
             --source "$RUNNER_TEMP/daniel-lfm2/merged" \
-            --output-dir "$RUNNER_TEMP/daniel-export"
+            --output-dir "$RUNNER_TEMP/daniel-export" \
+            --upload-hf
 
       - name: Prepare browser release assets
         run: |

@@ -61,12 +61,13 @@ Push changes to the dataset, profile, trainer, validator, exporter, or
    out-of-scope refusals, Korean responses, and the public strict test;
 4. publishes the evaluated FP16 checkpoint and matching SFT dataset to Hugging
    Face, and publishes the source under `daniel-lfm2-source-v2`;
-5. exports and smoke-tests symmetric Q4 ONNX before updating the
-   `model-assets` branch and `daniel-lfm2-onnx-v1` release.
+5. exports and smoke-tests symmetric Q4 ONNX before updating the public ONNX
+   model, `model-assets` backup branch, and `daniel-lfm2-onnx-v1` release.
 
 This keeps model training and export isolated from the 32 GB development Mac.
-After the remote job passes, pin the emitted model-assets revision and bump the
-browser cache version with `python3 scripts/pin_daniel_lfm2_model.py <revision>`.
+After the remote job passes, pin the emitted Hugging Face model revision and
+bump the browser cache version with
+`python3 scripts/pin_daniel_lfm2_model.py <revision>`.
 
 The merged model gate requires at least 70% overall, 60% verified-profile
 answers, two-thirds of missing-fact answers, and 80% of out-of-scope refusals.
@@ -92,15 +93,16 @@ hf jobs uv run \
 
 When Hugging Face CLI credentials are unavailable, dispatch
 `.github/workflows/export-daniel-lfm2.yml`. It performs the same export on a
-GitHub-hosted runner and publishes the flattened model files under the
-`daniel-lfm2-onnx-v1` release tag. It also publishes the original directory
-structure to the Git LFS-backed `model-assets` branch so the browser worker can
-load the files through GitHub's CORS-enabled media host.
+GitHub-hosted runner, publishes the browser directory to Hugging Face, and
+publishes flattened backup files under the `daniel-lfm2-onnx-v1` release tag.
+It also preserves the original structure on the Git LFS-backed `model-assets`
+branch as a second backup.
 
-After the job succeeds, pin the `model-assets` branch commit in
-`MODEL_REVISION` inside `assets/js/lfm-worker.js`. The worker uses an immutable
-`media.githubusercontent.com` URL template so all model files are CORS-enabled
-and the browser cache is tied to the exact export revision.
+After the job succeeds, pin the public `danelcsb/daniel-lfm2-350m-ONNX` commit
+in `MODEL_REVISION` inside `assets/js/lfm-worker.js`. The worker uses Hugging
+Face's CORS-enabled resolve endpoint and an immutable commit so the browser
+cache and every model file stay tied to the evaluated export. The GitHub release
+remains a downloadable backup rather than the browser's primary model origin.
 
 The browser still retrieves verified JSON context before generation. The model
 learns how to apply that context and when to decline, while source data remains
