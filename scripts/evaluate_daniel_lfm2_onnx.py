@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -32,8 +33,10 @@ def tokenizer_root(model_path: Path) -> Path:
 
 
 def token_list(value) -> list[int]:
-    if isinstance(value, dict):
+    if isinstance(value, Mapping):
         value = value["input_ids"]
+    elif hasattr(value, "input_ids"):
+        value = value.input_ids
     if hasattr(value, "tolist"):
         value = value.tolist()
     while value and isinstance(value[0], list):
@@ -82,6 +85,7 @@ def generate(
         add_generation_prompt=True,
         truncation=True,
         max_length=int(generation["max_input_tokens"]),
+        return_dict=False,
     )
     input_ids = token_list(encoded)
     history = input_ids.copy()

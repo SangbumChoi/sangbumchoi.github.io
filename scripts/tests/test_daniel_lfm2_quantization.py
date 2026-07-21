@@ -3,9 +3,12 @@
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import sys
 import unittest
+from collections import UserDict
+from collections.abc import Mapping
 from pathlib import Path
 
 
@@ -24,6 +27,23 @@ def load_module(name: str, path: Path):
 COMPARE = load_module(
     "compare_daniel_lfm2_quantization",
     ROOT / "scripts/compare_daniel_lfm2_quantization.py",
+)
+
+
+def load_standalone_function(path: Path, function_name: str):
+    tree = ast.parse(path.read_text())
+    function = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == function_name
+    )
+    namespace = {"Mapping": Mapping}
+    exec(compile(ast.Module(body=[function], type_ignores=[]), str(path), "exec"), namespace)
+    return namespace[function_name]
+
+
+TOKEN_LIST = load_standalone_function(
+    ROOT / "scripts/evaluate_daniel_lfm2_onnx.py", "token_list"
 )
 
 
@@ -123,6 +143,10 @@ class DanielLfm2QuantizationParityTest(unittest.TestCase):
         self.assertEqual(report["quality"]["answer_change_rate"], 0.5)
         self.assertEqual(report["quality"]["new_strict_regression_count"], 0)
         self.assertGreater(report["performance"]["throughput_ratio"], 1.0)
+
+    def test_batch_encoding_style_mapping_returns_token_ids(self) -> None:
+        encoded = UserDict({"input_ids": [[11, 22, 33]]})
+        self.assertEqual(TOKEN_LIST(encoded), [11, 22, 33])
 
     def test_new_private_fact_leak_blocks_publish(self) -> None:
         baseline, quantized = self.reports("Daniel is 180 cm tall.")
