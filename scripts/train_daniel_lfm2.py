@@ -21,6 +21,8 @@ import math
 import os
 import random
 import re
+import statistics
+import time
 import urllib.request
 from collections import Counter
 from pathlib import Path
@@ -29,7 +31,12 @@ import torch
 from datasets import Dataset
 from huggingface_hub import HfApi
 from peft import LoraConfig, PeftModel
-from transformers import AutoModelForCausalLM, AutoTokenizer, EarlyStoppingCallback
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    EarlyStoppingCallback,
+    TrainerCallback,
+)
 from trl import SFTConfig, SFTTrainer
 
 
@@ -67,6 +74,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--routing-eval-url")
     parser.add_argument("--output", default="artifacts/daniel-lfm2-350m")
     parser.add_argument("--epochs", type=int, default=3)
+    parser.add_argument("--max-steps", type=int, default=-1)
     parser.add_argument("--max-length", type=int, default=1152)
     parser.add_argument("--learning-rate", type=float, default=2e-4)
     parser.add_argument("--batch-size", type=int, default=1)
@@ -76,6 +84,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--weight-decay", type=float, default=0.0)
     parser.add_argument("--eval-steps", type=int, default=0)
     parser.add_argument("--early-stopping-patience", type=int, default=0)
+    parser.add_argument("--dataloader-num-workers", type=int, default=0)
+    parser.add_argument("--dataloader-prefetch-factor", type=int, default=2)
+    parser.add_argument("--dataloader-persistent-workers", action="store_true")
+    parser.add_argument("--dataloader-benchmark-batches", type=int, default=0)
+    parser.add_argument("--no-dataloader-pin-memory", action="store_true")
+    parser.add_argument("--include-tokens-per-second", action="store_true")
+    parser.add_argument("--torch-compile", action="store_true")
+    parser.add_argument("--torch-compile-mode", default="default")
+    parser.add_argument("--allow-tf32", action="store_true")
+    parser.add_argument("--profile-output")
+    parser.add_argument("--profile-wait-steps", type=int, default=2)
+    parser.add_argument("--profile-warmup-steps", type=int, default=2)
+    parser.add_argument("--profile-active-steps", type=int, default=5)
+    parser.add_argument("--profile-with-stack", action="store_true")
+    parser.add_argument("--benchmark-only", action="store_true")
     parser.add_argument("--lora-rank", type=int, default=16)
     parser.add_argument("--lora-alpha", type=int, default=32)
     parser.add_argument("--lora-dropout", type=float, default=0.05)
@@ -281,6 +304,191 @@ def model_dtype() -> torch.dtype:
     if torch.cuda.is_available() or torch.backends.mps.is_available():
         return torch.float16
     return torch.float32
+
+
+def tf32_supported() -> bool:
+    return torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8
+
+
+def write_performance_config(
+    output: Path,
+    args: argparse.Namespace,
+    dtype: torch.dtype,
+    tf32_enabled: bool,
+) -> None:
+    device = None
+    if torch.cuda.is_available():
+        properties = torch.cuda.get_device_properties(0)
+        device = {
+            "name": properties.name,
+            "capability": list(torch.cuda.get_device_capability(0)),
+            "memory_bytes": properties.total_memory,
+        }
+    payload = {
+        "device": device,
+        "dtype": str(dtype).replace("torch.", ""),
+        "batch_size": args.batch_size,
+        "gradient_accumulation_steps": args.gradient_accumulation_steps,
+        "max_length": args.max_length,
+        "max_steps": args.max_steps,
+        "dataloader": {
+            "num_workers": args.dataloader_num_workers,
+            "prefetch_factor": (
+                args.dataloader_prefetch_factor
+                if args.dataloader_num_workers > 0
+                else None
+            ),
+            "persistent_workers": (
+                args.dataloader_persistent_workers
+                and args.dataloader_num_workers > 0
+            ),
+            "pin_memory": not args.no_dataloader_pin_memory,
+            "benchmark_batches": args.dataloader_benchmark_batches,
+        },
+        "torch_compile": args.torch_compile,
+        "torch_compile_mode": args.torch_compile_mode if args.torch_compile else None,
+        "tf32_enabled": tf32_enabled,
+        "profiler_enabled": bool(args.profile_output),
+        "benchmark_only": args.benchmark_only,
+    }
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def benchmark_train_dataloader(trainer: SFTTrainer, batches: int, output: Path) -> None:
+    loader = trainer.get_train_dataloader()
+    fetch_seconds = []
+    samples = 0
+    tokens = 0
+    iterator = iter(loader)
+    for _ in range(batches):
+        started = time.perf_counter()
+        try:
+            batch = next(iterator)
+        except StopIteration:
+            break
+        fetch_seconds.append(time.perf_counter() - started)
+        input_ids = batch.get("input_ids") if isinstance(batch, dict) else None
+        if input_ids is not None:
+            samples += int(input_ids.shape[0])
+            tokens += int(input_ids.numel())
+    if not fetch_seconds:
+        raise RuntimeError("DataLoader benchmark did not produce a batch.")
+    steady = fetch_seconds[1:] or fetch_seconds
+    p95 = (
+        statistics.quantiles(steady, n=100, method="inclusive")[94]
+        if len(steady) > 1
+        else steady[0]
+    )
+    payload = {
+        "requested_batches": batches,
+        "measured_batches": len(fetch_seconds),
+        "first_batch_seconds": fetch_seconds[0],
+        "steady_fetch_p50_seconds": statistics.median(steady),
+        "steady_fetch_p95_seconds": p95,
+        "loader_only_samples_per_second": samples / sum(fetch_seconds),
+        "loader_only_padded_tokens_per_second": tokens / sum(fetch_seconds),
+    }
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(json.dumps({"dataloader_benchmark": payload}, indent=2), flush=True)
+
+
+class ProfilerStepCallback(TrainerCallback):
+    def __init__(self, profiler: torch.profiler.profile) -> None:
+        self.profiler = profiler
+
+    def on_step_end(self, args, state, control, **kwargs):
+        self.profiler.step()
+        return control
+
+
+def create_torch_profiler(
+    output: Path,
+    wait_steps: int,
+    warmup_steps: int,
+    active_steps: int,
+    with_stack: bool,
+) -> torch.profiler.profile:
+    if min(wait_steps, warmup_steps, active_steps) < 0 or active_steps == 0:
+        raise ValueError("Profiler wait/warmup must be non-negative and active steps positive.")
+    output.mkdir(parents=True, exist_ok=True)
+    activities = [torch.profiler.ProfilerActivity.CPU]
+    has_cuda = torch.cuda.is_available()
+    if has_cuda:
+        activities.append(torch.profiler.ProfilerActivity.CUDA)
+
+    def event_device_time(event) -> float:
+        return getattr(
+            event,
+            "self_device_time_total",
+            getattr(event, "self_cuda_time_total", 0.0),
+        )
+
+    def trace_handler(profiler: torch.profiler.profile) -> None:
+        step = profiler.step_num
+        trace_path = output / f"trace-step-{step}.json"
+        table_path = output / f"operators-step-{step}.txt"
+        summary_path = output / f"summary-step-{step}.json"
+        profiler.export_chrome_trace(str(trace_path))
+        sort_key = "self_cuda_time_total" if has_cuda else "self_cpu_time_total"
+        averages = profiler.key_averages()
+        table_path.write_text(
+            averages.table(sort_by=sort_key, row_limit=40), encoding="utf-8"
+        )
+        ranked = sorted(
+            averages,
+            key=lambda event: (
+                event_device_time(event)
+                if has_cuda
+                else getattr(event, "self_cpu_time_total", 0.0)
+            ),
+            reverse=True,
+        )[:40]
+        summary_path.write_text(
+            json.dumps(
+                {
+                    "step": step,
+                    "sort_key": sort_key,
+                    "trace": str(trace_path),
+                    "operator_table": str(table_path),
+                    "top_operations": [
+                        {
+                            "name": event.key,
+                            "calls": event.count,
+                            "self_cpu_time_us": event.self_cpu_time_total,
+                            "self_device_time_us": event_device_time(event),
+                            "cpu_memory_bytes": getattr(
+                                event, "cpu_memory_usage", 0
+                            ),
+                            "device_memory_bytes": getattr(
+                                event,
+                                "device_memory_usage",
+                                getattr(event, "cuda_memory_usage", 0),
+                            ),
+                        }
+                        for event in ranked
+                    ],
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        print(f"PyTorch profiler trace written to {trace_path}", flush=True)
+
+    return torch.profiler.profile(
+        activities=activities,
+        schedule=torch.profiler.schedule(
+            wait=wait_steps,
+            warmup=warmup_steps,
+            active=active_steps,
+            repeat=1,
+        ),
+        on_trace_ready=trace_handler,
+        record_shapes=True,
+        profile_memory=True,
+        with_stack=with_stack,
+    )
 
 
 def generation_device() -> torch.device:
@@ -516,6 +724,10 @@ def write_training_metrics(
         "summary": {
             "reported_average_train_loss": train_metrics.get("train_loss"),
             "train_runtime_seconds": train_metrics.get("train_runtime"),
+            "train_samples_per_second": train_metrics.get("train_samples_per_second"),
+            "train_steps_per_second": train_metrics.get("train_steps_per_second"),
+            "train_tokens_per_second": train_metrics.get("train_tokens_per_second"),
+            "num_input_tokens_seen": train_metrics.get("num_input_tokens_seen"),
             "best_validation_loss": best["loss"] if best else None,
         },
     }
@@ -551,6 +763,18 @@ def require_finite_validation_loss(log_history: list[dict]) -> None:
 
 def main() -> None:
     args = parse_args()
+    if args.dataloader_num_workers < 0:
+        raise ValueError("--dataloader-num-workers must be non-negative.")
+    if args.dataloader_benchmark_batches < 0:
+        raise ValueError("--dataloader-benchmark-batches must be non-negative.")
+    if args.dataloader_num_workers > 0 and args.dataloader_prefetch_factor < 1:
+        raise ValueError("--dataloader-prefetch-factor must be positive with workers.")
+    if args.profile_output and not args.benchmark_only:
+        print(
+            "Warning: torch.profiler adds overhead. Use --benchmark-only and compare "
+            "throughput in a separate run without --profile-output.",
+            flush=True,
+        )
     output = Path(args.output)
     adapter_dir = output / "adapter"
     merged_dir = output / "merged"
@@ -570,6 +794,9 @@ def main() -> None:
         tokenizer.pad_token = tokenizer.eos_token
 
     dtype = model_dtype()
+    tf32_enabled = args.allow_tf32 and tf32_supported()
+    if args.allow_tf32 and not tf32_enabled:
+        print("TF32 requested but unavailable on this GPU; continuing without it.", flush=True)
     behavior_counts: Counter
     if not args.merge_only:
         if bool(args.prepared_train) != bool(args.prepared_validation):
@@ -595,9 +822,11 @@ def main() -> None:
         model = AutoModelForCausalLM.from_pretrained(args.model, dtype=dtype)
         model.config.use_cache = False
         use_step_evaluation = args.eval_steps > 0
+        run_evaluation = not args.benchmark_only
         config = SFTConfig(
             output_dir=str(adapter_dir),
             num_train_epochs=args.epochs,
+            max_steps=args.max_steps,
             per_device_train_batch_size=args.batch_size,
             per_device_eval_batch_size=args.eval_batch_size,
             gradient_accumulation_steps=args.gradient_accumulation_steps,
@@ -605,20 +834,54 @@ def main() -> None:
             warmup_ratio=args.warmup_ratio,
             weight_decay=args.weight_decay,
             logging_steps=5 if use_step_evaluation else 2,
-            eval_on_start=bool(args.prepared_train),
-            eval_strategy="steps" if use_step_evaluation else "epoch",
-            eval_steps=args.eval_steps if use_step_evaluation else None,
-            save_strategy="steps" if use_step_evaluation else "epoch",
-            save_steps=args.eval_steps if use_step_evaluation else 500,
+            eval_on_start=bool(args.prepared_train) and run_evaluation,
+            eval_strategy=(
+                "no"
+                if not run_evaluation
+                else "steps" if use_step_evaluation else "epoch"
+            ),
+            eval_steps=(
+                args.eval_steps if use_step_evaluation and run_evaluation else None
+            ),
+            save_strategy=(
+                "no"
+                if args.benchmark_only
+                else "steps" if use_step_evaluation else "epoch"
+            ),
+            save_steps=(
+                args.eval_steps
+                if use_step_evaluation and not args.benchmark_only
+                else 500
+            ),
             save_total_limit=2,
-            load_best_model_at_end=True,
-            metric_for_best_model=selection_metric,
+            load_best_model_at_end=not args.benchmark_only,
+            metric_for_best_model=(
+                selection_metric if not args.benchmark_only else None
+            ),
             greater_is_better=False,
             max_length=args.max_length,
             completion_only_loss=True,
             bf16=dtype == torch.bfloat16,
             fp16=dtype == torch.float16 and torch.cuda.is_available(),
             group_by_length=True,
+            dataloader_num_workers=args.dataloader_num_workers,
+            dataloader_prefetch_factor=(
+                args.dataloader_prefetch_factor
+                if args.dataloader_num_workers > 0
+                else None
+            ),
+            dataloader_persistent_workers=(
+                args.dataloader_persistent_workers
+                and args.dataloader_num_workers > 0
+            ),
+            dataloader_pin_memory=not args.no_dataloader_pin_memory,
+            include_tokens_per_second=args.include_tokens_per_second,
+            include_num_input_tokens_seen=args.include_tokens_per_second,
+            torch_compile=args.torch_compile,
+            torch_compile_mode=(
+                args.torch_compile_mode if args.torch_compile else None
+            ),
+            tf32=tf32_enabled if torch.cuda.is_available() else None,
             report_to="none",
             seed=args.seed,
         )
@@ -630,12 +893,22 @@ def main() -> None:
             task_type="CAUSAL_LM",
         )
         callbacks = []
-        if args.early_stopping_patience > 0:
+        if args.early_stopping_patience > 0 and not args.benchmark_only:
             callbacks.append(
                 EarlyStoppingCallback(
                     early_stopping_patience=args.early_stopping_patience
                 )
             )
+        profiler = None
+        if args.profile_output:
+            profiler = create_torch_profiler(
+                Path(args.profile_output),
+                args.profile_wait_steps,
+                args.profile_warmup_steps,
+                args.profile_active_steps,
+                args.profile_with_stack,
+            )
+            callbacks.append(ProfilerStepCallback(profiler))
         trainer = SFTTrainer(
             model=model,
             args=config,
@@ -645,7 +918,17 @@ def main() -> None:
             peft_config=lora,
             callbacks=callbacks,
         )
-        train_result = trainer.train()
+        if args.dataloader_benchmark_batches:
+            benchmark_train_dataloader(
+                trainer,
+                args.dataloader_benchmark_batches,
+                output / "dataloader_metrics.json",
+            )
+        if profiler is None:
+            train_result = trainer.train()
+        else:
+            with profiler:
+                train_result = trainer.train()
         write_training_metrics(
             output / "training_metrics.json",
             trainer.state.log_history,
@@ -654,12 +937,28 @@ def main() -> None:
             args.max_length,
             train_result.metrics,
         )
-        require_finite_validation_loss(trainer.state.log_history)
-        trainer.save_model(str(adapter_dir))
-        tokenizer.save_pretrained(adapter_dir)
+        write_performance_config(
+            output / "performance_config.json", args, dtype, tf32_enabled
+        )
+        if not args.benchmark_only:
+            require_finite_validation_loss(trainer.state.log_history)
+            trainer.save_model(str(adapter_dir))
+            tokenizer.save_pretrained(adapter_dir)
         del trainer, model
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+        if args.benchmark_only:
+            print(
+                json.dumps(
+                    {
+                        "benchmark_output": str(output),
+                        "metrics": train_result.metrics,
+                    },
+                    indent=2,
+                ),
+                flush=True,
+            )
+            return
     else:
         behavior_counts = Counter(
             record["behavior"]

@@ -58,14 +58,16 @@ excluded from Git.
 
 Open
 [`notebooks/daniel_lfm2_gpu_retraining.ipynb`](../notebooks/daniel_lfm2_gpu_retraining.ipynb)
-in Colab with a GPU runtime. The notebook performs five stages:
+in Colab with a GPU runtime. The notebook performs six stages:
 
 1. reconstruct the old sampling mixture and loss diagnostics;
 2. refresh source availability without automatically trusting scraped text;
 3. use a 4-bit Qwen3-4B teacher to paraphrase prompts only;
-4. build scenario-family-disjoint train and validation sets and compare
+4. audit sequence lengths and padding, capture a bounded PyTorch Profiler trace,
+   and benchmark DataLoader worker counts without profiler overhead;
+5. build scenario-family-disjoint train and validation sets and compare
    LFM2-350M with LFM2.5-350M at `5e-5`, `1e-4`, and `2e-4`;
-5. rank candidates against the currently deployed frozen strict-test baseline.
+6. rank candidates against the currently deployed frozen strict-test baseline.
 
 The teacher never writes a target answer. Every answer, evidence object,
 profile key, retrieval token, and behavior comes from curated seed data.
@@ -91,6 +93,46 @@ python3 scripts/train_daniel_lfm2.py \
   --batch-size 8 --gradient-accumulation-steps 4 \
   --learning-rate 1e-4 --eval-steps 25 --early-stopping-patience 2
 ```
+
+### Training-speed profiling
+
+The speed lab adapts the pipeline-first approach from the
+[Trillion Labs VLM training study](https://blog.trillionlabs.co/posts/vlm-training-speed/)
+to text SFT. Image decoding and resolution variance do not apply here; the
+corresponding variables are chat-template tokenization, sequence-length
+variance, dynamic padding, collation, host-to-device copies, and GPU kernel
+launch/compute time.
+
+`torch.profiler` is restricted to a wait/warmup/active window and records CPU
+and CUDA operators, shapes, and memory. It writes a Chrome/Perfetto trace plus
+operator summaries under `--profile-output`. A separate DataLoader microbenchmark
+records cold first-batch latency, steady p50/p95 fetch latency, and loader-only
+throughput. Profiling adds overhead, so the
+notebook uses a separate unprofiled benchmark to choose among zero, two, and
+four DataLoader workers. It keeps `pin_memory=True`; worker trials also enable
+prefetching and persistent workers. The full sweep inherits a worker count only
+when measured throughput improves by at least 3%.
+
+```sh
+python3 scripts/train_daniel_lfm2.py \
+  --prepared-train artifacts/daniel-lfm2-v3/train.jsonl \
+  --prepared-validation artifacts/daniel-lfm2-v3/validation.jsonl \
+  --output artifacts/daniel-lfm2-speed/profile \
+  --benchmark-only --max-steps 12 \
+  --batch-size 8 --gradient-accumulation-steps 4 \
+  --dataloader-benchmark-batches 20 \
+  --include-tokens-per-second \
+  --profile-output artifacts/daniel-lfm2-speed/profile/trace
+```
+
+Use the trace to explain a bottleneck, not to claim speedup. Compare throughput
+with the profiler disabled and one variable changed at a time. If extra workers
+do not improve tokens/second, the in-memory text input path is not the dominant
+bottleneck. `torch.compile` is also opt-in because its first-step compilation
+cost can dominate a short run; the notebook compares equal 60-step eager and
+compiled trials before carrying it into full training. Gradient checkpointing
+is intentionally not enabled as a speed feature because it trades additional
+recomputation for lower activation memory.
 
 ## Train and publish without using local memory
 

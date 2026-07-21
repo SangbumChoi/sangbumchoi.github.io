@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
 import sys
@@ -108,6 +109,53 @@ class DanielLfm2DataPipelineTest(unittest.TestCase):
         notebook = (ROOT / "notebooks/daniel_lfm2_gpu_retraining.ipynb").read_text()
         self.assertNotIn("hf_ke", notebook)
         self.assertIn("userdata.get('HF_TOKEN')", notebook)
+
+    def test_notebook_profiles_before_comparing_throughput(self) -> None:
+        notebook = json.loads(
+            (ROOT / "notebooks/daniel_lfm2_gpu_retraining.ipynb").read_text()
+        )
+        markdown = "\n".join(
+            "".join(cell.get("source", []))
+            for cell in notebook["cells"]
+            if cell["cell_type"] == "markdown"
+        )
+        code = "\n".join(
+            "".join(cell.get("source", []))
+            for cell in notebook["cells"]
+            if cell["cell_type"] == "code"
+        )
+        for index, cell in enumerate(notebook["cells"]):
+            if cell["cell_type"] == "code":
+                ast.parse("".join(cell.get("source", [])), filename=f"cell-{index}")
+        self.assertIn("Profile before optimizing", markdown)
+        self.assertIn("profiler trace has deliberate overhead", markdown)
+        self.assertIn("for workers in (0, 2, 4)", code)
+        self.assertIn("--profile-output", code)
+        self.assertIn("profile_workers0", code)
+        self.assertIn("eager60", code)
+        self.assertIn("compile60", code)
+        self.assertIn("speed-diagnosis.json", code)
+        self.assertLess(code.index("profile_workers0"), code.index("for workers in (0, 2, 4)"))
+
+    def test_trainer_exposes_bounded_performance_controls(self) -> None:
+        source = (ROOT / "scripts/train_daniel_lfm2.py").read_text()
+        ast.parse(source)
+        for option in (
+            "--benchmark-only",
+            "--dataloader-num-workers",
+            "--dataloader-prefetch-factor",
+            "--dataloader-benchmark-batches",
+            "--torch-compile",
+            "--allow-tf32",
+            "--profile-output",
+            "--profile-wait-steps",
+            "--profile-warmup-steps",
+            "--profile-active-steps",
+            "--include-tokens-per-second",
+        ):
+            self.assertIn(option, source)
+        self.assertIn("torch.profiler.schedule", source)
+        self.assertIn("export_chrome_trace", source)
 
 
 if __name__ == "__main__":
