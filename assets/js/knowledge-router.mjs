@@ -1,6 +1,6 @@
 const PROFILE_NAME_PATTERN = /\b(?:daniel|sangbum|sangbum daniel choi|choi)\b|최상범|상범|다니엘/i;
 const PROFILE_PRONOUN_PATTERN = /\b(?:he|him|his|you|your)\b|그가|그의|본인|당신|너의/i;
-const PROFILE_SCOPE_PATTERN = /\b(?:portfolio|resume|cv|career|experience|publications?|education|startup history|current (?:role|employer)|(?:open.?source|hugging face) contributions?)\b|포트폴리오|이력서|경력|논문|학력|오픈.?소스 기여/i;
+const PROFILE_SCOPE_PATTERN = /\b(?:portfolio|resume|cv|career|experience|leadership|team leadership|team size|publications?|education|startup history|current (?:role|employer)|(?:open.?source|hugging face) contributions?)\b|포트폴리오|이력서|경력|리더십|팀 규모|논문|학력|오픈.?소스 기여/i;
 const DEFINITION_PATTERN = /^\s*(?:what|who|where)\s+(?:is|are|was|were)\b|^\s*(?:define|explain)\b|^\s*(?:what does|where does)\b|무엇|뭐야|뭔가요|어디|설명(?:해|해줘|해주세요)/i;
 const PRIVATE_PATTERN = /\b(?:bank account|account number|height|how tall|tallness|stature|weight|how old|current age|exact age|relationship status|girlfriend|boyfriend|spouse|wife|husband|family|home address|phone number|salary|exact birthday|social security|passport)\b|계좌|키|신장|몸무게|정확한 나이|현재 나이|몇 살|연애|여자친구|남자친구|배우자|가족|집 주소|전화번호|연봉|생일|주민등록|여권/i;
 const VISITOR_IDENTITY_PATTERN = /^\s*(?:who am i|do you know who i am)\b|나는 누구|내가 누구/i;

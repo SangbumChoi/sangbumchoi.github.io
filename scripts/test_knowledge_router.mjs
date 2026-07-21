@@ -100,6 +100,14 @@ test("routes second-person portfolio questions to Daniel's profile", () => {
   assert.equal(route.type, "profile");
 });
 
+test("routes standalone leadership questions to Daniel's profile", () => {
+  const english = classifyKnowledgeIntent("Tell me about the leadership experience", knowledge);
+  const korean = classifyKnowledgeIntent("리더십과 팀 규모를 설명해 줘", knowledge);
+  assert.equal(english.type, "profile");
+  assert.equal(korean.type, "profile");
+  assert.equal(profile.leadership.maximum_people_led_simultaneously, 8);
+});
+
 test("keeps visitor identity questions on the identity-safe model path", () => {
   const route = classifyKnowledgeIntent("Who am I?", knowledge);
   assert.equal(route.type, "profile");

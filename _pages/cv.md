@@ -46,7 +46,7 @@ Work experience
 
 * 2021/09-2026/01: Machine Learning Engineer
   * <span style="font-weight:bold">SuperbAI</span>
-  * Led multimodal pre-training and staged text/image alignment for a visual-grounding model using a curated 1.1M-image dataset.
+  * Held approximately one year of team-leadership responsibility, leading two ML engineers through multimodal pre-training and staged text/image alignment for a visual-grounding model using a curated 1.1M-image dataset.
   * Built distributed, multi-GPU training and serving infrastructure with AWS Batch, TensorRT, and Triton Inference Server, improving inference throughput by 5x over pure PyTorch serving.
   * Built LoRA, Adapter, and LST post-training pipelines and delivered 1,100+ models and 60+ customer endpoints in one year.
   * Built interactive segmentation tools using RepViT-SAM, FocalClick, SAM, and SAM2, increasing segmentation labeling speed by 25x.
@@ -117,5 +117,7 @@ Teaching
   
 Athlete Service and Leadership
 ======
-* CTO, Team Island, 2019/02-2020/06
+* Approximately one year of team leadership at SuperbAI, including leading two ML engineers on multimodal pre-training.
+* Co-founder and CTO, Team ISLAND, 2019/02-2020/06.
+* Led up to eight people simultaneously across leadership roles.
 * Open-source contributor to Hugging Face Transformers

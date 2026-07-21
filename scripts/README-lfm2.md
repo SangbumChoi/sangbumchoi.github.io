@@ -148,7 +148,7 @@ path after reviewing a candidate. The workflow:
    retrieval decisions, missing facts, refusals, Korean responses, and the public strict test;
 4. publishes the evaluated FP16 checkpoint and matching SFT dataset to Hugging
    Face, and publishes the source under `daniel-lfm2-source-v2`;
-5. replays the same serialized 51-case strict test on source CPU and symmetric
+5. replays the same serialized 53-case strict test on source CPU and symmetric
    Q4 ONNX CPU with identical greedy decoding, then updates the public ONNX
    model, `model-assets` backup branch, and `daniel-lfm2-onnx-v1` release only
    when quantization parity passes.
@@ -162,7 +162,7 @@ The merged model gate requires at least 70% overall, 60% profile answers and
 grounded definitions, two-thirds of retrieval and missing-fact decisions, and
 80% of privacy or safety refusals. Nine routing cases add held-out-entity
 evidence, definition-versus-contribution contrasts, and unseen retrieval terms.
-The separate 51-case strict gate checks privacy, chronology, Korean output,
+The separate 53-case strict gate checks privacy, chronology, leadership, Korean output,
 hallucination traps, and genuine multi-turn follow-ups before ONNX export.
 The post-export gate additionally requires identical input tokenization, no
 strict-score drop, no new strict regression, no new forbidden-information

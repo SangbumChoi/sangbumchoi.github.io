@@ -23,7 +23,7 @@
     "title": "Machine Learning Engineer",
     "dates": "September 2021 to January 2026",
     "highlights": [
-      "Led two ML engineers through multimodal pre-training and staged text-image alignment with a contrastive objective for a visual-grounding model.",
+      "Held approximately one year of team-leadership responsibility, leading two ML engineers through multimodal pre-training and staged text-image alignment with a contrastive objective for a visual-grounding model.",
       "Curated a 1.1-million-image dataset with captions, noun phrases, bounding boxes, and segmentation masks.",
       "Placed second in the CVPR 2025 Incremental Object Detection challenge and fourth in the Few-Shot Object Detection challenge.",
       "Built AWS Batch multi-GPU training and TensorRT/Triton serving infrastructure, improving throughput fivefold over pure PyTorch serving.",
@@ -31,6 +31,23 @@
       "Used LoRA, Adapter, and LST methods and reduced GPU memory use by 65.6 percent and training time by 44.3 percent while preserving performance.",
       "Built interactive segmentation systems with RepViT-SAM, FocalClick, SAM, and SAM2, increasing labeling speed by 25 times."
     ]
+  },
+  "leadership": {
+    "summary": "Daniel held approximately one year of team-leadership responsibility at SuperbAI and also exercised founder-level leadership as co-founder and CTO of Team ISLAND.",
+    "summary_ko": "최상범은 SuperbAI에서 약 1년간 팀 리더십을 맡았고 Team ISLAND를 공동 창업해 CTO로서 리더십을 발휘했습니다.",
+    "superbai": {
+      "duration": "Approximately one year",
+      "duration_ko": "약 1년",
+      "scope": "Led two ML engineers through multimodal pre-training and staged text-image alignment for a visual-grounding model."
+    },
+    "team_island": {
+      "role": "Co-founder and CTO",
+      "dates": "February 2019 to June 2020",
+      "scope": "Led product and technical work for ZZAZZ across Android, Unity, deep learning, and mobile deployment."
+    },
+    "maximum_people_led_simultaneously": 8,
+    "maximum_team_size_note": "Across his leadership experience, the largest group Daniel led at one time was eight people. Narrower project records separately identify two ML engineers in the SuperbAI visual-grounding work and five developers in Team ISLAND's core development team.",
+    "maximum_team_size_note_ko": "여러 리더십 역할을 통틀어 한 시점에 이끈 최대 인원은 8명입니다. 더 좁은 프로젝트 기록에는 SuperbAI의 ML 엔지니어 2명과 Team ISLAND 핵심 개발팀의 개발자 5명이 각각 명시되어 있습니다."
   },
   "career_timeline": {
     "ai_start": "June 2018",

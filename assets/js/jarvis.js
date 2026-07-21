@@ -208,6 +208,10 @@ function selectProfileContext(profile, prompt = "") {
 
   if (/how long|years? (?:of )?(?:experience|work)|worked? in ai|ai experience|career length|경력.*(?:몇|얼마나)|ai.*경력|몇 년/.test(query)) {
     context.career_timeline = profile.career_timeline;
+  } else if (/leadership|team lead|team size|how many people|maximum (?:number of )?people|people (?:did|has|have|he).*(?:lead|led)|led.*(?:people|team)|largest (?:team|group)|managerial|리더십|팀장|팀 규모|최대.*(?:명|인원)|몇 명.*(?:이끌|리드)/.test(query)) {
+    context.leadership = profile.leadership;
+    context.previous_work = profile.previous_work;
+    context.career_timeline = profile.career_timeline;
   } else if (/startup|founder|co.?founder|team\s*island|팀\s*아일랜드|창업|스타트업/.test(query)) {
     context.career_timeline = profile.career_timeline;
     context.other_experience = profile.other_experience;

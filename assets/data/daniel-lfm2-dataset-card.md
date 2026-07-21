@@ -126,8 +126,10 @@ the source URLs and retrieval date when updating them.
 Actions training run. `metrics/strict-evaluation.json`, when present, contains
 post-training results for expected fact-group recall, forbidden-claim avoidance,
 behavior pass rate, Korean response rate, and per-behavior scores.
-The published metrics correspond to portfolio revision `e54fa04` and the complete
-51-case strict set, including the ZZAZZ product and multi-turn cases.
+The published metrics correspond to portfolio revision `e54fa04` and the then-current
+51-case strict set, including the ZZAZZ product and multi-turn cases. The source
+strict set now contains 53 cases after adding leadership coverage; those two new
+cases will enter the published metrics in the next evaluated training run.
 
 ## Related model
 

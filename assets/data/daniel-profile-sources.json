@@ -1,5 +1,5 @@
 {
-  "retrieved_at": "2026-07-17",
+  "retrieved_at": "2026-07-21",
   "policy": {
     "externally_verified": "Confirmed by an official publication, repository, or public API.",
     "public_self_report": "Published by Daniel on his portfolio, CV, or LinkedIn profile but not independently verifiable from public evidence.",
@@ -23,6 +23,16 @@
         "https://sangbumchoi.github.io/cv/",
         "https://theorg.com/org/superb-ai/org-chart/sangbum-choi"
       ]
+    },
+    {
+      "id": "leadership_scope",
+      "claim": "Daniel held approximately one year of team-leadership responsibility at SuperbAI, co-founded Team ISLAND as CTO, and has led up to eight people simultaneously across his leadership experience.",
+      "status": "public_self_report",
+      "sources": [
+        "https://sangbumchoi.github.io/cv/",
+        "https://www.linkedin.com/in/daniel-choi-86648216b/"
+      ],
+      "note": "The eight-person figure is the maximum simultaneous group size across Daniel's leadership experience. Narrower project records separately list two ML engineers in the SuperbAI visual-grounding work and five developers in Team ISLAND's core development team."
     },
     {
       "id": "zzazz_product",
