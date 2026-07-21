@@ -1,11 +1,11 @@
-import { detectPortraitFeatures } from "./portrait-landmarks.js?v=36";
-import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=36";
+import { detectPortraitFeatures } from "./portrait-landmarks.js?v=37";
+import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=37";
 import {
   chooseRuntimePolicy,
   formatWeightSize,
   modelResidencyCoordinator,
   probeRuntimeCapabilities,
-} from "./runtime-policy.mjs?v=36";
+} from "./runtime-policy.mjs?v=37";
 import {
   buildEntityAnswer,
   buildExternalEvidenceAnswer,
@@ -16,9 +16,9 @@ import {
   fetchWikipediaEvidence,
   privateInformationResponse,
   profileWorkClarificationResponse,
-} from "./knowledge-router.mjs?v=36";
+} from "./knowledge-router.mjs?v=37";
 
-const ASSET_VERSION = new URL(import.meta.url).searchParams.get("v") || "36";
+const ASSET_VERSION = new URL(import.meta.url).searchParams.get("v") || "37";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 const ENTITY_KNOWLEDGE_URL = `/assets/data/daniel-entity-knowledge.json?v=${ASSET_VERSION}`;
 
@@ -209,7 +209,12 @@ function selectProfileContext(profile, prompt = "") {
   if (/how long|years? (?:of )?(?:experience|work)|worked? in ai|ai experience|career length|경력.*(?:몇|얼마나)|ai.*경력|몇 년/.test(query)) {
     context.career_timeline = profile.career_timeline;
   } else if (/leadership|team lead|team size|how many people|maximum (?:number of )?people|people (?:did|has|have|he).*(?:lead|led)|led.*(?:people|team)|largest (?:team|group)|managerial|리더십|팀장|팀 규모|최대.*(?:명|인원)|몇 명.*(?:이끌|리드)/.test(query)) {
-    context.leadership = profile.leadership;
+    const leadership = profile.leadership;
+    context.leadership = {
+      summary: /[가-힣]/.test(prompt) ? leadership.summary_ko : leadership.summary,
+    };
+    if (/superb|슈퍼브/.test(query)) context.leadership.superbai = leadership.superbai;
+    if (/team\s*island|팀\s*아일랜드/.test(query)) context.leadership.team_island = leadership.team_island;
   } else if (/startup|founder|co.?founder|team\s*island|팀\s*아일랜드|창업|스타트업/.test(query)) {
     context.career_timeline = profile.career_timeline;
     context.other_experience = profile.other_experience;
