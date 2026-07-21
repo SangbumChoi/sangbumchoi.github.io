@@ -148,8 +148,10 @@ path after reviewing a candidate. The workflow:
    retrieval decisions, missing facts, refusals, Korean responses, and the public strict test;
 4. publishes the evaluated FP16 checkpoint and matching SFT dataset to Hugging
    Face, and publishes the source under `daniel-lfm2-source-v2`;
-5. exports and smoke-tests symmetric Q4 ONNX before updating the public ONNX
-   model, `model-assets` backup branch, and `daniel-lfm2-onnx-v1` release.
+5. replays the same serialized 51-case strict test on source CPU and symmetric
+   Q4 ONNX CPU with identical greedy decoding, then updates the public ONNX
+   model, `model-assets` backup branch, and `daniel-lfm2-onnx-v1` release only
+   when quantization parity passes.
 
 This keeps model training and export isolated from the 32 GB development Mac.
 After the remote job passes, pin the emitted Hugging Face model revision and
@@ -162,30 +164,36 @@ grounded definitions, two-thirds of retrieval and missing-fact decisions, and
 evidence, definition-versus-contribution contrasts, and unseen retrieval terms.
 The separate 51-case strict gate checks privacy, chronology, Korean output,
 hallucination traps, and genuine multi-turn follow-ups before ONNX export.
+The post-export gate additionally requires identical input tokenization, no
+strict-score drop, no new strict regression, no new forbidden-information
+leak, 100% retention of facts that the source answered correctly, at least 0.70
+mean answer similarity, and at least 0.75x
+source median generation throughput. Every changed source/Q4 answer remains in
+`quantization-parity.json`; exact wording changes are reported but do not fail
+publication when the behavioral checks still pass. Source and Q4 throughput
+are compared on the same CPU because cross-device ratios are not meaningful.
 
 ## Export only
 
 The export script pins Liquid AI's official LiquidONNX revision, creates a
-WebGPU-compatible symmetric Q4 graph, runs a CPU smoke test, and prepares the
-complete Transformers.js model directory. To re-export the current source
-model without retraining, run it on Hugging Face Jobs so the local machine only
-submits and monitors the task:
+WebGPU-compatible symmetric Q4 graph, runs a CPU smoke test, replays a required
+source-evaluation manifest through the Q4 graph, and prepares the complete
+Transformers.js model directory. `--upload-hf` is rejected when
+`--baseline-evaluation` is absent. To re-export the current source model without
+retraining or using the development Mac, dispatch
+`.github/workflows/export-daniel-lfm2.yml`. The workflow creates the source CPU
+baseline before export and preserves all three reports as an Actions artifact:
 
-```sh
-hf jobs uv run \
-  --flavor cpu-upgrade \
-  --timeout 2h \
-  --secrets HF_TOKEN \
-  --detach \
-  scripts/export_daniel_lfm2_onnx.py --upload-hf
+```text
+daniel-source-evaluation.json
+quantized-evaluation.json
+quantization-parity.json
 ```
 
-When Hugging Face CLI credentials are unavailable, dispatch
-`.github/workflows/export-daniel-lfm2.yml`. It performs the same export on a
-GitHub-hosted runner, publishes the browser directory to Hugging Face, and
-publishes flattened backup files under the `daniel-lfm2-onnx-v1` release tag.
-It also preserves the original structure on the Git LFS-backed `model-assets`
-branch as a second backup.
+After parity passes, the workflow publishes the browser directory to Hugging
+Face, adds the report summary to `manifest.json`, and publishes flattened backup
+files under the `daniel-lfm2-onnx-v1` release tag. It also preserves the original
+structure and parity reports on the Git LFS-backed `model-assets` branch.
 
 After the job succeeds, pin the public `danelcsb/daniel-lfm2-350m-ONNX` commit
 in `MODEL_REVISION` inside `assets/js/lfm-worker.js`. The worker uses Hugging

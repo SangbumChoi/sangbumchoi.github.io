@@ -18,7 +18,7 @@ permissions:
 jobs:
   export:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     env:
       RELEASE_TAG: ${{ inputs.release_tag }}
       SOURCE_MODEL: ${{ inputs.source_model }}
@@ -34,12 +34,31 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Export and verify personalized Q4 model
+      - name: Evaluate source checkpoint with frozen prompts
+        run: |
+          uv run scripts/evaluate_daniel_lfm2_test.py \
+            --model "$SOURCE_MODEL" \
+            --device cpu \
+            --output "$RUNNER_TEMP/daniel-source-evaluation.json"
+
+      - name: Export and parity-test personalized Q4 model
         run: |
           uv run scripts/export_daniel_lfm2_onnx.py \
             --source "$SOURCE_MODEL" \
             --output-dir "$RUNNER_TEMP/daniel-export" \
+            --baseline-evaluation "$RUNNER_TEMP/daniel-source-evaluation.json" \
             --upload-hf
+
+      - name: Preserve quantization evaluations
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: daniel-lfm2-quantization-parity-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/daniel-source-evaluation.json
+            ${{ runner.temp }}/daniel-export/quantized-evaluation.json
+            ${{ runner.temp }}/daniel-export/quantization-parity.json
+          if-no-files-found: warn
 
       - name: Prepare browser release assets
         run: |
@@ -56,12 +75,15 @@ jobs:
           fi
           cp "$export_dir/onnx/model_q4.onnx" "$asset_dir/model_q4.onnx"
           cp "$export_dir/onnx/model_q4.onnx_data" "$asset_dir/model_q4.onnx_data"
+          cp "$export_dir/quantized-evaluation.json" "$asset_dir/quantized-evaluation.json"
+          cp "$export_dir/quantization-parity.json" "$asset_dir/quantization-parity.json"
 
           jq -n \
             --arg source "$SOURCE_MODEL" \
             --arg exporter_revision "9a23ddd23035165f7414a5de3220a51e85780f64" \
             --arg commit "$GITHUB_SHA" \
-            '{source_model:$source, exporter_revision:$exporter_revision, portfolio_commit:$commit, precision:"q4", webgpu:true}' \
+            --slurpfile parity "$export_dir/quantization-parity.json" \
+            '{source_model:$source, exporter_revision:$exporter_revision, portfolio_commit:$commit, precision:"q4", webgpu:true, quantization_parity:{quality:$parity[0].quality, performance:$parity[0].performance, publication_allowed:$parity[0].publication_allowed}}' \
             > "$asset_dir/manifest.json"
 
       - name: Publish CORS-enabled model branch
@@ -93,6 +115,8 @@ jobs:
           fi
           cp "$export_dir/onnx/model_q4.onnx" "$model_root/onnx/model_q4.onnx"
           cp "$export_dir/onnx/model_q4.onnx_data" "$model_root/onnx/model_q4.onnx_data"
+          cp "$export_dir/quantized-evaluation.json" "$model_root/quantized-evaluation.json"
+          cp "$export_dir/quantization-parity.json" "$model_root/quantization-parity.json"
           cp "$RUNNER_TEMP/release-assets/manifest.json" "$model_root/manifest.json"
 
           git add .gitattributes "$model_root"
@@ -103,7 +127,8 @@ jobs:
         run: |
           set -euo pipefail
           asset_dir="$RUNNER_TEMP/release-assets"
-          notes="Personalized symmetric-Q4 LFM2 export for Daniel OS. Built from $SOURCE_MODEL at portfolio commit $GITHUB_SHA."
+          parity_summary=$(jq -r '"strict drop=" + (.quality.strict_score_drop|tostring) + ", answer change=" + (.quality.answer_change_rate|tostring) + ", throughput ratio=" + (.performance.throughput_ratio|tostring)' "$asset_dir/quantization-parity.json")
+          notes="Personalized symmetric-Q4 LFM2 export for Daniel OS. Built from $SOURCE_MODEL at portfolio commit $GITHUB_SHA. Quantization parity passed: $parity_summary."
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "$asset_dir"/* --clobber
             gh release edit "$RELEASE_TAG" --notes "$notes" --title "Daniel OS LFM2 WebGPU v1"

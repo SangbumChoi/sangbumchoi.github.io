@@ -11,8 +11,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
+import time
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -71,6 +73,11 @@ def rate(numerator: int, denominator: int) -> float:
     return numerator / denominator if denominator else 0.0
 
 
+def messages_digest(messages: list[dict]) -> str:
+    payload = json.dumps(messages, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
 def evaluation_device(requested: str) -> torch.device:
     if requested != "auto":
         return torch.device(requested)
@@ -79,6 +86,13 @@ def evaluation_device(requested: str) -> torch.device:
     if torch.backends.mps.is_available():
         return torch.device("mps")
     return torch.device("cpu")
+
+
+def synchronize(device: torch.device) -> None:
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
+    elif device.type == "mps" and hasattr(torch.mps, "synchronize"):
+        torch.mps.synchronize()
 
 
 def main() -> None:
@@ -132,6 +146,8 @@ def main() -> None:
             truncation=True,
             max_length=1536,
         ).to(device)
+        synchronize(device)
+        started_at = time.perf_counter()
         with torch.inference_mode():
             generated = model.generate(
                 **inputs,
@@ -139,9 +155,11 @@ def main() -> None:
                 do_sample=False,
                 repetition_penalty=1.05,
             )
-        answer = tokenizer.decode(
-            generated[0, inputs["input_ids"].shape[1] :], skip_special_tokens=True
-        ).strip()
+        synchronize(device)
+        elapsed_seconds = time.perf_counter() - started_at
+        generated_ids = generated[0, inputs["input_ids"].shape[1] :]
+        generated_token_count = int(generated_ids.shape[0])
+        answer = tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
         normalized = answer.lower()
         matched_groups = [
             any(term.lower() in normalized for term in group)
@@ -175,7 +193,17 @@ def main() -> None:
                 "language": language,
                 "difficulty": case["difficulty"],
                 "prompt": prompt,
+                "messages": messages,
+                "messages_sha256": messages_digest(messages),
+                "expected_groups": case["expected_groups"],
+                "forbidden_terms": case.get("forbidden_terms", []),
                 "answer": answer,
+                "input_token_count": int(inputs["input_ids"].shape[1]),
+                "generated_token_count": generated_token_count,
+                "generation_seconds": elapsed_seconds,
+                "tokens_per_second": (
+                    generated_token_count / elapsed_seconds if elapsed_seconds else 0.0
+                ),
                 "matched_groups": matched_groups,
                 "forbidden_matches": forbidden_matches,
                 "expected_pass": expected_pass,
@@ -207,6 +235,14 @@ def main() -> None:
     summary = {
         "model": args.model,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
+        "runtime": f"pytorch-{device.type}",
+        "precision": str(dtype).removeprefix("torch."),
+        "generation": {
+            "max_input_tokens": 1536,
+            "max_new_tokens": args.max_new_tokens,
+            "do_sample": False,
+            "repetition_penalty": 1.05,
+        },
         "case_count": len(results),
         "metrics": {
             "behavior_pass_rate": rate(behavior_pass_count, len(results)),

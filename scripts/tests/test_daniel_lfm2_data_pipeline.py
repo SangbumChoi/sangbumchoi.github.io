@@ -135,7 +135,11 @@ class DanielLfm2DataPipelineTest(unittest.TestCase):
         self.assertIn("eager60", code)
         self.assertIn("compile60", code)
         self.assertIn("speed-diagnosis.json", code)
+        self.assertIn("RUN_Q4_PARITY = True", code)
+        self.assertIn("--baseline-evaluation", code)
+        self.assertIn("quantization_parity['publication_allowed']", code)
         self.assertLess(code.index("profile_workers0"), code.index("for workers in (0, 2, 4)"))
+        self.assertLess(code.index("selection ="), code.index("RUN_Q4_PARITY = True"))
 
     def test_trainer_exposes_bounded_performance_controls(self) -> None:
         source = (ROOT / "scripts/train_daniel_lfm2.py").read_text()

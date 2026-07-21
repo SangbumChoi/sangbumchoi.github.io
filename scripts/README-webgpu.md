@@ -39,7 +39,7 @@ and measurements of first load, warm latency, peak memory, and artifact size.
 
 | Component | Default candidate | Alternatives to measure | Quality gate |
 | --- | --- | --- | --- |
-| LFM2-350M | Q4 | Q8, FP16 on capable hardware | strict factual, privacy, and refusal suite |
+| LFM2-350M | Q4 | Q8, FP16 on capable hardware | same-prompt source/Q4 answer parity, strict factual, privacy, and refusal suite |
 | Whisper STT | Q8 or Q8 encoder/Q4 decoder | FP16 encoder/Q4 decoder when `shader-f16` is available | overall and worst-group WER, keyword recall, browser RTF |
 | Personal TTS | Q8 | FP16 | independent-ASR intelligibility, speaker similarity, listening score |
 
@@ -50,6 +50,15 @@ encoder-decoder model and its encoder can be quantization-sensitive, so an
 all-Q4 STT build must not ship merely because it is smaller. A 1-bit build is
 outside the supported ONNX/Transformers.js path and would require a specialized
 runtime and kernels; it is not a current candidate.
+
+The LLM export records two different kinds of change. Exact answer match and
+character-level similarity expose wording drift, while expected fact groups,
+forbidden terms, language, and strict behavior determine whether that drift is
+acceptable. It also records per-case generation latency and token throughput.
+The automated ratio uses source PyTorch CPU and Q4 ONNX Runtime CPU on the same
+runner; WebGPU speed is hardware-specific and remains covered by the visible
+browser benchmark below. A Q4 artifact is never uploaded without a passing
+`quantization-parity.json` report.
 
 ## Kernel decision
 

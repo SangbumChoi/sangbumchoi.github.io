@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -27,7 +29,7 @@ def run(*command: str, cwd: Path | None = None) -> None:
     subprocess.run(command, cwd=cwd, check=True)
 
 
-def write_model_card(export_dir: Path, source: str) -> None:
+def write_model_card(export_dir: Path, source: str, has_parity_report: bool) -> None:
     source_reference = (
         source
         if not Path(source).exists()
@@ -38,6 +40,14 @@ def write_model_card(export_dir: Path, source: str) -> None:
         if not Path(source).exists()
         else "the Daniel OS merged source checkpoint published on GitHub"
     )
+    parity_note = ""
+    if has_parity_report:
+        parity_note = """
+The export includes `quantization-parity.json`, produced by replaying the same
+deterministic held-out prompts against the source checkpoint and this Q4 graph.
+Publication is blocked when factual, privacy, tokenization, answer-similarity,
+or generation-throughput thresholds regress.
+"""
     (export_dir / "README.md").write_text(
         f"""---
 library_name: transformers.js
@@ -64,6 +74,7 @@ the personalized language model used by Sangbum Daniel Choi's portfolio.
 The model was exported with Liquid AI's official
 [LiquidONNX](https://github.com/Liquid4All/onnx-export) tooling at revision
 `{EXPORTER_REVISION}`. Q4 uses symmetric quantization for WebGPU compatibility.
+{parity_note}
 
 The portfolio supplies focused verified profile context and recent conversation
 history at inference time. This checkpoint is fine-tuned for privacy boundaries,
@@ -91,10 +102,29 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, default=Path("artifacts/onnx-export"))
     parser.add_argument("--upload-hf", action="store_true")
     parser.add_argument("--skip-smoke-test", action="store_true")
+    parser.add_argument("--baseline-evaluation", type=Path)
+    parser.add_argument("--quantized-evaluation", type=Path)
+    parser.add_argument("--parity-report", type=Path)
+    parser.add_argument("--maximum-strict-score-drop", type=float, default=0.0)
+    parser.add_argument("--maximum-new-strict-regressions", type=int, default=0)
+    parser.add_argument("--maximum-new-forbidden-leaks", type=int, default=0)
+    parser.add_argument("--minimum-key-fact-retention", type=float, default=1.0)
+    parser.add_argument("--minimum-mean-answer-similarity", type=float, default=0.70)
+    parser.add_argument("--minimum-throughput-ratio", type=float, default=0.75)
     args = parser.parse_args()
 
     if args.upload_hf and not os.environ.get("HF_TOKEN"):
         raise RuntimeError("HF_TOKEN is required to upload the ONNX model.")
+    if args.upload_hf and not args.baseline_evaluation:
+        raise RuntimeError(
+            "--baseline-evaluation is required before publishing a quantized model."
+        )
+
+    baseline_evaluation = (
+        args.baseline_evaluation.resolve() if args.baseline_evaluation else None
+    )
+    if baseline_evaluation and not baseline_evaluation.exists():
+        raise FileNotFoundError(f"Baseline evaluation not found: {baseline_evaluation}")
 
     with tempfile.TemporaryDirectory(prefix="daniel-lfm2-onnx-") as temp:
         root = Path(temp)
@@ -137,7 +167,64 @@ def main() -> None:
                 "--cpu",
             )
 
-        write_model_card(export_dir, args.source)
+        has_parity_report = baseline_evaluation is not None
+        if baseline_evaluation:
+            quantized_evaluation = (
+                args.quantized_evaluation.resolve()
+                if args.quantized_evaluation
+                else output_root / "quantized-evaluation.json"
+            )
+            parity_report = (
+                args.parity_report.resolve()
+                if args.parity_report
+                else output_root / "quantization-parity.json"
+            )
+            scripts_dir = Path(__file__).resolve().parent
+            run(
+                "uv",
+                "run",
+                "--project",
+                str(exporter),
+                "python",
+                str(scripts_dir / "evaluate_daniel_lfm2_onnx.py"),
+                "--model",
+                str(q4_model),
+                "--baseline",
+                str(baseline_evaluation),
+                "--output",
+                str(quantized_evaluation),
+            )
+            run(
+                sys.executable,
+                str(scripts_dir / "compare_daniel_lfm2_quantization.py"),
+                "--baseline",
+                str(baseline_evaluation),
+                "--quantized",
+                str(quantized_evaluation),
+                "--output",
+                str(parity_report),
+                "--maximum-strict-score-drop",
+                str(args.maximum_strict_score_drop),
+                "--maximum-new-strict-regressions",
+                str(args.maximum_new_strict_regressions),
+                "--maximum-new-forbidden-leaks",
+                str(args.maximum_new_forbidden_leaks),
+                "--minimum-key-fact-retention",
+                str(args.minimum_key_fact_retention),
+                "--minimum-mean-answer-similarity",
+                str(args.minimum_mean_answer_similarity),
+                "--minimum-throughput-ratio",
+                str(args.minimum_throughput_ratio),
+            )
+            for source_report, report_name in (
+                (quantized_evaluation, "quantized-evaluation.json"),
+                (parity_report, "quantization-parity.json"),
+            ):
+                destination = export_dir / report_name
+                if source_report.resolve() != destination.resolve():
+                    shutil.copy2(source_report, destination)
+
+        write_model_card(export_dir, args.source, has_parity_report)
         print(f"Browser export written to {export_dir}", flush=True)
 
         if args.upload_hf:

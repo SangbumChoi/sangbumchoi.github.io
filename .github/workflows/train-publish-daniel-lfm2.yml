@@ -122,12 +122,24 @@ jobs:
             --evaluation "$RUNNER_TEMP/daniel-lfm2-strict-evaluation.json" \
             --training-metrics "$RUNNER_TEMP/daniel-lfm2/training_metrics.json"
 
-      - name: Export and CPU-smoke-test Q4 ONNX
+      - name: Export and parity-test Q4 ONNX
         run: |
           uv run scripts/export_daniel_lfm2_onnx.py \
             --source "$RUNNER_TEMP/daniel-lfm2/merged" \
             --output-dir "$RUNNER_TEMP/daniel-export" \
+            --baseline-evaluation "$RUNNER_TEMP/daniel-lfm2-strict-evaluation.json" \
             --upload-hf
+
+      - name: Preserve quantization evaluations
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: daniel-lfm2-quantization-parity-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/daniel-lfm2-strict-evaluation.json
+            ${{ runner.temp }}/daniel-export/quantized-evaluation.json
+            ${{ runner.temp }}/daniel-export/quantization-parity.json
+          if-no-files-found: warn
 
       - name: Prepare browser release assets
         run: |
@@ -143,11 +155,14 @@ jobs:
           fi
           cp "$export_dir/onnx/model_q4.onnx" "$asset_dir/model_q4.onnx"
           cp "$export_dir/onnx/model_q4.onnx_data" "$asset_dir/model_q4.onnx_data"
+          cp "$export_dir/quantized-evaluation.json" "$asset_dir/quantized-evaluation.json"
+          cp "$export_dir/quantization-parity.json" "$asset_dir/quantization-parity.json"
           jq -n \
             --arg source_release "$SOURCE_TAG" \
             --arg training_revision "$GITHUB_SHA" \
             --arg exporter_revision "9a23ddd23035165f7414a5de3220a51e85780f64" \
-            '{source_release:$source_release, training_revision:$training_revision, exporter_revision:$exporter_revision, precision:"q4", webgpu:true}' \
+            --slurpfile parity "$export_dir/quantization-parity.json" \
+            '{source_release:$source_release, training_revision:$training_revision, exporter_revision:$exporter_revision, precision:"q4", webgpu:true, quantization_parity:{quality:$parity[0].quality, performance:$parity[0].performance, publication_allowed:$parity[0].publication_allowed}}' \
             > "$asset_dir/manifest.json"
 
       - name: Publish CORS-enabled model branch
@@ -171,6 +186,8 @@ jobs:
           fi
           cp "$export_dir/onnx/model_q4.onnx" "$model_root/onnx/model_q4.onnx"
           cp "$export_dir/onnx/model_q4.onnx_data" "$model_root/onnx/model_q4.onnx_data"
+          cp "$export_dir/quantized-evaluation.json" "$model_root/quantized-evaluation.json"
+          cp "$export_dir/quantization-parity.json" "$model_root/quantization-parity.json"
           cp "$RUNNER_TEMP/browser-release/manifest.json" "$model_root/manifest.json"
           git add .gitattributes "$model_root"
           git commit -m "Publish evidence-routed Daniel LFM2 WebGPU assets"
@@ -181,7 +198,8 @@ jobs:
         run: |
           set -euo pipefail
           asset_dir="$RUNNER_TEMP/browser-release"
-          notes="Scope-trained symmetric-Q4 Daniel OS LFM2. Training revision: $GITHUB_SHA. Model asset revision: $MODEL_ASSET_REVISION."
+          parity_summary=$(jq -r '"strict drop=" + (.quality.strict_score_drop|tostring) + ", answer change=" + (.quality.answer_change_rate|tostring) + ", throughput ratio=" + (.performance.throughput_ratio|tostring)' "$asset_dir/quantization-parity.json")
+          notes="Scope-trained symmetric-Q4 Daniel OS LFM2. Training revision: $GITHUB_SHA. Model asset revision: $MODEL_ASSET_REVISION. Quantization parity passed: $parity_summary."
           if gh release view "$WEB_TAG" >/dev/null 2>&1; then
             gh release upload "$WEB_TAG" "$asset_dir"/* --clobber
             gh release edit "$WEB_TAG" --notes "$notes" --title "Daniel OS LFM2 WebGPU v2"
@@ -198,3 +216,4 @@ jobs:
           echo "- Model asset revision: \`$MODEL_ASSET_REVISION\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Source release: \`$SOURCE_TAG\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Browser release: \`$WEB_TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '"- Q4 strict-score drop: `" + (.quality.strict_score_drop|tostring) + "`\n- Q4 answer-change rate: `" + (.quality.answer_change_rate|tostring) + "`\n- Q4/source throughput ratio: `" + (.performance.throughput_ratio|tostring) + "`"' "$RUNNER_TEMP/daniel-export/quantization-parity.json" >> "$GITHUB_STEP_SUMMARY"
