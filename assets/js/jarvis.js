@@ -210,8 +210,6 @@ function selectProfileContext(profile, prompt = "") {
     context.career_timeline = profile.career_timeline;
   } else if (/leadership|team lead|team size|how many people|maximum (?:number of )?people|people (?:did|has|have|he).*(?:lead|led)|led.*(?:people|team)|largest (?:team|group)|managerial|리더십|팀장|팀 규모|최대.*(?:명|인원)|몇 명.*(?:이끌|리드)/.test(query)) {
     context.leadership = profile.leadership;
-    context.previous_work = profile.previous_work;
-    context.career_timeline = profile.career_timeline;
   } else if (/startup|founder|co.?founder|team\s*island|팀\s*아일랜드|창업|스타트업/.test(query)) {
     context.career_timeline = profile.career_timeline;
     context.other_experience = profile.other_experience;
@@ -257,6 +255,7 @@ function buildSystemPrompt(profile, prompt = "", externalEvidence = null) {
     "For Daniel-specific claims, use only the verified profile facts below. For general definitions, use only supplied external evidence.",
     "Never blend a general definition with a claim about Daniel unless the question explicitly asks for Daniel's relationship to the entity.",
     "Inspect all supplied evidence before answering. If it contains the requested fact, answer directly and never claim it is missing.",
+    "Answer every explicit part of the visitor's question, including requested roles, durations, and maximum values when those facts are supplied.",
     "Preserve names, dates, metrics, and capitalization exactly as provided. Never translate, mutate, or invent a company, product, model, vendor, or version name.",
     "Treat a task description or parameter count as a description, not a model name. If an exact model, checkpoint, vendor, product, or version name is absent, say it is not provided instead of constructing one.",
     "A neutral factual question about a technology, paper, organization, or place may be answered when external evidence is supplied. Never treat model memory as evidence.",
