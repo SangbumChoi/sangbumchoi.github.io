@@ -38,13 +38,17 @@ export async function detectPortraitFeatures(image) {
     const leftEye = boundsForConnections(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYE);
     const rightEye = boundsForConnections(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE);
     const lips = boundsForConnections(landmarks, FaceLandmarker.FACE_LANDMARKS_LIPS);
-    if (!leftEye || !rightEye || !lips) throw new Error("Eye or lip landmarks were incomplete.");
+    const faceOval = boundsForConnections(landmarks, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL);
+    if (!leftEye || !rightEye || !lips || !faceOval) throw new Error("Face, eye, or lip landmarks were incomplete.");
 
     return {
       source: "mediapipe-478",
       leftEye,
       rightEye,
       lips,
+      faceOval,
+      // Normalized image coordinates with MediaPipe's relative depth, used by the 3D portrait.
+      points: landmarks.map(({ x, y, z }) => ({ x, y, z })),
     };
   } finally {
     landmarker.close();
