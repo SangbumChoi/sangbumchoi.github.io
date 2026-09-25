@@ -20,11 +20,15 @@ layout: compress
     <a class="skip-link" href="#conversation">Skip to conversation</a>
     {% include jarvis-header.html interactive=true %}
 
-    <main class="jarvis-shell">
-      <section class="identity-panel" aria-labelledby="identity-title">
+    <main class="jarvis-shell" id="jarvis-shell" data-avatar="auto">
+      <section class="identity-panel" id="identity-panel" aria-labelledby="identity-title">
+        <h1 class="sr-only" id="identity-title">Sangbum Daniel Choi</h1>
         <div class="identity-panel__topline">
-          <span>PERSONAL AI / SEOUL</span>
-          <span id="local-time">--:-- KST</span>
+          <span class="identity-panel__label">PERSONAL AI / SEOUL</span>
+          <span class="identity-panel__time" id="local-time">--:-- KST</span>
+          <button class="icon-button panel-toggle" id="avatar-toggle" type="button" aria-controls="identity-panel" aria-expanded="true" aria-label="Minimize avatar panel" title="Minimize avatar panel">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg>
+          </button>
         </div>
 
         <figure class="portrait" id="portrait" data-state="idle">
@@ -40,6 +44,7 @@ layout: compress
                 fetchpriority="high"
               >
               <canvas id="portrait-mesh" class="portrait__mesh" aria-hidden="true"></canvas>
+              <canvas id="portrait-3d" class="portrait__mesh portrait__mesh--3d" aria-hidden="true"></canvas>
             </div>
             <div class="portrait__scan" aria-hidden="true"></div>
             <div class="portrait__focus portrait__focus--top" aria-hidden="true"></div>
@@ -51,21 +56,6 @@ layout: compress
             <span>Voice-reactive avatar / local session</span>
           </figcaption>
         </figure>
-
-        <div class="identity-copy">
-          <p class="eyebrow">AI RESEARCH &amp; SYSTEMS ENGINEER</p>
-          <h1 id="identity-title">Sangbum Daniel Choi</h1>
-          <p class="identity-copy__intro">
-            I build multimodal models, production AI systems, and open-source tools.
-            Ask this local-first profile assistant about my work, research, or the technology behind it.
-          </p>
-        </div>
-
-        <dl class="signal-grid" aria-label="Profile highlights">
-          <div><dt>OPEN SOURCE</dt><dd>40+ HF contrib.</dd></div>
-          <div><dt>MODEL DELIVERY</dt><dd>1,100+</dd></div>
-          <div><dt>CVPR 2025</dt><dd>2nd / 4th</dd></div>
-        </dl>
       </section>
 
       <section class="console-panel" id="conversation" aria-labelledby="console-title">

@@ -17,7 +17,18 @@
   {% endif %}
   <nav class="jarvis-nav" aria-label="Primary navigation">
     <a href="{{ base_path }}/cv/"{% if page.url == '/cv/' %} aria-current="page"{% endif %}>CV</a>
+    <a href="{{ base_path }}/files/resume/daniel_choi_resume_clean.pdf">Resume</a>
     <a href="{{ base_path }}/publications/"{% if page.url == '/publications/' or page.collection == 'publications' %} aria-current="page"{% endif %}>Research</a>
+    <a href="{{ base_path }}/year-archive/"{% if page.url == '/year-archive/' or page.collection == 'posts' %} aria-current="page"{% endif %}>Field Notes</a>
     <a href="{{ base_path }}/github/"{% if page.url == '/github/' %} aria-current="page"{% endif %}>GitHub</a>
+    <span class="jarvis-nav__divider" aria-hidden="true"></span>
+    <a class="jarvis-nav__contact" href="https://www.linkedin.com/in/daniel-choi-86648216b/" target="_blank" rel="noopener" title="LinkedIn">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+      <span class="jarvis-nav__label">LinkedIn</span>
+    </a>
+    <a class="jarvis-nav__contact" href="mailto:danielsejong55@gmail.com" title="Email">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+      <span class="jarvis-nav__label">Email</span>
+    </a>
   </nav>
 </header>

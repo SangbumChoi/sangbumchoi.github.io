@@ -1,11 +1,12 @@
-import { detectPortraitFeatures } from "./portrait-landmarks.js?v=38";
-import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=38";
+import { detectPortraitFeatures } from "./portrait-landmarks.js?v=39";
+import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=39";
+import { createPortraitThreeAnimator } from "./portrait-three.js?v=39";
 import {
   chooseRuntimePolicy,
   formatWeightSize,
   modelResidencyCoordinator,
   probeRuntimeCapabilities,
-} from "./runtime-policy.mjs?v=38";
+} from "./runtime-policy.mjs?v=39";
 import {
   buildEntityAnswer,
   buildExternalEvidenceAnswer,
@@ -16,9 +17,9 @@ import {
   fetchWikipediaEvidence,
   privateInformationResponse,
   profileWorkClarificationResponse,
-} from "./knowledge-router.mjs?v=38";
+} from "./knowledge-router.mjs?v=39";
 
-const ASSET_VERSION = new URL(import.meta.url).searchParams.get("v") || "38";
+const ASSET_VERSION = new URL(import.meta.url).searchParams.get("v") || "39";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 const ENTITY_KNOWLEDGE_URL = `/assets/data/daniel-entity-knowledge.json?v=${ASSET_VERSION}`;
 
@@ -30,6 +31,9 @@ const els = {
   portraitAvatar: document.querySelector(".portrait__avatar"),
   portraitImage: document.querySelector("#portrait-image"),
   portraitMesh: document.querySelector("#portrait-mesh"),
+  portrait3d: document.querySelector("#portrait-3d"),
+  shell: document.querySelector("#jarvis-shell"),
+  avatarToggle: document.querySelector("#avatar-toggle"),
   portraitState: document.querySelector("#portrait-state"),
   canvas: document.querySelector("#voice-wave"),
   loader: document.querySelector("#model-loader"),
@@ -176,23 +180,78 @@ function updateClock() {
   els.localTime.textContent = `${value} KST`;
 }
 
+const AVATAR_PANEL_KEY = "daniel-os:avatar-panel";
+const compactLayout = window.matchMedia("(max-width: 760px)");
+
+function readAvatarPreference() {
+  try {
+    return JSON.parse(window.localStorage.getItem(AVATAR_PANEL_KEY) || "{}") || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function applyAvatarPanel(expanded) {
+  els.shell.dataset.avatar = expanded ? "expanded" : "collapsed";
+  const label = expanded ? "Minimize avatar panel" : "Expand avatar panel";
+  els.avatarToggle.setAttribute("aria-expanded", String(expanded));
+  els.avatarToggle.setAttribute("aria-label", label);
+  els.avatarToggle.title = label;
+}
+
+// Desktop opens the avatar panel by default; phones start with the compact strip.
+function initAvatarPanel() {
+  if (!els.shell || !els.avatarToggle) return;
+  const layout = () => (compactLayout.matches ? "compact" : "wide");
+  const sync = () => {
+    const saved = readAvatarPreference()[layout()];
+    applyAvatarPanel(typeof saved === "boolean" ? saved : layout() === "wide");
+  };
+  sync();
+  compactLayout.addEventListener("change", sync);
+  els.avatarToggle.addEventListener("click", () => {
+    const expanded = els.shell.dataset.avatar !== "expanded";
+    applyAvatarPanel(expanded);
+    try {
+      const preference = readAvatarPreference();
+      preference[layout()] = expanded;
+      window.localStorage.setItem(AVATAR_PANEL_KEY, JSON.stringify(preference));
+    } catch (_) {
+      // Storage can be unavailable in private windows; the toggle still works for this visit.
+    }
+  });
+}
+
 async function initPortraitLandmarks() {
-  if (!els.portraitImage || !els.portraitMesh || !els.portraitAvatar) return;
+  if (!els.portraitImage || !els.portraitMesh || !els.portrait3d || !els.portraitAvatar) return;
   els.portrait.dataset.landmarks = "loading";
   els.portrait.dataset.mesh = "loading";
   try {
     state.portraitFeatures = await detectPortraitFeatures(els.portraitImage);
-    state.portraitAnimator = createPortraitMeshAnimator({
-      canvas: els.portraitMesh,
-      image: els.portraitImage,
-      media: els.portraitAvatar.parentElement,
-      features: state.portraitFeatures,
-    });
+    const media = els.portraitAvatar.parentElement;
+    let mesh = "three";
+    try {
+      state.portraitAnimator = await createPortraitThreeAnimator({
+        canvas: els.portrait3d,
+        image: els.portraitImage,
+        media,
+        features: state.portraitFeatures,
+      });
+    } catch (error) {
+      console.warn("3D portrait unavailable, using 2D texture mesh:", error.message);
+      mesh = "texture-warp";
+      state.portraitAnimator = createPortraitMeshAnimator({
+        canvas: els.portraitMesh,
+        image: els.portraitImage,
+        media,
+        features: state.portraitFeatures,
+      });
+    }
     state.portraitAnimator.start();
     state.portraitAnimator.setState(els.portrait.dataset.state || "idle");
     state.portraitAnimator.setViseme(els.portrait.dataset.viseme || "rest");
     els.portrait.dataset.landmarks = state.portraitFeatures.source;
-    els.portrait.dataset.mesh = "texture-warp";
+    els.portrait.dataset.mesh = mesh;
     state.portraitResizeObserver = new ResizeObserver(() => state.portraitAnimator?.resize());
     state.portraitResizeObserver.observe(els.portraitAvatar.parentElement);
   } catch (error) {
@@ -1013,6 +1072,7 @@ function bindEvents() {
 
 async function boot() {
   initializeIcons();
+  initAvatarPanel();
   updateClock();
   window.setInterval(updateClock, 30_000);
   initWaveform();

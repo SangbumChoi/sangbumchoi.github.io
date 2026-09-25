@@ -58,11 +58,11 @@ def main() -> None:
         "ASSET_VERSION",
     )
     jarvis, import_count = re.subn(
-        r'((?:portrait-landmarks\.js|portrait-mesh\.js|runtime-policy\.mjs)\?v=)\d+',
+        r'((?:portrait-landmarks\.js|portrait-mesh\.js|portrait-three\.js|runtime-policy\.mjs)\?v=)\d+',
         rf"\g<1>{next_version}",
         jarvis,
     )
-    if import_count != 3:
+    if import_count != 4:
         raise RuntimeError("Could not update all versioned Jarvis module imports")
     config = replace_once(
         config,
