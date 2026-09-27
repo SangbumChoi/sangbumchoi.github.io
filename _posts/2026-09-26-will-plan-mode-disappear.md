@@ -1,15 +1,394 @@
 ---
 title: "Will Plan Mode Disappear?"
+title_ko: "Plan Mode는 사라질까?"
 permalink: /posts/will-plan-mode-disappear/
 date: 2026-09-26
 last_modified_at: 2026-09-26
 eyebrow: "ESSAY / CODING AGENTS"
-dek: "Codex와 Claude Code를 쓰면서 든 생각. Planning은 사라지지 않는다. 다만 Plan Mode라는 명시적인 기능은 agent 내부로 흡수될 가능성이 높다."
+dek: "Some thoughts from using Codex and Claude Code. Planning isn't going away, but Plan Mode as an explicit feature will likely be absorbed into the agent itself."
+dek_ko: "Codex와 Claude Code를 쓰면서 든 생각. Planning은 사라지지 않는다. 다만 Plan Mode라는 명시적인 기능은 agent 내부로 흡수될 가능성이 높다."
 read_time: true
 comments: false
 share: false
 related: false
 ---
+
+<div class="lang-block" lang="en" markdown="1">
+
+Using Codex and Claude Code lately, one thought keeps coming back to me.
+
+**Will we keep using Plan Mode?**
+
+Personally, I don't think so.
+
+To be precise, I don't think planning itself will disappear. What I think will likely
+disappear is **Plan Mode as an explicit feature**.
+
+## Why did we need Plan Mode?
+
+What Plan Mode does in a coding agent is fairly clear.
+
+Say I make this request:
+
+> "Add authentication."
+
+To a person, that's one simple sentence. To an agent, it isn't.
+
+- Is there existing authentication?
+- OAuth, or email/password?
+- Which library should it use?
+- Does the DB schema need to change?
+- How do we stay compatible with the existing API?
+- How far should the tests go?
+
+User queries are far more incomplete than we think.
+
+So instead of writing code right away, the agent reads the repository, interprets the
+requirements, decomposes the task, builds an implementation strategy, and then shows it
+to a human. Roughly this:
+
+```text
+User Query → Interpret → Plan → Human Review → Execute
+```
+
+Anthropic describes Plan Mode in a similar way. Rather than asking for approval on each
+action one by one, Claude first shows the plan it intends to carry out, and the user
+reviews, edits, and approves it. In Anthropic's words, this moves the user's oversight
+*"from the individual step to the overall strategy"*
+([Anthropic, Trustworthy agents in practice](https://www.anthropic.com/research/trustworthy-agents)).
+
+The Claude Code docs describe the agent loop as three phases, **gather context → take
+action → verify results**, which blend together and repeat
+([Claude Code Docs](https://code.claude.com/docs/en/how-claude-code-works)).
+You can see Plan Mode as a device that explicitly exposes the context-gathering and
+strategy-building part of that loop to the user, so it can be reviewed before execution.
+
+Codex has a similar Plan Mode. Looking at Codex's public
+[Plan Mode template](https://github.com/openai/codex/blob/main/codex-rs/collaboration-mode-templates/templates/plan.md),
+in this mode the agent gathers facts and reduces ambiguity using only actions that don't
+change the repository, like reading files, searching, and static analysis, and then
+produces a *"decision complete"* plan that leaves the implementer no further decisions
+to make. Mutating actions such as editing files or running migrations are forbidden.
+
+But this raises a question.
+
+**Why does this need to be a separate Mode?**
+
+## Planning may actually be closer to critique
+
+I don't think one of Plan Mode's important roles is simply "producing a sequence of
+future actions." It's closer to this:
+
+> **Criticize the user's instruction before executing it.**
+
+Instead of executing the instruction as given, the agent asks first:
+
+- Is this really what the user wants?
+- Is the instruction missing any conditions?
+- Does the implementation I'm about to write actually match the real goal?
+- Is there a better way?
+
+Seen this way, the line between planning and criticism blurs.
+
+Say a user writes:
+
+> "Add an `is_admin` boolean column to the User table and build the admin features."
+
+A good agent might think this through before generating a migration:
+
+> Wait. This service already has per-organization roles.
+> Adding `is_admin` would create two sources of authorization.
+> Wouldn't extending the existing RBAC be more natural?
+
+Is that planning? Criticism? Architecture review?
+
+There's really no need to tell them apart. What a good agent needs is the ability to
+criticize its own interpretation and actions before executing.
+
+## Plan Mode was a kind of UX safety net
+
+Then why wasn't this handled inside the agent from the start? Why make it an explicit
+feature called Plan Mode?
+
+I think part of it was **solving a model capability and trust problem with UX**.
+
+Imagine the agent reinterprets the user's instruction on its own. The user says
+
+> "Make this DB query faster."
+
+and the agent decides "changing the schema is the best approach" and goes ahead and
+runs a migration.
+
+If the result is good, no problem. But if it's wrong, the user feels:
+
+> "I never asked for that."
+
+So we insert a checkpoint in the middle.
+
+```text
+User Intent → Agent Interpretation → Human Approval → Execution
+```
+
+The agent shows "As I understand it, I'm going to do A, B, and C," and the human
+presses Yes.
+
+The agent didn't suddenly get smarter. But because the user verified the agent's
+interpretation once, the surprise when things fail drops sharply.
+
+In that sense, Plan Mode was less a reasoning feature and more a
+**soft-landing UX for imperfect agents**.
+
+## We're already watching a similar transition
+
+Interestingly, almost the same thing is happening with permissions.
+
+According to Anthropic, Claude Code users were approving **93%** of permission prompts.
+The problem is that when approvals pile up, people stop actually reading them.
+Anthropic calls this *approval fatigue*, and built **auto mode**, where a model-based
+classifier evaluates each action before it runs instead of a human
+([Anthropic Engineering](https://www.anthropic.com/engineering/claude-code-auto-mode)).
+And per the current Claude Code docs, auto mode is now the default starting permission
+mode for interactive sessions in the terminal and VS Code
+([Claude Code Docs](https://code.claude.com/docs/en/permission-modes)).
+
+So this
+
+```text
+AI Action → Human Approval → Execute
+```
+
+is turning into this.
+
+```text
+AI Action → Internal Risk Evaluation → Execute
+```
+
+High-risk moments still go to a human.
+
+OpenAI shows a similar direction. In how OpenAI describes running Codex internally, a
+separate auto-approval subagent reviews planned actions and recent context, and approves
+low-risk actions without interrupting the user. It's designed to stop on actions that
+are high-risk or could have unintended consequences
+([OpenAI, Running Codex safely at OpenAI](https://openai.com/index/running-codex-safely/)).
+
+You can apply the same evolution to planning. In fact, the Codex repository has a
+feature request asking to let the agent enter and exit Plan Mode on its own in the
+middle of implementation
+([openai/codex#35858](https://github.com/openai/codex/issues/35858)).
+It's a request to let the agent, not the human, decide when to plan.
+
+## Not Plan Mode, but Dynamic Planning
+
+Today it looks roughly like this.
+
+```text
+Plan Mode ON  → think a lot.
+Plan Mode OFF → execute right away.
+```
+
+But do we really need this binary distinction? The agent can just decide for itself.
+
+For example:
+
+> "Change the button color from blue to green."
+
+This needs almost no planning. Just do it.
+
+On the other hand:
+
+> "Migrate our payment architecture to Stripe Connect."
+
+That's a completely different story. The agent has to explore the repository, map the
+dependencies, analyze migration risk, and compare alternative architectures.
+
+And along the way, an important decision may surface.
+
+> Should we migrate existing customers?
+
+That has too much impact for the agent to decide on its own. It only needs to ask the
+human at that moment.
+
+So the future agent loop will look less like
+
+```text
+Plan → Approve → Execute
+```
+
+and more like this.
+
+```text
+Observe → Act → Critique → Act → Observe → Replan → Ask Human → Act
+```
+
+Planning stops being a phase and becomes an internal behavior that is continuously
+adjusted.
+
+## The amount of planning can become a hyperparameter
+
+I think we can go one step further.
+
+Instead of thinking of planning as ON/OFF, treat it as a continuous variable: **how far
+to diverge**. Conceptually, imagine the agent has values like these inside it.
+
+```text
+exploration_depth
+reasoning_budget
+uncertainty_tolerance
+autonomy_horizon
+human_escalation_threshold
+```
+
+For a simple task, exploration depth is close to zero.
+
+```text
+Query → Execute
+```
+
+A bit of ambiguity raises it.
+
+```text
+Query → Inspect → Critique → Execute
+```
+
+A complex task raises it much further.
+
+```text
+Query → Explore → Generate alternatives → Critique → Gather context → Re-plan → Execute
+```
+
+And at moments that are irreversible or call for a value judgment, it crosses the human
+escalation threshold.
+
+```text
+→ Ask Human
+```
+
+From this angle, a Plan Mode UI starts to look a little odd. Why should the user have
+to tell the agent "think hard this time" every time?
+
+A good agent should look at a problem's complexity and uncertainty and decide for
+itself how much planning it needs.
+
+## The context window can be part of the planning budget
+
+Context size ties into this too.
+
+Hand a long task to an agent today and context keeps piling up. So humans manage it
+with Plan Mode, subagents, `/clear`, task decomposition, and so on.
+
+But this, too, is likely to move inside the agent runtime. The agent decides for itself:
+
+- Do I really need the last 50K tokens to solve this?
+- Which context should I keep?
+- What can be compressed into a summary?
+- Which subset should I hand to a new subagent?
+- When should I re-read the global context?
+
+Then the context window stops being just a model specification and becomes a
+**planning resource**. The agent dynamically allocates reasoning depth, exploration
+breadth, and context budget per task.
+
+## Then do humans not even need to write queries?
+
+Push this thought to the end and you arrive at a slightly strange question.
+
+If the agent, on its own,
+
+- interprets intent,
+- finds missing information,
+- explores alternatives,
+- criticizes its own plan,
+- manages context,
+- and replans after seeing results,
+
+why should a human write a precise query?
+
+Maybe what humans hand agents in the future won't be a task specification but a much
+lighter direction. For example:
+
+> "Onboarding conversion seems a bit off lately."
+
+Today's AI would likely wait for a question. A future agent could fan out into several
+hypotheses from here. Check analytics, look at recent deployments, find drop-off
+points, read customer feedback, form a few hypotheses, and design low-risk experiments.
+
+And come back to the human only when a truly important decision comes up.
+
+> "Removing one signup step could improve conversion, but it might weaken fraud
+> protection. Which way do you want to take this trade-off?"
+
+The human's role gradually shifts from
+
+> *How should this be done?*
+
+toward
+
+> *What do we actually value?*
+
+## Planning won't disappear. Plan Mode might.
+
+So the future I imagine isn't an agent without planning. Quite the opposite. Agents
+will plan far more than they do now.
+
+But the user will likely no longer need to press a button every time to say "start
+planning now." Planning stops being a feature separate from execution and melts
+naturally into the agent loop.
+
+- If needed, think for two seconds and act.
+- If needed, explore the entire repository.
+- If needed, generate several alternatives.
+- If needed, criticize its own thinking.
+- If needed, throw away the context and start over.
+
+And **call a human only at the moments when it shouldn't be the one deciding.**
+
+## One piece of data I'd like to check
+
+There's one piece of data I'm personally most curious about.
+
+**How is the share of tasks that start in explicit Plan Mode changing over time in
+Codex and Claude Code?**
+
+With current public data, it's hard to see a historical trend for this usage ratio. So
+there's no basis yet for claiming "Plan Mode usage is already declining." This essay's
+claim is observation and hypothesis, not measured fact.
+
+If anything, Claude Code still teaches explore → plan → implement → commit as the
+recommended workflow
+([Claude Code best practices](https://code.claude.com/docs/en/best-practices)),
+and Codex also offers a Plan Mode that separates planning from execution.
+
+That said, the same docs contain one interesting line. Plan mode has overhead, so
+*"if you could describe the diff in one sentence, skip the plan."* Right now a human
+makes that call. This essay's claim, in the end, is that the call moves to the agent.
+
+Still, as models' self-critique and autonomy improve, I expect this number to go down
+over the long run. The shift of permission prompts to auto mode may be a leading
+indicator.
+
+If the real data turns out that way, it would mean something rather fun.
+
+Plan Mode wouldn't be disappearing because it was a failed feature.
+**It would be absorbed into the agent because it succeeded too well.**
+
+1. At first, planning had to be shown to humans.
+2. Then humans approved the planning.
+3. Then the agent critiques its own planning.
+4. And eventually, only the important decisions reach the human.
+
+So the question I'm curious about is this.
+
+> *Will Plan Mode exist forever?*
+
+My guess is,
+
+**Planning will.**
+
+**Plan Mode probably won't.**
+
+</div>
+
+<div class="lang-block" lang="ko" markdown="1">
 
 요즘 Codex나 Claude Code를 쓰면서 한 가지 생각이 든다.
 
@@ -384,3 +763,5 @@ Plan Mode가 실패한 feature여서 사라지는 것이 아니다.
 **Planning will.**
 
 **Plan Mode probably won't.**
+
+</div>

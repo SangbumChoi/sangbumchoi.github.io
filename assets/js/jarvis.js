@@ -1,12 +1,12 @@
-import { detectPortraitFeatures } from "./portrait-landmarks.js?v=39";
-import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=39";
-import { createPortraitThreeAnimator } from "./portrait-three.js?v=39";
+import { detectPortraitFeatures } from "./portrait-landmarks.js?v=40";
+import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=40";
+import { createPortraitThreeAnimator } from "./portrait-three.js?v=40";
 import {
   chooseRuntimePolicy,
   formatWeightSize,
   modelResidencyCoordinator,
   probeRuntimeCapabilities,
-} from "./runtime-policy.mjs?v=39";
+} from "./runtime-policy.mjs?v=40";
 import {
   buildEntityAnswer,
   buildExternalEvidenceAnswer,
@@ -17,9 +17,9 @@ import {
   fetchWikipediaEvidence,
   privateInformationResponse,
   profileWorkClarificationResponse,
-} from "./knowledge-router.mjs?v=39";
+} from "./knowledge-router.mjs?v=40";
 
-const ASSET_VERSION = new URL(import.meta.url).searchParams.get("v") || "39";
+const ASSET_VERSION = new URL(import.meta.url).searchParams.get("v") || "40";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 const ENTITY_KNOWLEDGE_URL = `/assets/data/daniel-entity-knowledge.json?v=${ASSET_VERSION}`;
 
@@ -890,7 +890,10 @@ function initSpeechRecognition() {
   state.recognition = new Recognition();
   state.recognition.continuous = true;
   state.recognition.interimResults = true;
-  state.recognition.lang = "en-US";
+  state.recognition.lang = window.danielLang?.current() === "ko" ? "ko-KR" : "en-US";
+  document.addEventListener("daniel:langchange", (event) => {
+    if (state.recognition) state.recognition.lang = event.detail.lang === "ko" ? "ko-KR" : "en-US";
+  });
   state.recognition.onstart = () => {
     state.recognitionActive = true;
     state.listening = true;
@@ -1061,7 +1064,10 @@ function bindEvents() {
     setPortraitState("idle", state.modelReady ? "LOCAL MODEL READY" : "STANDING BY");
   });
   document.querySelectorAll("[data-prompt]").forEach((button) => {
-    button.addEventListener("click", () => submitPrompt(button.dataset.prompt));
+    button.addEventListener("click", () => {
+      const korean = window.danielLang?.current() === "ko" && button.dataset.promptKo;
+      submitPrompt(korean ? button.dataset.promptKo : button.dataset.prompt);
+    });
   });
   els.voiceOutput.addEventListener("change", () => {
     if (els.voiceOutput.checked) return;

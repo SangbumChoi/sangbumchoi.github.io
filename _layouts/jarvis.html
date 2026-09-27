@@ -6,6 +6,7 @@ layout: compress
 <html lang="{{ site.locale | slice: 0,2 }}" class="jarvis-js">
   <head>
     <meta charset="utf-8">
+    {% include jarvis-lang-init.html %}
     {% include seo.html %}
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#0b0d0f">
@@ -53,7 +54,7 @@ layout: compress
           <canvas id="voice-wave" class="portrait__wave" width="640" height="72" aria-hidden="true"></canvas>
           <figcaption>
             <span class="portrait__state" id="portrait-state">STANDING BY</span>
-            <span>Voice-reactive avatar / local session</span>
+            <span><span class="i18n" lang="en">Voice-reactive avatar / local session</span><span class="i18n" lang="ko">음성 반응 아바타 / 로컬 세션</span></span>
           </figcaption>
         </figure>
       </section>
@@ -62,7 +63,7 @@ layout: compress
         <div class="console-heading">
           <div>
             <p class="eyebrow">LOCAL INFERENCE CONSOLE</p>
-            <h2 id="console-title">Ask Daniel</h2>
+            <h2 id="console-title"><span class="i18n" lang="en">Ask Daniel</span><span class="i18n" lang="ko">Daniel에게 묻기</span></h2>
           </div>
           <button class="icon-button" id="clear-chat" type="button" title="Clear conversation" aria-label="Clear conversation">
             <i data-lucide="rotate-ccw" aria-hidden="true"></i>
@@ -88,22 +89,20 @@ layout: compress
         <div class="chat-log" id="chat-log" aria-live="polite" aria-relevant="additions text">
           <article class="message message--assistant">
             <div class="message__meta"><span>DANIEL AI</span><time>NOW</time></div>
-            <div class="message__body">
-              Hi, I am Daniel's browser-native portfolio assistant. Ask about my work or a technical topic connected to the portfolio. Known facts stay local; uncached general lookups show their public source.
-            </div>
+            <div class="message__body"><span class="i18n" lang="en">Hi, I am Daniel's browser-native portfolio assistant. Ask about my work or a technical topic connected to the portfolio. Known facts stay local; uncached general lookups show their public source.</span><span class="i18n" lang="ko">안녕하세요, 브라우저에서 동작하는 Daniel의 포트폴리오 assistant입니다. 제 경력이나 포트폴리오와 관련된 기술 주제를 물어보세요. 알려진 정보는 로컬에서 답하고, 캐시되지 않은 일반 검색은 공개 출처를 함께 보여드립니다.</span></div>
           </article>
         </div>
 
         <div class="prompt-shelf" aria-label="Suggested questions">
-          <button type="button" data-prompt="What are Daniel's strongest open-source contributions?">Open source</button>
-          <button type="button" data-prompt="Explain Daniel's multimodal and document AI experience.">Multimodal work</button>
-          <button type="button" data-prompt="Why does Daniel contribute to open source?">Philosophy</button>
-          <button type="button" data-prompt="What links can I open?">Links</button>
+          <button type="button" data-prompt="What are Daniel's strongest open-source contributions?" data-prompt-ko="Daniel의 대표적인 오픈소스 기여는 무엇인가요?"><span class="i18n" lang="en">Open source</span><span class="i18n" lang="ko">오픈소스</span></button>
+          <button type="button" data-prompt="Explain Daniel's multimodal and document AI experience." data-prompt-ko="Daniel의 멀티모달과 document AI 경험을 설명해 주세요."><span class="i18n" lang="en">Multimodal work</span><span class="i18n" lang="ko">멀티모달</span></button>
+          <button type="button" data-prompt="Why does Daniel contribute to open source?" data-prompt-ko="Daniel은 왜 오픈소스에 기여하나요?"><span class="i18n" lang="en">Philosophy</span><span class="i18n" lang="ko">철학</span></button>
+          <button type="button" data-prompt="What links can I open?" data-prompt-ko="어떤 링크를 열어볼 수 있나요?"><span class="i18n" lang="en">Links</span><span class="i18n" lang="ko">링크</span></button>
         </div>
 
         <form class="composer" id="prompt-form">
           <label class="sr-only" for="prompt-input">Ask Daniel a question</label>
-          <textarea id="prompt-input" rows="1" maxlength="2000" placeholder="Ask about Daniel or a topic in his portfolio…"></textarea>
+          <textarea id="prompt-input" rows="1" maxlength="2000" placeholder="Ask about Daniel or a topic in his portfolio…" data-placeholder-en="Ask about Daniel or a topic in his portfolio…" data-placeholder-ko="Daniel이나 포트폴리오 관련 주제를 물어보세요…"></textarea>
           <div class="composer__actions">
             <button class="icon-button icon-button--mic" id="mic-button" type="button" title="Start voice input; click again to stop and send" aria-label="Start voice input" aria-pressed="false">
               <i data-lucide="mic" aria-hidden="true"></i>
@@ -118,7 +117,7 @@ layout: compress
           <label class="voice-toggle" for="voice-output" title="TTS: browser or operating-system SpeechSynthesis voice; not WebGPU">
             <input id="voice-output" type="checkbox" checked>
             <span aria-hidden="true"></span>
-            Read replies aloud
+            <span class="i18n" lang="en">Read replies aloud</span><span class="i18n" lang="ko">답변 읽어주기</span>
           </label>
           <span id="latency-label">DEMO · grounded · local-first</span>
         </div>

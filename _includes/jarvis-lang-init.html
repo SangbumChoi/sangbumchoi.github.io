@@ -1,0 +1,12 @@
+<script>
+  (function () {
+    var lang;
+    try { lang = window.localStorage.getItem("daniel-os:lang"); } catch (error) { lang = null; }
+    if (lang !== "en" && lang !== "ko") {
+      lang = (navigator.language || "").toLowerCase().indexOf("ko") === 0 ? "ko" : "en";
+    }
+    document.documentElement.setAttribute("data-lang", lang);
+    document.documentElement.setAttribute("lang", lang);
+  })();
+</script>
+<script src="{{ base_path }}/assets/js/lang.js?v={{ site.jarvis_asset_version }}" defer></script>

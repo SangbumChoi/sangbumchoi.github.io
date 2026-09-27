@@ -2,20 +2,40 @@
 layout: jarvis-content
 permalink: /year-archive/
 title: "Field Notes"
+title_ko: "노트"
 eyebrow: "DANIEL OS / ENGINEERING NOTES"
 dek: "Implementation details, model delivery decisions, and research notes."
+dek_ko: "구현 과정, 모델 배포에 관한 결정, 그리고 연구 노트."
 author_profile: false
 redirect_from:
   - /wordpress/blog-posts/
 ---
 
 {% include base_path %}
-{% capture written_year %}'None'{% endcapture %}
+{% assign written_year = '' %}
 {% for post in site.posts %}
-  {% capture year %}{{ post.date | date: '%Y' }}{% endcapture %}
+  {% assign year = post.date | date: '%Y' %}
   {% if year != written_year %}
-    <h2 id="{{ year | slugify }}" class="archive__subtitle">{{ year }}</h2>
-    {% capture written_year %}{{ year }}{% endcapture %}
+    {% unless forloop.first %}</div>{% endunless %}
+    <h2 class="archive__subtitle">{{ year }}</h2>
+    <div class="research-index">
+    {% assign written_year = year %}
   {% endif %}
-  {% include archive-single.html %}
+  <article class="research-entry">
+    <div class="research-entry__meta">
+      <time datetime="{{ post.date | date_to_xmlschema }}"><span class="i18n" lang="en">{{ post.date | date: "%B %d, %Y" }}</span><span class="i18n" lang="ko">{{ post.date | date: "%Y년 %-m월 %-d일" }}</span></time>
+      <span>{{ post.eyebrow | default: "PAPER NOTE" }}</span>
+    </div>
+    <h2>
+      <a href="{{ base_path }}{{ post.url }}">
+        {% if post.title_ko %}<span class="i18n" lang="en">{{ post.title }}</span><span class="i18n" lang="ko">{{ post.title_ko }}</span>{% else %}{{ post.title }}{% endif %}
+      </a>
+    </h2>
+    {% if post.dek and post.dek_ko %}
+      <p><span class="i18n" lang="en">{{ post.dek }}</span><span class="i18n" lang="ko">{{ post.dek_ko }}</span></p>
+    {% elsif post.dek %}
+      <p>{{ post.dek }}</p>
+    {% endif %}
+  </article>
+  {% if forloop.last %}</div>{% endif %}
 {% endfor %}
