@@ -13,7 +13,7 @@ redirect_from:
 
 Summary
 ======
-AI research and systems engineer with 6+ years of experience in multimodal pre-training and post-training, data curation, evaluation, open-source model integration, and production deployment. Built PyTorch training/serving systems and made 40+ contributions across the Hugging Face ecosystem, including 28 public pull requests authored in Transformers.
+Former entrepreneur and research scientist with 6+ years of experience leading projects across multimodal AI, on-device inference, AI agents, and production ML systems. Co-founded a startup and served as CTO, led teams of up to eight people, and delivered projects from research through deployment. Extensive open-source contributor across the Hugging Face ecosystem and creator of OpenLocalAgent, OCR, and Absorbed.
 
 Resume downloads
 ======

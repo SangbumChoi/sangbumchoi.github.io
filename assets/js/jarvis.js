@@ -399,8 +399,8 @@ function groundedAnswer(prompt) {
   const links = state.profile.links;
   if (/who (is|are) daniel|who (is|are) sangbum|about (daniel|sangbum)|introduce (daniel|yourself)|다니엘.*누구|상범.*누구|자기.?소개|소개해/.test(query)) {
     return korean
-      ? "Sangbum Daniel Choi는 서울에서 일하는 AI research and systems engineer입니다. 6년 이상 멀티모달 모델 학습, 데이터 설계, 평가, 오픈소스 통합, 온디바이스 배포와 프로덕션 ML 인프라를 경험했으며 현재 Toss Bank의 Data Scientist입니다."
-      : "Sangbum Daniel Choi is an AI research and systems engineer in Seoul with 6+ years of experience in multimodal training, data design, evaluation, open-source integration, edge deployment, and production ML infrastructure. He currently works as a Data Scientist at Toss Bank.";
+      ? "Sangbum Daniel Choi는 창업 경험을 갖춘 연구 과학자이자 활발한 오픈소스 기여자입니다. 6년 이상 멀티모달 AI, 온디바이스 추론, AI 에이전트와 프로덕션 ML 프로젝트를 이끌었으며 현재 Toss Bank의 Data Scientist입니다."
+      : "Sangbum Daniel Choi is a research scientist, former entrepreneur, and extensive open-source contributor based in Seoul. He has 6+ years of experience leading projects across multimodal AI, on-device inference, AI agents, and production ML systems. He currently works as a Data Scientist at Toss Bank.";
   }
 
   if (/link|링크|resume|cv|github|linkedin|paper|publication|논문/.test(query)) {
