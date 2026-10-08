@@ -12,8 +12,9 @@
     "title": "Data Scientist",
     "dates": "January 2026 to present",
     "projects": [
-      "An on-premise AI agent system using internally deployed LLMs for secure development workflows.",
-      "AI authentication for face and ID card verification.",
+      "Building on-premise tool-calling agents that route requests between direct question answering and RAG over internal documents retrieved with image embeddings.",
+      "Developing My ID MFR for mobile ID card recognition and facial verification with ONNX models running through WebGPU; combining face anti-spoofing, multitask depth/normal/keypoint estimation, and face-embedding similarity.",
+      "Building an in-house language model benchmark aligned with public evaluation protocols and scoring heuristics to compare Qwen and GLM models and analyze performance differences.",
       "An end-to-end document extraction pipeline using an approximately 1B-parameter vision-language model, including document classification, orientation, layout, OCR and table understanding, and key-value extraction.",
       "Designed stage-level evaluation and reached a 61 percent exact-match baseline for automation-ready outputs."
     ]
@@ -104,6 +105,23 @@
       "Led the integration of Segment Anything 2 into Transformers, including image and video processing, conversion, documentation, and integration tests.",
       "Opened Molmo2 support and published danelcsb/Molmo2-4B on the Hugging Face Hub.",
       "Implemented or improved RT-DETR, ViTPose, DETA training, DINOv3 utilities, and distributed training behavior."
+    ],
+    "projects": [
+      {
+        "name": "OpenLocalAgent",
+        "url": "https://github.com/SangbumChoi/OpenLocalAgent",
+        "description": "Building small tool-calling agents from scratch in pure PyTorch using open data, with pretraining, midtraining, post-training, and evaluation across ten public agent benchmarks. Developed dataset-level loss analysis to investigate differences in predictability across coding, structured, and web-text corpora."
+      },
+      {
+        "name": "OCR",
+        "url": "https://github.com/SangbumChoi/OCR",
+        "description": "Building a reproducible evaluation and improvement framework for sub-1B document VLMs, covering accuracy, calibration, robustness, and LoRA adaptation. Unified public document datasets into a shared evaluation and training format, with deduplication, held-out splits, task-specific metrics, and ablation studies."
+      },
+      {
+        "name": "Absorbed",
+        "url": "https://github.com/SangbumChoi/Absorbed",
+        "description": "Developing an open-source SwiftUI roguelike with turn-based combat, branching expeditions, spirit capture, persistent progression, and English/Korean localization. Built deterministic content, asset, localization, and balance checks; currently a playable iOS prototype under active development."
+      }
     ]
   },
   "research": [

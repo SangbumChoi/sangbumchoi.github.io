@@ -124,6 +124,26 @@
       "status": "not_verified",
       "sources": [],
       "note": "ZZAZZ (째즈) was the name of Team ISLAND's video-editing product; it does not verify a jazz performance or music activity."
+    },
+    {
+      "id": "toss_authentication_agents_details",
+      "claim": "My ID MFR uses ONNX/WebGPU for mobile ID and face verification; on-premise agents use image-embedding document retrieval and direct-answer/RAG routing, with in-house Qwen/GLM evaluation.",
+      "status": "public_self_report",
+      "sources": [
+        "https://sangbumchoi.github.io/cv/"
+      ],
+      "note": "Details supplied by Daniel for this portfolio update on 2026-10-08; exact language model versions were not specified."
+    },
+    {
+      "id": "independent_open_source_projects",
+      "claim": "Daniel develops OpenLocalAgent, OCR, and Absorbed.",
+      "status": "public_self_report",
+      "sources": [
+        "https://github.com/SangbumChoi/OpenLocalAgent",
+        "https://github.com/SangbumChoi/OCR",
+        "https://github.com/SangbumChoi/Absorbed"
+      ],
+      "note": "Descriptions checked against the local project READMEs on 2026-10-08."
     }
   ]
 }

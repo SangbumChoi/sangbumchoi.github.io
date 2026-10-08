@@ -61,6 +61,7 @@ export function classifyKnowledgeIntent(prompt, knowledge, options = {}) {
   if (PRIVATE_PATTERN.test(prompt) && (profileRelated || PROFILE_PRONOUN_PATTERN.test(prompt))) {
     return { type: "sensitive_personal", entity: null };
   }
+  if (/\b(?:openlocalagents?|absorbed|my id mfr|ocr project)\b|오픈\s*로컬\s*에이전트|흡수\s*게임/i.test(prompt)) return { type: "profile", entity: null };
   if (entity && profileRelated) return { type: "profile_entity", entity };
   if (entity && (DEFINITION_PATTERN.test(prompt) || !profileRelated)) {
     return { type: "entity_definition", entity };

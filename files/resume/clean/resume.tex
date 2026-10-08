@@ -73,7 +73,7 @@
   \textbf{\Large Sangbum Daniel Choi} & Email : \href{mailto:danielsejong55@gmail.com}{danielsejong55@gmail.com}\\
   \href{https://www.linkedin.com/in/daniel-choi-86648216b/}{linkedin.com/in/daniel-choi-86648216b} & Mobile : +82-010-5913-2857 \\
   \href{https://github.com/SangbumChoi}{github.com/SangbumChoi} &
-  {Updated: 2026/07/21}\\
+  {Updated: 2026/10/08}\\
 \end{tabular*}
 
 %-----------SUMMARY-----------------
@@ -88,9 +88,11 @@ Applied scientist and research engineer with 6+ years of experience taking multi
       {Data Scientist}{Jan 2026 - Present}
       \resumeItemListStart
         \resumeItem{On-premise AI Agent System}
-          {Building an on-premise agent system with internally deployed LLMs for secure AI-assisted development workflows.}
-        \resumeItem{AI Authentication}
-          {Developing AI-based authentication systems for face and ID card verification.}
+          {Building on-premise tool-calling agents that route requests between direct question answering and RAG over internal documents retrieved with image embeddings.}
+        \resumeItem{AI Authentication -- My ID MFR}
+          {Developing My ID MFR for mobile ID card recognition and facial verification with ONNX models running through WebGPU; combining face anti-spoofing, multitask depth/normal/keypoint estimation, and face-embedding similarity.}
+        \resumeItem{Language Model Evaluation}
+          {Building an in-house language model benchmark aligned with public evaluation protocols and scoring heuristics to compare Qwen and GLM models and analyze performance differences.}
         \resumeItem{[Lead] End-to-End Document AI}
           {Led the full research and production pipeline for an approximately 1B-parameter vision-language model, spanning multi-page classification, orientation, layout detection, OCR/table understanding, and LLM-based key-value extraction; post-trained the model, designed stage-level diagnostics, and reached 61\% exact-match accuracy for automation-ready outputs.}
       \resumeItemListEnd
@@ -133,6 +135,12 @@ Applied scientist and research engineer with 6+ years of experience taking multi
 %-----------OPEN SOURCE-----------------
 \section{Open Source}
   \resumeSubHeadingListStart
+    \resumeSubItem{\MYhref{https://github.com/SangbumChoi/OpenLocalAgent}{OpenLocalAgent}}
+      {Building small tool-calling agents from scratch in pure PyTorch using open data, with pretraining, midtraining, post-training, and evaluation across ten public agent benchmarks.}
+    \resumeSubItem{\MYhref{https://github.com/SangbumChoi/OCR}{OCR}}
+      {Building a reproducible evaluation and improvement framework for sub-1B document VLMs, covering accuracy, calibration, robustness, and LoRA adaptation.}
+    \resumeSubItem{\MYhref{https://github.com/SangbumChoi/Absorbed}{Absorbed}}
+      {Developing an open-source SwiftUI roguelike with turn-based combat, branching expeditions, spirit capture, persistent progression, and English/Korean localization.}
     \resumeSubItem{\MYhref{https://github.com/huggingface/transformers/pulls?q=is\%3Apr+SangbumChoi}{Hugging Face Transformers}}
       {Contributed 40+ pull requests to a large production codebase across multimodal and vision models, independently shipping model architectures, processors, conversion scripts, distributed training fixes, tests, and documentation.}
     \resumeSubItem{\MYhref{https://github.com/huggingface/transformers/pull/32317}{Hugging Face Transformers - SAM2}}
@@ -175,11 +183,14 @@ Applied scientist and research engineer with 6+ years of experience taking multi
  \resumeSubHeadingListStart
    \item{
      \textbf{Research}{: Python, PyTorch, Transformers, multimodal pre/post-training, LoRA, contrastive alignment, evaluation}
-     \hfill
+   }
+   \item{
      \textbf{Systems}{: Linux, AWS Batch, multi-GPU training, MLflow, TensorRT, Triton, ONNX, TensorFlow Lite, Git}
-     \\
+   }
+   \item{
      \textbf{Agents}{: LangChain, Langfuse, Claude Code, Codex, opencode}
-     \hfill
+   }
+   \item{
      \textbf{Languages}{: Korean (native), English (professional)}
    }
  \resumeSubHeadingListEnd

@@ -216,3 +216,9 @@ test("Wikipedia citations encode parentheses for Markdown rendering", () => {
   });
   assert.match(answer, /Example_%28topic%29/);
 });
+
+test("routes named personal projects to profile facts", () => {
+  for (const prompt of ["What is OpenLocalAgent?", "Tell me about Absorbed", "Explain My ID MFR", "What does the OCR project do?"]) {
+    assert.equal(classifyKnowledgeIntent(prompt, knowledge).type, "profile");
+  }
+});

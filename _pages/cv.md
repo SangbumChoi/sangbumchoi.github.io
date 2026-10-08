@@ -23,6 +23,9 @@ Resume downloads
 
 Open source
 ======
+* [OpenLocalAgent](https://github.com/SangbumChoi/OpenLocalAgent): Building small tool-calling agents from scratch in pure PyTorch using open data, with pretraining, midtraining, post-training, and evaluation across ten public agent benchmarks. Developed dataset-level loss analysis to investigate differences in predictability across coding, structured, and web-text corpora.
+* [OCR](https://github.com/SangbumChoi/OCR): Building a reproducible evaluation and improvement framework for sub-1B document VLMs, covering accuracy, calibration, robustness, and LoRA adaptation. Unified public document datasets into a shared evaluation and training format, with deduplication, held-out splits, task-specific metrics, and ablation studies.
+* [Absorbed](https://github.com/SangbumChoi/Absorbed): Developing an open-source SwiftUI roguelike with turn-based combat, branching expeditions, spirit capture, persistent progression, and English/Korean localization. Built deterministic content, asset, localization, and balance checks; currently a playable iOS prototype under active development.
 * Hugging Face ecosystem contributor with 40+ contributions, including 28 public pull requests authored in Transformers across model architectures, processors, conversion scripts, distributed training fixes, tests, and documentation.
 * Hugging Face Transformers contributor: led the addition of Segment Anything 2 (SAM2) support to `huggingface/transformers`.
   * Implemented and refined image/video segmentation model support, processors, documentation, conversion flow, and integration tests through a long-running community review cycle.
@@ -40,8 +43,9 @@ Work experience
 ======
 * 2026/01-Present: Data Scientist
   * <span style="font-weight:bold">Toss Bank (토스뱅크)</span>
-  * Building an on-premise agent system with internally deployed LLMs for secure AI-assisted development workflows.
-  * Developing AI-based authentication systems for face and ID card verification.
+  * Building on-premise tool-calling agents that route requests between direct question answering and RAG over internal documents retrieved with image embeddings.
+  * Building an in-house language model benchmark aligned with public evaluation protocols and scoring heuristics to compare Qwen and GLM models and analyze performance differences.
+  * Developing My ID MFR for mobile ID card recognition and facial verification with ONNX models running through WebGPU; combining face anti-spoofing, multitask depth/normal/keypoint estimation, and face-embedding similarity.
   * Post-trained and evaluated an approximately 1B-parameter vision-language model in an end-to-end document extraction pipeline, reaching 61% exact-match accuracy for automation-ready outputs.
 
 * 2021/09-2026/01: Machine Learning Engineer
