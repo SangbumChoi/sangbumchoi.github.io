@@ -218,7 +218,7 @@ test("Wikipedia citations encode parentheses for Markdown rendering", () => {
 });
 
 test("routes named personal projects to profile facts", () => {
-  for (const prompt of ["What is OpenLocalAgent?", "Tell me about Absorbed", "Explain My ID MFR", "What does the OCR project do?"]) {
+  for (const prompt of ["What is OpenLocalAgent?", "Tell me about Absorbed", "Explain mobile ID authentication", "What does the OCR project do?"]) {
     assert.equal(classifyKnowledgeIntent(prompt, knowledge).type, "profile");
   }
 });

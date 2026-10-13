@@ -278,7 +278,7 @@ function selectProfileContext(profile, prompt = "") {
     context.other_experience = profile.other_experience;
   } else if (/open.?local.?agents?|absorbed|\bocr project\b|game|roguelike|오픈.?로컬|흡수|게임/.test(query)) {
     context.open_source = profile.open_source;
-  } else if (/my\s*id|mfr|webgpu|spoof|qwen|glm|toss\s*bank|tossbank|document|authentication|agent|토스\s*뱅크|토스은행|문서|인증|에이전트/.test(query)) {
+  } else if (/my\s*id|webgpu|spoof|qwen|glm|toss\s*bank|tossbank|document|authentication|agent|토스\s*뱅크|토스은행|문서|인증|에이전트/.test(query)) {
     context.current_work = profile.current_work;
   } else if (/\b(?:(?:his|your|daniel(?:'s)?)\s+(?:work|job|company|role|employer)|work experience|company experience|current job)\b|\b(?:at|in|for)\s+(?:his|your|the)\s+compan(?:y|ies)\b|회사|직장|업무/.test(query)) {
     context.current_work = profile.current_work;
@@ -425,10 +425,10 @@ function groundedAnswer(prompt) {
       : "Daniel has made 40+ contributions across the Hugging Face ecosystem, including 28 public pull requests authored in Transformers. He led the SAM2 integration, opened Molmo2 support and published a Molmo2-4B checkpoint, and contributed to RT-DETR, ViTPose, DETA training, DINOv3 utilities, distributed training fixes, tests, and documentation. He also develops OpenLocalAgent for agent training, OCR for small document VLM evaluation, and Absorbed, an iOS roguelike.";
   }
 
-  if (/my\s*id|mfr|webgpu|spoof|qwen|glm|toss\s*bank|tossbank|document|authentication|agent|토스\s*뱅크|토스은행|문서|인증|에이전트/.test(query)) {
+  if (/my\s*id|webgpu|spoof|qwen|glm|toss\s*bank|tossbank|document|authentication|agent|토스\s*뱅크|토스은행|문서|인증|에이전트/.test(query)) {
     return korean
-      ? "Toss Bank에서 Daniel은 내부 LLM을 사용하는 온프레미스 AI 에이전트, ONNX·WebGPU 기반 My ID MFR 얼굴·신분증 인증, 그리고 약 10억 파라미터 VLM 기반의 end-to-end 문서 추출 파이프라인을 개발합니다. 분류·회전·레이아웃·OCR/표·키값 추출 단계별 평가를 설계했고, 자동 처리 가능한 결과 기준 exact match 61%를 달성했습니다. 에이전트는 직접 응답과 이미지 임베딩 기반 문서 RAG를 선택하며, 공개 평가 프로토콜에 맞춘 Qwen·GLM 사내 벤치마크도 구축합니다."
-      : "At Toss Bank, Daniel works on an on-premise AI agent using internally deployed LLMs, My ID MFR for mobile ID recognition and facial verification using ONNX and WebGPU, and an end-to-end document extraction pipeline with an approximately 1B-parameter VLM. His agents route direct answers versus RAG with image-embedding retrieval; he also builds in-house Qwen/GLM evaluations aligned with public benchmarks. He designed stage-level evaluation and reached a 61% exact-match baseline for automation-ready outputs.";
+      ? "Toss Bank에서 Daniel은 내부 LLM을 사용하는 온프레미스 AI 에이전트, ONNX·WebGPU 기반 모바일 신분증·얼굴 인증, 그리고 약 10억 파라미터 VLM 기반의 end-to-end 문서 추출 파이프라인을 개발합니다. 분류·회전·레이아웃·OCR/표·키값 추출 단계별 평가를 설계했고, 자동 처리 가능한 결과 기준 exact match 61%를 달성했습니다. 에이전트는 직접 응답과 이미지 임베딩 기반 문서 RAG를 선택하며, 공개 평가 프로토콜에 맞춘 Qwen·GLM 사내 벤치마크도 구축합니다."
+      : "At Toss Bank, Daniel works on an on-premise AI agent using internally deployed LLMs, mobile ID and facial verification using ONNX and WebGPU, and an end-to-end document extraction pipeline with an approximately 1B-parameter VLM. His agents route direct answers versus RAG with image-embedding retrieval; he also builds in-house Qwen/GLM evaluations aligned with public benchmarks. He designed stage-level evaluation and reached a 61% exact-match baseline for automation-ready outputs.";
   }
 
   if (/superb|multimodal|ground|training|gpu|dataset|cvpr|멀티모달|학습|데이터/.test(query)) {

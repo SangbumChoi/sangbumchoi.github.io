@@ -127,7 +127,7 @@
     },
     {
       "id": "toss_authentication_agents_details",
-      "claim": "My ID MFR uses ONNX/WebGPU for mobile ID and face verification; on-premise agents use image-embedding document retrieval and direct-answer/RAG routing, with in-house Qwen/GLM evaluation.",
+      "claim": "AI authentication uses ONNX/WebGPU for mobile ID and face verification; on-premise agents use image-embedding document retrieval and direct-answer/RAG routing, with in-house Qwen/GLM evaluation.",
       "status": "public_self_report",
       "sources": [
         "https://sangbumchoi.github.io/cv/"

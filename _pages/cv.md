@@ -45,7 +45,7 @@ Work experience
   * <span style="font-weight:bold">Toss Bank (토스뱅크)</span>
   * Building on-premise tool-calling agents that route requests between direct question answering and RAG over internal documents retrieved with image embeddings.
   * Building an in-house language model benchmark aligned with public evaluation protocols and scoring heuristics to compare Qwen and GLM models and analyze performance differences.
-  * Developing My ID MFR for mobile ID card recognition and facial verification with ONNX models running through WebGPU; combining face anti-spoofing, multitask depth/normal/keypoint estimation, and face-embedding similarity.
+  * Developing mobile ID card recognition and facial verification with ONNX models running through WebGPU; combining face anti-spoofing, multitask depth/normal/keypoint estimation, and face-embedding similarity.
   * Post-trained and evaluated an approximately 1B-parameter vision-language model in an end-to-end document extraction pipeline, reaching 61% exact-match accuracy for automation-ready outputs.
 
 * 2021/09-2026/01: Machine Learning Engineer
