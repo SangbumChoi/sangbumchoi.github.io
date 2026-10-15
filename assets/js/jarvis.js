@@ -1,12 +1,12 @@
-import { detectPortraitFeatures } from "./portrait-landmarks.js?v=40";
-import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=40";
-import { createPortraitThreeAnimator } from "./portrait-three.js?v=40";
+import { detectPortraitFeatures } from "./portrait-landmarks.js?v=42";
+import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=42";
+import { createPortraitThreeAnimator } from "./portrait-three.js?v=42";
 import {
   chooseRuntimePolicy,
   formatWeightSize,
   modelResidencyCoordinator,
   probeRuntimeCapabilities,
-} from "./runtime-policy.mjs?v=40";
+} from "./runtime-policy.mjs?v=42";
 import {
   buildEntityAnswer,
   buildExternalEvidenceAnswer,
@@ -17,9 +17,9 @@ import {
   fetchWikipediaEvidence,
   privateInformationResponse,
   profileWorkClarificationResponse,
-} from "./knowledge-router.mjs?v=40";
+} from "./knowledge-router.mjs?v=42";
 
-const ASSET_VERSION = new URL(import.meta.url).searchParams.get("v") || "40";
+const ASSET_VERSION = new URL(import.meta.url).searchParams.get("v") || "42";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 const ENTITY_KNOWLEDGE_URL = `/assets/data/daniel-entity-knowledge.json?v=${ASSET_VERSION}`;
 
@@ -276,7 +276,9 @@ function selectProfileContext(profile, prompt = "") {
   } else if (/2018|seerslab|uiuc|early career|earlier work|2018년|초기 경력/.test(query)) {
     context.career_timeline = profile.career_timeline;
     context.other_experience = profile.other_experience;
-  } else if (/toss\s*bank|tossbank|document|authentication|agent|토스\s*뱅크|토스은행|문서|인증|에이전트/.test(query)) {
+  } else if (/open.?local.?agents?|absorbed|\bocr project\b|game|roguelike|오픈.?로컬|흡수|게임/.test(query)) {
+    context.open_source = profile.open_source;
+  } else if (/my\s*id|webgpu|spoof|qwen|glm|toss\s*bank|tossbank|document|authentication|agent|토스\s*뱅크|토스은행|문서|인증|에이전트/.test(query)) {
     context.current_work = profile.current_work;
   } else if (/\b(?:(?:his|your|daniel(?:'s)?)\s+(?:work|job|company|role|employer)|work experience|company experience|current job)\b|\b(?:at|in|for)\s+(?:his|your|the)\s+compan(?:y|ies)\b|회사|직장|업무/.test(query)) {
     context.current_work = profile.current_work;
@@ -397,8 +399,8 @@ function groundedAnswer(prompt) {
   const links = state.profile.links;
   if (/who (is|are) daniel|who (is|are) sangbum|about (daniel|sangbum)|introduce (daniel|yourself)|다니엘.*누구|상범.*누구|자기.?소개|소개해/.test(query)) {
     return korean
-      ? "Sangbum Daniel Choi는 서울에서 일하는 AI research and systems engineer입니다. 6년 이상 멀티모달 모델 학습, 데이터 설계, 평가, 오픈소스 통합, 온디바이스 배포와 프로덕션 ML 인프라를 경험했으며 현재 Toss Bank의 Data Scientist입니다."
-      : "Sangbum Daniel Choi is an AI research and systems engineer in Seoul with 6+ years of experience in multimodal training, data design, evaluation, open-source integration, edge deployment, and production ML infrastructure. He currently works as a Data Scientist at Toss Bank.";
+      ? "Sangbum Daniel Choi는 창업 경험을 갖춘 연구 과학자이자 활발한 오픈소스 기여자입니다. 6년 이상 멀티모달 AI, 온디바이스 추론, AI 에이전트와 프로덕션 ML 프로젝트를 이끌었으며 현재 Toss Bank의 Data Scientist입니다."
+      : "Sangbum Daniel Choi is a research scientist, former entrepreneur, and extensive open-source contributor based in Seoul. He has 6+ years of experience leading projects across multimodal AI, on-device inference, AI agents, and production ML systems. He currently works as a Data Scientist at Toss Bank.";
   }
 
   if (/link|링크|resume|cv|github|linkedin|paper|publication|논문/.test(query)) {
@@ -413,16 +415,20 @@ function groundedAnswer(prompt) {
       : state.profile.open_source.philosophy;
   }
 
-  if (/open.?source|hugging|sam2|molmo|transformers|오픈.?소스/.test(query)) {
-    return korean
-      ? "Daniel은 Hugging Face 생태계에 40건 이상 기여했으며, 그중 Hugging Face Transformers에 작성한 공개 PR은 현재 28건입니다. SAM2 통합을 주도했고, Molmo2 지원을 열어 Molmo2-4B 체크포인트를 공개했으며, RT-DETR·ViTPose·DETA 학습·DINOv3 유틸리티·분산 학습 수정·테스트·문서화에도 기여했습니다."
-      : "Daniel has made 40+ contributions across the Hugging Face ecosystem, including 28 public pull requests authored in Transformers. He led the SAM2 integration, opened Molmo2 support and published a Molmo2-4B checkpoint, and contributed to RT-DETR, ViTPose, DETA training, DINOv3 utilities, distributed training fixes, tests, and documentation.";
+  if (/open.?local.?agents?|absorbed|\bocr project\b|game|roguelike|오픈.?로컬|흡수|게임/.test(query)) {
+    return state.profile.open_source.projects.map((project) => `[${project.name}](${project.url}): ${project.description}`).join("\n\n");
   }
 
-  if (/toss\s*bank|tossbank|document|authentication|agent|토스\s*뱅크|토스은행|문서|인증|에이전트/.test(query)) {
+  if (/open.?source|hugging|sam2|molmo|transformers|오픈.?소스/.test(query)) {
     return korean
-      ? "Toss Bank에서 Daniel은 내부 LLM을 사용하는 온프레미스 AI 에이전트, 얼굴·신분증 인증, 그리고 약 10억 파라미터 VLM 기반의 end-to-end 문서 추출 파이프라인을 개발합니다. 분류·회전·레이아웃·OCR/표·키값 추출 단계별 평가를 설계했고, 자동 처리 가능한 결과 기준 exact match 61%를 달성했습니다."
-      : "At Toss Bank, Daniel works on an on-premise AI agent using internally deployed LLMs, face and ID-card authentication, and an end-to-end document extraction pipeline with an approximately 1B-parameter VLM. He designed stage-level evaluation and reached a 61% exact-match baseline for automation-ready outputs.";
+      ? "Daniel은 Hugging Face 생태계에 40건 이상 기여했으며, 그중 Hugging Face Transformers에 작성한 공개 PR은 현재 28건입니다. SAM2 통합을 주도했고, Molmo2 지원을 열어 Molmo2-4B 체크포인트를 공개했으며, RT-DETR·ViTPose·DETA 학습·DINOv3 유틸리티·분산 학습 수정·테스트·문서화에도 기여했습니다. OpenLocalAgent(에이전트 모델 학습), OCR(소형 문서 VLM 평가), Absorbed(iOS 로그라이크)도 개발하고 있습니다."
+      : "Daniel has made 40+ contributions across the Hugging Face ecosystem, including 28 public pull requests authored in Transformers. He led the SAM2 integration, opened Molmo2 support and published a Molmo2-4B checkpoint, and contributed to RT-DETR, ViTPose, DETA training, DINOv3 utilities, distributed training fixes, tests, and documentation. He also develops OpenLocalAgent for agent training, OCR for small document VLM evaluation, and Absorbed, an iOS roguelike.";
+  }
+
+  if (/my\s*id|webgpu|spoof|qwen|glm|toss\s*bank|tossbank|document|authentication|agent|토스\s*뱅크|토스은행|문서|인증|에이전트/.test(query)) {
+    return korean
+      ? "Toss Bank에서 Daniel은 내부 LLM을 사용하는 온프레미스 AI 에이전트, ONNX·WebGPU 기반 모바일 신분증·얼굴 인증, 그리고 약 10억 파라미터 VLM 기반의 end-to-end 문서 추출 파이프라인을 개발합니다. 분류·회전·레이아웃·OCR/표·키값 추출 단계별 평가를 설계했고, 자동 처리 가능한 결과 기준 exact match 61%를 달성했습니다. 에이전트는 직접 응답과 이미지 임베딩 기반 문서 RAG를 선택하며, 공개 평가 프로토콜에 맞춘 Qwen·GLM 사내 벤치마크도 구축합니다."
+      : "At Toss Bank, Daniel works on an on-premise AI agent using internally deployed LLMs, mobile ID and facial verification using ONNX and WebGPU, and an end-to-end document extraction pipeline with an approximately 1B-parameter VLM. His agents route direct answers versus RAG with image-embedding retrieval; he also builds in-house Qwen/GLM evaluations aligned with public benchmarks. He designed stage-level evaluation and reached a 61% exact-match baseline for automation-ready outputs.";
   }
 
   if (/superb|multimodal|ground|training|gpu|dataset|cvpr|멀티모달|학습|데이터/.test(query)) {
