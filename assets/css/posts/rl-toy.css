@@ -60,6 +60,17 @@
 .content-body .rl-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .content-body .rl-pair__title { color: var(--text); font-size: 14px; font-weight: 600; }
 
+/* Bar charts (end-of-training values) */
+.content-body .rl-bar__key { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: middle; }
+.content-body .rl-bars { display: grid; gap: 14px; }
+.content-body .rl-bars__row { display: grid; grid-template-columns: minmax(150px, 30%) 1fr; gap: 14px; align-items: center; }
+.content-body .rl-bars__label { color: #c5c9c8; font-size: 13px; line-height: 1.4; }
+.content-body .rl-bars__group { display: grid; gap: 3px; }
+.content-body .rl-bar { display: grid; grid-template-columns: 1fr 40px; gap: 8px; align-items: center; height: 14px; }
+.content-body .rl-bar__track { display: block; height: 100%; border-radius: 2px; background: #12171a; }
+.content-body .rl-bar__fill { display: block; height: 100%; border-radius: 2px; }
+.content-body .rl-bar__val { color: var(--muted); font: 400 11px var(--mono); font-variant-numeric: tabular-nums; }
+
 /* GRPO calculator */
 .content-body .rl-grpo { margin: 22px 0; padding: 16px 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
 .content-body .rl-grpo button { padding: 4px 10px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--muted); font: 500 11px/1.4 var(--mono); cursor: pointer; }
@@ -88,5 +99,6 @@
 
 @media (max-width: 760px) {
   .content-body .rl-pair { grid-template-columns: 1fr; }
+  .content-body .rl-bars__row { grid-template-columns: 1fr; gap: 6px; }
   .content-body .rl-grpo__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 14px; }
 }

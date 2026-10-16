@@ -178,6 +178,91 @@
     };
   }
 
+  // Bar charts for end-of-training values (figures 3-3, 6-1, 6-2, 6-3). Numbers match the tables in the post.
+  var BARS = {
+    order: {
+      aria: "Ones-first answers reach 100% on every digit; thousands-first answers reach 14% exact match",
+      series: [
+        { en: "Ones digit", ko: "1의 자리", color: "var(--rl-rl)" },
+        { en: "Tens digit", ko: "10의 자리", color: "var(--rl-distill)" },
+        { en: "Hundreds digit", ko: "100의 자리", color: "var(--rl-sft)" },
+        { en: "Exact match", ko: "전체 정답", color: "var(--rl-cold)" }
+      ],
+      rows: [
+        { en: "Addition · ones first", ko: "덧셈 · 1의 자리부터", v: [100, 100, 100, 100.0] },
+        { en: "Addition · thousands first", ko: "덧셈 · 1000의 자리부터", v: [31, 71, 95, 14.1] },
+        { en: "Subtraction · ones first", ko: "뺄셈 · 1의 자리부터", v: [100, 100, 100, 99.8] },
+        { en: "Subtraction · thousands first", ko: "뺄셈 · 1000의 자리부터", v: [40, 30, 96, 13.7] }
+      ]
+    },
+    big: {
+      aria: "Experiment 6 multiplication and division accuracy by method",
+      series: [
+        { en: "Multiplication", ko: "곱셈", color: "var(--rl-rl)" },
+        { en: "Division", ko: "나눗셈", color: "var(--rl-distill)" }
+      ],
+      rows: [
+        { en: "Starting student", ko: "출발 학생", v: [30.2, 27.0] },
+        { en: "True-answer SFT", ko: "정답 SFT", v: [57.7, 72.3] },
+        { en: "SFT distillation", ko: "SFT 증류", v: [58.2, 70.3] },
+        { en: "MOPD", ko: "MOPD", v: [55.1, 69.6] },
+        { en: "Single-teacher OPD", ko: "선생 1명 OPD", v: [58.4, 66.1] },
+        { en: "MOPD → RL", ko: "MOPD → RL", v: [48.1, 63.8] },
+        { en: "Mix-RL", ko: "Mix-RL", v: [31.8, 30.4] },
+        { en: "Cascade-RL", ko: "Cascade-RL", v: [26.9, 30.6] }
+      ]
+    },
+    real: {
+      aria: "Bug teacher and noisy grader conditions versus the baseline condition",
+      series: [
+        { en: "Baseline condition", ko: "기준 조건", color: "var(--rl-sft)" },
+        { en: "This condition", ko: "이 조건", color: "var(--rl-cold)" }
+      ],
+      rows: [
+        { en: "Bug teacher · MOPD (addition)", ko: "버그 선생 · MOPD (덧셈)", v: [100.0, 80.4] },
+        { en: "Bug teacher · SFT distillation (addition)", ko: "버그 선생 · SFT 증류 (덧셈)", v: [100.0, 80.3] },
+        { en: "Bug teacher · MOPD → RL (addition)", ko: "버그 선생 · MOPD → RL (덧셈)", v: [100.0, 86.9] },
+        { en: "10% wrong grader · Mix-RL (overall)", ko: "10% 틀리는 채점기 · Mix-RL (전체)", v: [65.6, 63.1] },
+        { en: "10% wrong grader · Cascade-RL (overall)", ko: "10% 틀리는 채점기 · Cascade-RL (전체)", v: [50.8, 18.4] },
+        { en: "10% wrong grader · MOPD → RL (overall)", ko: "10% 틀리는 채점기 · MOPD → RL (전체)", v: [78.0, 77.1] }
+      ]
+    },
+    lr: {
+      aria: "RL learning rate 3e-4 collapses accuracy; 3e-5 keeps it",
+      series: [
+        { en: "RL learning rate 3e-4", ko: "RL 학습률 3e-4", color: "var(--rl-cold)" },
+        { en: "RL learning rate 3e-5", ko: "RL 학습률 3e-5", color: "var(--rl-rl)" }
+      ],
+      rows: [
+        { en: "Multiplication teacher (SFT end 99.9)", ko: "곱셈 선생 (SFT 끝 99.9)", v: [77.5, 99.6] },
+        { en: "Division teacher (SFT end 91.8)", ko: "나눗셈 선생 (SFT 끝 91.8)", v: [58.3, 90.5] },
+        { en: "Mix-RL student · multiplication", ko: "Mix-RL 학생 · 곱셈", v: [14.9, 32.3] },
+        { en: "Mix-RL student · division", ko: "Mix-RL 학생 · 나눗셈", v: [18.3, 35.0] },
+        { en: "Cascade-RL student · addition", ko: "Cascade-RL 학생 · 덧셈", v: [0.1, 75.3] },
+        { en: "Cascade-RL student · subtraction", ko: "Cascade-RL 학생 · 뺄셈", v: [2.3, 82.8] }
+      ]
+    }
+  };
+  var BAR_TEXT = { en: "Accuracy % at the end of training", ko: "학습이 끝났을 때의 정답률 %" };
+
+  function barChart(box, cfg, lang) {
+    box.setAttribute("role", "img");
+    box.setAttribute("aria-label", cfg.aria);
+    var html = '<div class="rl-chart__ylabel">' + BAR_TEXT[lang] + '</div><div class="rl-chart__legend">';
+    cfg.series.forEach(function (s) { html += '<span><i class="rl-bar__key" style="background:' + s.color + '"></i>' + s[lang] + "</span>"; });
+    html += '</div><div class="rl-bars">';
+    cfg.rows.forEach(function (r) {
+      html += '<div class="rl-bars__row"><div class="rl-bars__label">' + r[lang] + '</div><div class="rl-bars__group">';
+      r.v.forEach(function (v, i) {
+        var s = cfg.series[i];
+        html += '<div class="rl-bar"><span class="rl-bar__track"><span class="rl-bar__fill" style="width:' + Math.max(v, 0.4) + "%;background:" + s.color + '"></span></span>' +
+          '<span class="rl-bar__val">' + v.toFixed(1) + "</span></div>";
+      });
+      html += "</div></div>";
+    });
+    box.innerHTML = html + "</div>";
+  }
+
   // GRPO calculator: flip the 8 pass/fail marks and watch the advantages change.
   var GRPO_TEXT = {
     en: {
@@ -250,6 +335,10 @@
     document.querySelectorAll("[data-rl-chart]").forEach(function (box) {
       var make = CHARTS[box.getAttribute("data-rl-chart")];
       if (make) lineChart(box, make(langOf(box)), langOf(box));
+    });
+    document.querySelectorAll("[data-rl-bars]").forEach(function (box) {
+      var cfg = BARS[box.getAttribute("data-rl-bars")];
+      if (cfg) barChart(box, cfg, langOf(box));
     });
     document.querySelectorAll("[data-rl-grpo]").forEach(function (box) { grpo(box, langOf(box)); });
   }

@@ -3,10 +3,10 @@ title: "A red pen is fast, a pass/fail grade outgrows the teacher: RLVR, OPD and
 title_ko: "빨간 펜(OPD)은 빠르고, O/X 채점(RLVR)은 선생을 넘어요"
 permalink: /posts/rlvr-opd-mopd-toy-experiment/
 date: 2026-10-15
-last_modified_at: 2026-10-15
+last_modified_at: 2026-10-16
 eyebrow: "FIELD NOTE / POST-TRAINING"
-dek: "I taught a tiny model three-digit addition and subtraction four ways under identical conditions. Per-character feedback (OPD) is fast but capped by the teacher, pass/fail rewards (RLVR) are slow but can beat the teacher, and with two subjects only per-subject teachers (MOPD) kept both."
-dek_ko: "세 자리 덧셈·뺄셈을 푸는 작은 모델을 같은 조건에서 네 가지 방법으로 가르쳐 봤어요. 글자마다 고쳐 주는 OPD 는 빠르지만 선생 실력이 천장이고, 정답 여부만 알려 주는 RLVR 은 느려도 선생을 넘으며, 과목이 둘이면 과목별 선생을 둔 MOPD 만 두 과목을 다 지켰어요."
+dek: "I taught a tiny model three-digit addition and subtraction four ways under identical conditions. Per-character feedback (OPD) is fast but capped by the teacher, pass/fail rewards (RLVR) are slow but can beat the teacher, and with two subjects only per-subject teachers (MOPD) kept both. Scaled up to million-sized arithmetic with near-perfect teachers, the distillation methods tie and RL barely learns."
+dek_ko: "세 자리 덧셈·뺄셈을 푸는 작은 모델을 같은 조건에서 네 가지 방법으로 가르쳐 봤어요. 글자마다 고쳐 주는 OPD 는 빠르지만 선생 실력이 천장이고, 정답 여부만 알려 주는 RLVR 은 느려도 선생을 넘으며, 과목이 둘이면 과목별 선생을 둔 MOPD 만 두 과목을 다 지켰어요. 선생이 거의 완벽한 백만 단위 사칙연산으로 키우면 증류 방법끼리는 비슷하고 RL 은 거의 못 배워요."
 read_time: true
 comments: false
 share: false
@@ -24,10 +24,12 @@ code is [`rlsim.py`]({{ '/files/rl-toy/rlsim.py' | relative_url }}), a single
 
 ## At a glance {#glance}
 
-There are five experiments. All use the same small student model, and every
-method writes the same 256 answers per training step. Numbers are accuracy on
-2,000 held-out evaluation problems (drawn separately from training problems,
-though an overlap is possible; see [known gaps](#code-gaps)).
+There are six experiments. Experiments 1–5 use the same small student model,
+and every method writes the same 256 answers per training step. Numbers are
+accuracy on 2,000 held-out evaluation problems (drawn separately from training
+problems, though an overlap is possible; see [known gaps](#code-gaps)).
+Experiment 6 scales up to million-sized numbers and all four operations on a
+GPU.
 
 | Experiment | Setup | Result (accuracy) | What it means |
 | --- | --- | --- | --- |
@@ -36,6 +38,7 @@ though an overlap is possible; see [known gaps](#code-gaps)).
 | 3. Weak teacher (73%) | addition, 3,000 steps | RLVR 91.8% · SFT 79.4% · OPD 78.9% | Distillation is capped by the teacher; RLVR is anchored to the truth |
 | 4. Two subjects | add/subtract, 1,000 steps | MOPD 98/97% · Mix-RL 45/45% · Cascade-RL 3/7% · addition teacher only 99/0% | Each subject needs its own teacher |
 | 5. RLVR from 0% | addition, 1,000–3,000 steps | true-answer SFT 100% · injected answer 70% · per-digit grading 24% · partial credit and easy-first 0% | A 0% student has to be shown the answer |
+| 6. Million-scale + − × ÷ | dev GPU, 10,000 steps, 3 seeds | true-answer SFT 82.5% · SFT distillation 82.1% · MOPD 81.2% · single-teacher OPD 81.1% · MOPD → RL 78.0% · Mix-RL 65.6% · Cascade-RL 50.8% | With near-perfect teachers the distillation methods barely differ, and RL learns little because its signal is rare |
 
 <div class="rl-callout is-decision" markdown="1">
 <span class="rl-callout__title">Why modern post-training looks the way it does</span>
@@ -570,10 +573,11 @@ seed 0 (the accuracy curve reproduces exactly) and measured accuracy per digit.
   hundreds hover around 10% until step 300, guessing among ten digits. KL barely
   moves from 4.3–4.6. The model seems not to have found which input positions to
   add yet.
-- **It unlocks in long-addition order.** The ones digit goes 30% → 90% between
-  steps 300 and 400; then between 400 and 500 the tens go 26% → 90% and the
-  hundreds 10% → 81%. The ones digit (no incoming carry) comes first, the digits
-  that need a carry follow.
+- **Addition unlocks in long-addition order.** The ones digit goes 30% → 90%
+  between steps 300 and 400; then between 400 and 500 the tens go 26% → 90% and
+  the hundreds 10% → 81%. The ones digit (no incoming carry) comes first, the
+  digits that need a carry follow. Subtraction goes in a different order
+  ([below](#cold-sub)).
 - **Exact match needs all five.** At step 400 the ones digit is at 90% but exact
   match is 2.3%, because the other digits are still guessing. Exact match is
   close to the product of the per-digit accuracies (step 500: product 71%,
@@ -585,6 +589,95 @@ digit-by-digit progress look like "flat, then a leap". Feeding the correct
 prefix (teacher forcing) gives almost the same per-digit accuracy, so this is
 not early mistakes propagating. Experiment 1 starts at 34% and already knows
 part of the rule, so it has no plateau.
+
+### Subtraction? The order follows how hard each digit's arithmetic is {#cold-sub}
+
+Subtraction does not go ones-first, and it doesn't go in reading order either.
+All six runs (OPD and true-answer SFT, three seeds each) behaved like this:
+
+- **The hundreds digit passes 50% first**, at steps 200–220, and then stalls in
+  the 60s–70s for a while.
+- **The ones digit is the first to finish (90%)**, at steps 420–940, followed by
+  the hundreds. The tens digit is last; under OPD it never reached 90% within
+  1,000 steps.
+- **Subtraction is harder than addition.** After 1,000 OPD steps, exact match is
+  72.3–83.1% for subtraction versus 93.5–98.4% for addition.
+
+| Run | Step past 50% (ones · tens · hundreds) | Step past 90% (ones · tens · hundreds) | Final exact match (seed range) |
+| --- | --- | --- | ---: |
+| Addition OPD (1,000 steps) | 433 · 540 · 560 | 507 · 647 · 653 | 96.4% (93.5–98.4) |
+| Subtraction OPD (1,000 steps) | 340 · 620 · 213 | 827 · never · 970 (2/3) | 79.3% (72.3–83.1) |
+| Addition true-answer SFT (2,000 steps) | 433 · 580 · 780 | 473 · 667 · 873 | 100.0% (100.0–100.0) |
+| Subtraction true-answer SFT (2,000 steps) | 493 · 880 · 213 | 573 · 1,100 · 887 | 99.8% (99.5–100.0) |
+
+<p class="rl-caption">Mean of three seeds. "(2/3)" means only two of the three seeds got there; the mean uses those seeds only.</p>
+
+Splitting up the arithmetic each digit needs shows why. Below, a "wrap" is the
+step that goes past 10 or below 0 and comes back around (7 + 5 → 2, 3 − 8 → 5).
+
+| Digit | Addition | Subtraction (larger − smaller) |
+| --- | --- | --- |
+| Ones | one wrap | one wrap |
+| Tens | wrap + carry (needs the ones digit) | wrap + borrow (needs the ones digit) |
+| Hundreds | wrap + carry (needs the tens and ones) | no wrap + borrow (needs the tens and ones) |
+
+Subtraction here always takes the smaller number from the larger, so
+subtracting the hundreds digits gives 0–9 directly, with no wrap. Ignoring the
+borrow and just writing "hundreds of a − hundreds of b" is already right more
+than half the time. The stall in the 60s–70s looks like that stage. Getting the
+borrow right needs the lower digits, so the hundreds only pass 90% after the
+ones digit is learned. The tens digit needs both a wrap and a borrow, so it's
+last.
+
+Addition's ones → tens → hundreds order also looks less like "long-addition
+order" and more like the order of easiest arithmetic, which happens to coincide.
+The model learns the easy computation first, not the writing order.
+
+### What if the answer is written biggest digit first? It learns far worse {#cold-order}
+
+So does writing order not matter? I switched the answer to reading order
+(thousands digit first) and compared it with the current ones-first format.
+There is no teacher for that format, so this uses true-answer SFT from a 0%
+student for 2,000 steps (three seeds, `digit_order.py`).
+
+<figure class="rl-chart" data-rl-bars="order"></figure>
+<p class="rl-caption">Figure 3-3. True-answer SFT after 2,000 steps, per-digit and exact-match accuracy (mean of three seeds). The thousands digit is 100% in every format and is left out.</p>
+
+| Format | Exact match at 2,000 steps (seed range) | Per-digit % (ones · tens · hundreds · thousands) | Seeds that reached 90% (ones · tens · hundreds · thousands) |
+| --- | ---: | --- | --- |
+| Addition · ones first | 100.0% (100.0–100.0) | 100 · 100 · 100 · 100 | 3/3 · 3/3 · 3/3 · 3/3 |
+| Addition · thousands first | 14.1% (7.8–22.7) | 31 · 71 · 95 · 100 | 0/3 · 1/3 · 3/3 · 3/3 |
+| Subtraction · ones first | 99.8% (99.5–100.0) | 100 · 100 · 100 · 100 | 3/3 · 3/3 · 3/3 · 3/3 |
+| Subtraction · thousands first | 13.7% (2.5–33.1) | 40 · 30 · 96 · 100 | 1/3 · 0/3 · 3/3 · 3/3 |
+
+- **Ones first:** after 2,000 steps addition is at 100% and subtraction at
+  99.5–100%.
+- **Thousands first:** addition 8–23%, subtraction 3–33%. The thousands and
+  hundreds digits come quickly (90% reached at steps 0–100 for thousands,
+  420–920 for hundreds). The tens and ones digits reached 90% within 2,000 steps
+  in only one of six seeds each.
+
+Writing ones first turns the low digits the model has already written into a
+scratchpad for the next digit. If a's ones digit is 7 and the model wrote 2 as
+the answer's ones digit, it can see there was a carry (7 + 5 = 12). Writing
+thousands first means computing every carry in its head in one go. The hundreds
+digit stalling at 93–97% in that format also looks like a carry guessed from the
+tens digit alone. For addition, the ones digit only decides the carry when the
+tens digits sum to exactly 9, which is about 4.5% of problems, so guessing gets
+you to about 95%. This matches the finding that small transformers learn
+addition much better when the answer is written reversed, ones digit first
+(Lee et al., 2023).
+
+What I could not explain is why, in the thousands-first format, the ones digit
+(the easiest arithmetic) is learned last.
+
+<div class="rl-callout" markdown="1">
+<span class="rl-callout__title">In real LLM training</span>
+This is the same reason we have LLMs write out their reasoning (chain of
+thought). Writing intermediate results first makes the next step easier. The
+five ones-first characters are this experiment's smallest "reasoning trace"
+([the setup](#stage)).
+</div>
 
 <div class="rl-callout" markdown="1">
 <span class="rl-callout__title">In real LLM training</span>
@@ -817,6 +910,200 @@ model (PRM).
 - Per-digit grading was possible only because this toy knows the right answer
   at every position. Real reasoning has no per-step ground truth, so a process
   reward model has to be trained separately.
+</div>
+
+## Experiment 6: million-scale arithmetic, four teachers {#exp6}
+
+**Question:** experiments 1–5 use three-digit addition and subtraction, which is
+very simple, and the right answer comes for free. If the problems grow to
+million-scale arithmetic with all four operations and one teacher per
+operation, does MOPD clearly beat the other methods?<br>
+**Setup:** 61 jobs on a dev GPU box (two H100 NVL), about 3 hours 40 minutes.
+Each student run is 10,000 steps, three seeds. The code is a single file,
+`big/bigsim.py` (not published here).
+
+| | Experiments 1–5 | Experiment 6 |
+| --- | --- | --- |
+| Numbers | 0–999 | 0–999,999; each operand's digit count drawn uniformly from 1–6 |
+| Operations | + − | + − × ÷ (division gives quotient and remainder) |
+| Answer | four digits + `$` | 12 digits + `$`. +, − and × are written ones first; ÷ writes the quotient, then the remainder, biggest digit first (long-division order) |
+| Student · teacher | 100K · 800K parameters | 3.2M · 10.7M parameters |
+| Evaluation | 2,000 problems | operation × digit count (1–6): 24 cells × 250 = 6,000 problems |
+
+### Making "the answer is free" less free
+
+- **True-answer SFT baseline:** the result when the correct worked answer can be
+  handed over directly. Other methods have to beat this to mean anything.
+- **RL-polished teachers:** only 10,000 steps of true-answer SFT, then 20,000
+  more steps of RLVR. Closer to how real teachers are made.
+- **A systematically wrong teacher:** an addition teacher that always drops the
+  carry into the thousands digit. Not random errors: the same mistake every
+  time.
+- **A grader that's sometimes wrong:** during RL, each pass/fail mark is flipped
+  with 10% probability.
+
+### The teachers are nearly perfect
+
+| Teacher | Accuracy % (own operation; for the four-operation teacher + · − · × · ÷) | By digit count % (1–6) | Training time |
+| --- | --- | --- | ---: |
+| Addition (true-answer SFT) | 100.0 | 100 · 100 · 100 · 100 · 100 · 100 | 35 min |
+| Subtraction (true-answer SFT) | 100.0 | 100 · 100 · 100 · 100 · 100 · 100 | 35 min |
+| Multiplication (true-answer SFT) | 99.8 | 100 · 100 · 100 · 100 · 100 · 99 | 35 min |
+| Division (true-answer SFT) | 97.1 | 100 · 100 · 100 · 100 · 98 · 86 | 35 min |
+| Four-operation teacher (4× the training) | 100.0 · 100.0 · 100.0 · 97.3 | — | 138 min |
+| Multiplication (RL-polished) | 99.6 | 100 · 100 · 100 · 100 · 100 · 98 | 142 min |
+| Division (RL-polished) | 90.5 | 100 · 100 · 99 · 95 · 84 · 65 | 69 min |
+| Addition (carry bug) | 80.4 | 100 · 100 · 80 · 70 · 71 · 61 | 36 min |
+
+A 10.7M-parameter teacher gets 6-digit × 6-digit multiplication right 99.8% of
+the time with no worked steps. That looks like the ones-first format plus an
+effectively unlimited supply of problems. The teacher that learned all four
+operations (4× the training) is as good as the specialists: 100% on +, − and ×,
+97.3% on ÷. For the RL-polished teachers, 20,000 RL steps did not raise
+accuracy (multiplication 99.9 → 99.6%, division 91.8 → 90.5%).
+
+The starting student is 1,000 steps of true-answer SFT. It is already at
+99.9–100% on addition and subtraction, and starts at 28–32% on multiplication
+and 23–32% on division.
+
+### Results: the distillation methods are about the same, and RL barely learns
+
+| Method (10,000 steps) | Overall accuracy (seed range) | + · − % | × · ÷ % |
+| --- | ---: | --- | --- |
+| Starting student | 64.3% (63.4–65.5) | 100.0 · 100.0 | 30.2 · 27.0 |
+| True-answer SFT (baseline) | 82.5% (80.6–83.6) | 99.9 · 99.9 | 57.7 · 72.3 |
+| SFT distillation | 82.1% (80.6–83.6) | 100.0 · 100.0 | 58.2 · 70.3 |
+| MOPD | 81.2% (80.4–81.9) | 100.0 · 100.0 | 55.1 · 69.6 |
+| Single-teacher OPD | 81.1% (79.8–81.9) | 100.0 · 99.9 | 58.4 · 66.1 |
+| MOPD → RL | 78.0% (77.4–78.9) | 100.0 · 100.0 | 48.1 · 63.8 |
+| Mix-RL | 65.6% (64.5–66.8) | 100.0 · 100.0 | 31.8 · 30.4 |
+| Cascade-RL | 50.8% (43.5–55.0) | 69.8 · 76.1 | 26.9 · 30.6 |
+
+<figure class="rl-chart" data-rl-bars="big"></figure>
+<p class="rl-caption">Figure 6-1. The student's multiplication and division accuracy after 10,000 steps (mean of three seeds).</p>
+
+- **All four distillation methods match true-answer SFT.** True-answer SFT
+  82.5%, SFT distillation 82.1%, MOPD 81.2%, single-teacher OPD 81.1%. With a
+  near-perfect teacher, copying the teacher and copying the truth are the same
+  thing. MOPD did not come out ahead.
+- **Why MOPD didn't win:** here even the teacher that learned all four
+  operations is as good as the specialists, so a teacher per subject buys
+  nothing. MOPD won experiment 4 because the addition teacher knew nothing about
+  subtraction. Answers are also short (13 positions), so OPD's strength,
+  learning to continue after one's own mistakes, has little room to show.
+- **The ceiling is the student.** The teacher is at 99.8% on multiplication;
+  the student sits near 58% whatever the method, stuck on large multiplications
+  (table below). The distillation curves were still rising 0.9–2.3 points over
+  the last 2,000 steps, so 10,000 steps is not converged.
+- **Mix-RL barely moves.** Multiplication 30 → 32%, division 27 → 30%. Only
+  about 3% of problems have some but not all of the 8 answers right, because a
+  point needs all 13 positions correct and the student rarely gets large ×
+  or ÷ right.
+- **Cascade-RL forgets the earlier subjects.** Running + → − → × → ÷ for 2,500
+  steps each dropped addition 100 → 69.8% and subtraction 100 → 76.1%.
+  Multiplication and division stay near the start.
+- **MOPD → RL ends below MOPD alone** (78.0 vs 81.2%). After 5,000 MOPD steps,
+  5,000 RL steps added 1.0–1.4 points; the same 5,000 steps spent on more MOPD
+  added 4.0–4.9.
+
+| Accuracy by digit count % (longer operand, 1–6 digits) | Multiplication | Division |
+| --- | --- | --- |
+| Teacher (true-answer SFT) | 100 · 100 · 100 · 100 · 100 · 99 | 100 · 100 · 100 · 100 · 98 · 86 |
+| Starting student | 100 · 39 · 18 · 11 · 9 · 4 | 91 · 39 · 14 · 9 · 5 · 3 |
+| True-answer SFT (baseline) | 100 · 99 · 65 · 35 · 27 · 20 | 100 · 98 · 85 · 73 · 42 · 35 |
+| SFT distillation | 100 · 99 · 66 · 38 · 26 · 20 | 100 · 98 · 85 · 67 · 40 · 32 |
+| MOPD | 100 · 93 · 60 · 36 · 25 · 17 | 100 · 98 · 85 · 65 · 40 · 29 |
+| Single-teacher OPD | 100 · 94 · 69 · 41 · 27 · 20 | 100 · 97 · 80 · 58 · 35 · 26 |
+| MOPD → RL | 100 · 84 · 46 · 25 · 19 · 14 | 100 · 97 · 75 · 54 · 32 · 25 |
+| Mix-RL | 100 · 41 · 22 · 13 · 10 · 5 | 96 · 45 · 19 · 12 · 7 · 4 |
+| Cascade-RL | 95 · 33 · 15 · 9 · 6 · 3 | 97 · 45 · 19 · 12 · 6 · 4 |
+
+### Realism conditions
+
+| Condition | Method | This condition (seed range) | Baseline condition |
+| --- | --- | ---: | ---: |
+| RL-polished teachers | MOPD | 82.2% (81.1–83.1) | 81.2% (80.4–81.9) |
+| | SFT distillation | 82.0% (80.9–83.2) | 82.1% (80.6–83.6) |
+| | MOPD → RL | 78.8% (77.5–79.5) | 78.0% (77.4–78.9) |
+| Bug teacher (addition only) | MOPD | addition 80.4% (80.4–80.4) | addition 100.0% (99.9–100.0) |
+| | SFT distillation | addition 80.3% (80.1–80.4) | addition 100.0% (99.9–100.0) |
+| | MOPD → RL | addition 86.9% (80.4–100.0); per seed 80.4 · 100.0 · 80.4 | addition 100.0% (100.0–100.0) |
+| Grader wrong 10% of the time | Mix-RL | 63.1% (62.0–64.1) | 65.6% (64.5–66.8) |
+| | Cascade-RL | 18.4% (10.8–29.3) | 50.8% (43.5–55.0) |
+| | MOPD → RL | 77.1% (76.5–77.8) | 78.0% (77.4–78.9) |
+
+<figure class="rl-chart" data-rl-bars="real"></figure>
+<p class="rl-caption">Figure 6-2. Baseline condition versus the bug teacher (addition accuracy) and the 10%-wrong grader (overall accuracy). Mean of three seeds.</p>
+
+- **RL-polished teachers: the student ends up the same.** The teacher's division
+  is 90.5%, below the true-answer SFT teacher's 97.1%, but the student's
+  division is around 70%, so the teacher difference only exists above the
+  student's ceiling.
+- **Bug teacher: distillation copies the mistake.** The starting student was
+  at 99.9–100% on addition, and both MOPD and SFT distillation brought it down
+  to 80.4%, exactly the bug teacher's score. The teacher's mistake overwrote
+  something the student already knew.
+- **Bug teacher + RL: only one seed of three recovered.** For seed 1, addition
+  was back to 99.8% within 1,000 RL steps and ended at 100%; seeds 0 and 2
+  stayed at 80.4% to the end. Once the student writes the buggy answer
+  confidently, all 8 answers are identically wrong and there is no signal. It
+  only gets fixed when an answer happens to get the carry right. Same reason as
+  experiments 2 and 5.
+- **A sometimes-wrong grader: Cascade-RL collapsed.** During the addition and
+  subtraction stages (already ~100%), "problems with something to learn" showed
+  up as 57%. With a clean grader it was 0.7–2.1%, so nearly all of it was fake
+  signal. In the multiplication stage, one mostly-wrong answer flipped to a pass
+  gets pushed hard with +2.47, and around steps 5,250–6,000 even addition
+  collapsed below 50%. Mix-RL didn't collapse, but multiplication and division
+  ended below the starting point. MOPD → RL mostly held because of what it had
+  already learned from OPD.
+
+### RL learning rate: at 3e-4 the model falls apart
+
+At first I ran RL with the same learning rate as OPD, 3e-4. A multiplication
+teacher that was at 99.9% after SFT dropped into the 80s within 1,000 RL steps.
+Only a few percent of problems have anything to learn, so the RL gradient is
+small and noisy, and Adam normalizes the step size per parameter, which turns
+that noise into steps of size 3e-4 as well. OPD's signal is dense (every
+character), so the same learning rate was fine there.
+
+<figure class="rl-chart" data-rl-bars="lr"></figure>
+<p class="rl-caption">Figure 6-3. Accuracy after RL with learning rate 3e-4 versus 3e-5. Teachers: after 20,000 RL steps that followed 10,000 SFT steps (SFT ended at 99.9% for multiplication and 91.8% for division). Students: seed 0.</p>
+
+| Accuracy % | RL learning rate 3e-4 | RL learning rate 3e-5 |
+| --- | --- | --- |
+| Multiplication teacher: end of SFT → after 20,000 RL steps | 99.9 → 77.5 | 99.9 → 99.6 |
+| Division teacher: end of SFT → after 20,000 RL steps | 91.8 → 58.3 | 91.8 → 90.5 |
+| Mix-RL student (seed 0): × · ÷ | 14.9 · 18.3 | 32.3 · 35.0 |
+| Cascade-RL student (seed 0): + · − | 0.1 · 2.3 | 75.3 · 82.8 |
+| Short sweep: Mix-RL multiplication after 1,200 steps (start 30.3) | 16.3 (1e-4: 26.9) | 29.5 (1e-5: 30.5) |
+
+<p class="rl-caption">The last row is from the <code>big/rl_lr_test.py</code> log (seed 0 starting student, 1,200 steps).</p>
+
+Lowering just the learning rate to 3e-5 stopped the collapse. Every RL run in
+the results above was re-run at 3e-5. It's the same reason real LLM RL uses
+learning rates around 1e-6, far smaller than SFT.
+
+<div class="rl-callout is-decision" markdown="1">
+<span class="rl-callout__title">Does MOPD pull far ahead? Not in this setup</span>
+MOPD's advantage grows under three conditions: ① no single teacher is good at
+every subject (experiment 4; in practice, teachers RL-trained per subject such
+as math, code and agents have different strengths), ② answers are long enough
+that a student's mistakes propagate, and ③ the student is big enough to get
+close to the teacher. All three were weak in experiment 6. The next things to
+scale are longer answers with written-out reasoning (CoT), a bigger student, or
+a smaller four-operation teacher so the subjects compete.
+</div>
+
+<div class="rl-callout is-warn" markdown="1">
+<span class="rl-callout__title">Limits of this experiment</span>
+- The student is small (3.2M) and 10,000 steps is not converged. Longer runs
+  could widen or narrow the gaps between methods.
+- The format writes only the answer, with no worked steps, so it's unlike real
+  long LLM reasoning.
+- Each teacher was made once, with one seed. Only the students have three seeds.
+- RL runs started at 3e-4 and were switched to 3e-5 and re-run partway through.
+  The 3e-4 results are used only in the learning-rate comparison above.
 </div>
 
 ## What carries over to real LLM training, and what doesn't {#real}
@@ -1615,9 +1902,11 @@ python3 rlsim.py single --seeds 1 --steps 100
 
 `rlsim.py` reproduces experiments 1–4, and results land in `results/*.json`.
 Experiment 5, the per-digit traces and the charts came from small helper scripts
-(`exp5.py`, `cold_digits.py`, `trace.py`, `summary.py`, `charts.py`) that build on
-`rlsim.py` and aren't published here. The core of experiment 5 is the
-`step_rlvr_variant` function shown above. Note that the CLI's default is
+(`exp5.py`, `cold_digits.py`, `digit_order.py`, `trace.py`, `summary.py`,
+`charts.py`) that build on `rlsim.py` and aren't published here. The core of
+experiment 5 is the `step_rlvr_variant` function shown above. Experiment 6 is a
+separate, larger script (`big/bigsim.py`, run with `big/orchestrate.py`; about
+3 h 40 min on two H100s), also not published. Note that the CLI's default is
 `--steps 500`; the experiments here used 1,000.
 
 ---
@@ -1635,10 +1924,11 @@ PyTorch 와 NumPy 만 쓰는 364줄짜리 파일 하나,
 
 ## 한눈에 보기 {#glance-ko}
 
-실험은 다섯 개예요. 모두 같은 작은 학생 모델로, 한 스텝에 답안 256장을 쓰는 같은
-조건에서 비교했어요. 숫자는 평가용으로 따로 고정한 문제 2,000개에서 잰
-정답률이에요(학습 문제와 따로 뽑지만 우연히 겹칠 수는 있어요.
-[허술한 점](#code-gaps-ko)).
+실험은 여섯 개예요. 실험 1~5 는 모두 같은 작은 학생 모델로, 한 스텝에 답안
+256장을 쓰는 같은 조건에서 비교했어요. 숫자는 평가용으로 따로 고정한 문제
+2,000개에서 잰 정답률이에요(학습 문제와 따로 뽑지만 우연히 겹칠 수는 있어요.
+[허술한 점](#code-gaps-ko)). 실험 6 은 GPU 에서 백만 단위 사칙연산으로 키운
+거예요.
 
 | 실험 | 조건 | 결과 (정답률) | 뜻 |
 | --- | --- | --- | --- |
@@ -1647,6 +1937,7 @@ PyTorch 와 NumPy 만 쓰는 364줄짜리 파일 하나,
 | 3. 약한 선생 (73%) | 덧셈, 3,000스텝 | RLVR 91.8% · SFT 79.4% · OPD 78.9% | 증류는 선생이 천장, RLVR 은 정답이 기준이에요 |
 | 4. 두 과목 | 덧셈/뺄셈, 1,000스텝 | MOPD 98/97% · 섞은 RL 45/45% · 순서대로 RL 3/7% · 덧셈 선생 혼자 99/0% | 과목마다 그 과목 선생이 있어야 해요 |
 | 5. 0% 학생에게 RLVR | 덧셈, 1,000~3,000스텝 | 정답 SFT 100% · 정답 끼워 넣기 70% · 칸마다 채점 24% · 부분 점수·쉬운 문제부터 0% | 0% 학생에게는 정답을 직접 보여 줘야 시작돼요 |
+| 6. 백만 단위 + − × ÷ | dev GPU, 10,000스텝, 시드 3개 | 정답 SFT 82.5% · SFT 증류 82.1% · MOPD 81.2% · 선생 1명 OPD 81.1% · MOPD → RL 78.0% · Mix-RL 65.6% · Cascade-RL 50.8% | 선생이 다 완벽하면 증류 방법끼리 차이가 작고, RL 은 신호가 드물어 거의 못 배워요 |
 
 <div class="rl-callout is-decision" markdown="1">
 <span class="rl-callout__title">그래서 요즘 학습 순서가 이렇게 생겼어요</span>
@@ -2156,9 +2447,10 @@ OPD 는 틀린 답안에도 글자마다 "여기엔 이 숫자" 를 알려 줘�
 - **계산이 필요한 자리는 한동안 10% 예요.** 1 · 10 · 100의 자리는 300스텝까지 10%
   안팎이에요. 숫자 10개 중 아무거나 찍는 수준이에요. KL 도 4.3~4.6 에서 거의 안
   내려가요. 문제의 어느 칸끼리 더해야 하는지를 아직 못 찾은 상태로 보여요.
-- **세로셈 순서대로 풀려요.** 1의 자리가 300 → 400스텝에 30% → 90%, 이어서 400 →
-  500스텝에 10의 자리가 26% → 90%, 100의 자리가 10% → 81% 로 올라요. 받아올림이
-  없는 1의 자리가 먼저고, 앞 자리 받아올림이 필요한 자리가 뒤따라요.
+- **덧셈은 세로셈 순서대로 풀려요.** 1의 자리가 300 → 400스텝에 30% → 90%, 이어서
+  400 → 500스텝에 10의 자리가 26% → 90%, 100의 자리가 10% → 81% 로 올라요.
+  받아올림이 없는 1의 자리가 먼저고, 앞 자리 받아올림이 필요한 자리가 뒤따라요.
+  뺄셈은 순서가 달라요([아래](#cold-sub-ko)).
 - **전체 정답은 다섯 자리가 다 맞아야 해요.** 400스텝에 1의 자리는 90% 인데 전체
   정답은 2.3% 예요. 나머지 자리가 아직 찍기 수준이라서요. 전체 정답률은 자리별
   정답률을 곱한 값과 거의 같아요(500스텝: 곱 71%, 실제 73%).
@@ -2169,6 +2461,86 @@ OPD 는 틀린 답안에도 글자마다 "여기엔 이 숫자" 를 알려 줘�
 번에 뛰는" 모양으로 보이게 해요. 앞 칸에 정답을 넣어 줘도(teacher forcing) 자리별
 정답률이 거의 같아서, 앞 칸 실수가 뒤로 번진 탓은 아니에요. 34% 에서 출발한 실험
 1 은 이미 규칙을 어느 정도 알고 시작해서 이런 정체 구간이 없어요.
+
+### 뺄셈은? — 순서를 정하는 건 "계산이 얼마나 복잡한가" {#cold-sub-ko}
+
+뺄셈은 1의 자리부터가 아니에요. 그렇다고 가로(읽는) 순서도 아니에요. OPD 와 정답
+SFT 의 시드 6개 모두 이렇게 됐어요.
+
+- **100의 자리가 가장 먼저 반을 넘어요.** 200~220스텝에 50% 를 넘고, 그 뒤 60~70%
+  대에서 한동안 멈춰요.
+- **완성(90%)은 1의 자리가 먼저예요.** 1의 자리가 420~940스텝에 90% 를 넘고,
+  100의 자리가 그 뒤예요. 10의 자리가 가장 늦어요. OPD 는 1,000스텝 안에 10의
+  자리가 90% 를 못 넘었어요.
+- **뺄셈이 덧셈보다 어려워요.** OPD 1,000스텝 전체 정답이 뺄셈 72.3~83.1%, 덧셈
+  93.5~98.4% 예요.
+
+| 실험 | 50% 를 넘은 스텝 (1 · 10 · 100의 자리) | 90% 를 넘은 스텝 (1 · 10 · 100의 자리) | 마지막 전체 정답 (시드 범위) |
+| --- | --- | --- | ---: |
+| 덧셈 OPD (1,000스텝) | 433 · 540 · 560 | 507 · 647 · 653 | 96.4% (93.5~98.4) |
+| 뺄셈 OPD (1,000스텝) | 340 · 620 · 213 | 827 · 못 닿음 · 970 (2/3) | 79.3% (72.3~83.1) |
+| 덧셈 정답 SFT (2,000스텝) | 433 · 580 · 780 | 473 · 667 · 873 | 100.0% (100.0~100.0) |
+| 뺄셈 정답 SFT (2,000스텝) | 493 · 880 · 213 | 573 · 1,100 · 887 | 99.8% (99.5~100.0) |
+
+<p class="rl-caption">시드 3개 평균이에요. (2/3) 은 시드 셋 중 둘만 닿았다는 뜻이고, 평균은 닿은 시드로만 냈어요.</p>
+
+자리마다 필요한 계산을 나눠 보면 이유가 보여요. 아래에서 "한 바퀴" 는 10 을
+넘거나 0 아래로 내려가서 한 바퀴 돌아오는 계산이에요(7 + 5 → 2, 3 − 8 → 5).
+
+| 자리 | 덧셈 | 뺄셈 (큰 수 − 작은 수) |
+| --- | --- | --- |
+| 1의 자리 | 한 바퀴 | 한 바퀴 |
+| 10의 자리 | 한 바퀴 + 받아올림 (1의 자리를 봐야 해요) | 한 바퀴 + 받아내림 (1의 자리를 봐야 해요) |
+| 100의 자리 | 한 바퀴 + 받아올림 (10·1의 자리를 다 봐야 해요) | 한 바퀴 없음 + 받아내림 (10·1의 자리를 다 봐야 해요) |
+
+이 실험의 뺄셈은 늘 큰 수에서 작은 수를 빼서, 100의 자리끼리 빼면 0~9 가 바로
+나와요. 한 바퀴 돌 일이 없어요. 그래서 받아내림을 무시하고 "a 의 100의 자리 − b 의
+100의 자리" 만 해도 절반 넘게 맞아요. 60~70% 에 멈춘 게 이 단계로 보여요.
+받아내림까지 맞히려면 아래 자리를 봐야 해서, 1의 자리를 배운 뒤에야 90% 를 넘어요.
+10의 자리는 한 바퀴와 받아내림이 둘 다 필요해서 가장 늦어요.
+
+덧셈의 1 → 10 → 100 순서도 세로셈 순서라서라기보다, 그 순서가 계산이 쉬운 순서와
+같아서로 보여요. 모델은 쓰는 순서가 아니라 쉬운 계산부터 배워요.
+
+### 답을 1000의 자리부터 쓰면? — 훨씬 못 배워요 {#cold-order-ko}
+
+그럼 쓰는 순서는 상관없을까요? 답을 읽는 순서(1000의 자리부터)로 쓰게 바꿔서, 1의
+자리부터 쓰는 지금 형식과 비교했어요. 이 형식에 맞는 선생이 없어서 정답 SFT 로, 0%
+학생에서 2,000스텝 돌렸어요(시드 3개, `digit_order.py`).
+
+<figure class="rl-chart" data-rl-bars="order"></figure>
+<p class="rl-caption">그림 3-3. 정답 SFT 2,000스텝 뒤 자리별·전체 정답률(시드 3개 평균). 1000의 자리는 모든 형식에서 100% 라 뺐어요.</p>
+
+| 형식 | 2,000스텝 전체 정답 (시드 범위) | 자리별 정답률 % (1 · 10 · 100 · 1000) | 90% 에 닿은 시드 (1 · 10 · 100 · 1000) |
+| --- | ---: | --- | --- |
+| 덧셈 · 1의 자리부터 | 100.0% (100.0~100.0) | 100 · 100 · 100 · 100 | 3/3 · 3/3 · 3/3 · 3/3 |
+| 덧셈 · 1000의 자리부터 | 14.1% (7.8~22.7) | 31 · 71 · 95 · 100 | 0/3 · 1/3 · 3/3 · 3/3 |
+| 뺄셈 · 1의 자리부터 | 99.8% (99.5~100.0) | 100 · 100 · 100 · 100 | 3/3 · 3/3 · 3/3 · 3/3 |
+| 뺄셈 · 1000의 자리부터 | 13.7% (2.5~33.1) | 40 · 30 · 96 · 100 | 1/3 · 0/3 · 3/3 · 3/3 |
+
+- **1의 자리부터 쓰면** 2,000스텝에 덧셈 100%, 뺄셈 99.5~100% 예요.
+- **1000의 자리부터 쓰면** 덧셈 8~23%, 뺄셈 3~33% 예요. 1000·100의 자리는 금방
+  배워요(90% 도달: 1000의 자리 0~100스텝, 100의 자리 420~920스텝). 10의 자리와
+  1의 자리는 시드 6개 중 하나씩만 2,000스텝 안에 90% 에 닿았어요.
+
+1의 자리부터 쓰면 모델이 앞에서 직접 쓴 낮은 자리가 다음 자리를 계산하는 메모가
+돼요. 예를 들어 a 의 1의 자리가 7 인데 답의 1의 자리에 2 를 썼다면 받아올림이
+있었다는 걸 바로 알 수 있어요(7 + 5 = 12). 1000의 자리부터 쓰면 이 메모 없이
+받아올림을 머릿속에서 한 번에 계산해야 해요. 이 형식에서 100의 자리가 93~97% 에서
+더 오르지 않은 것도 받아올림을 10의 자리만 보고 어림한 결과로 보여요. 덧셈이라면
+10의 자리끼리 합이 딱 9 일 때만 1의 자리가 받아올림을 결정하는데, 그런 문제가 약
+4.5% 라 어림만으로 95% 안팎까지 가요. 작은 트랜스포머에게 덧셈 답을 거꾸로(1의
+자리부터) 쓰게 하면 훨씬 잘 배운다는 연구 결과(Lee 등, 2023)와 같은 방향이에요.
+
+다만 1000의 자리부터 쓸 때 계산이 가장 쉬운 1의 자리가 가장 늦게 배워지는 이유는
+확인하지 못했어요.
+
+<div class="rl-callout" markdown="1">
+<span class="rl-callout__title">실제 LLM 에서는</span>
+LLM 에게 추론 과정(chain of thought)을 쓰게 하는 이유와 같아요. 중간 결과를 먼저
+써 두면 다음 단계가 쉬워져요. 1의 자리부터 쓰는 다섯 글자가 이 실험에서 가장 작은
+"추론 과정" 이에요([실험 무대](#stage-ko)).
+</div>
 
 <div class="rl-callout" markdown="1">
 <span class="rl-callout__title">실제 LLM 에서는</span>
@@ -2388,6 +2760,183 @@ def step_rlvr_variant(model, opt, prompts, answers, method: str) -> dict:
   답이 아니라는 점을 보정(importance weighting 등)해요.
 - 칸마다 채점은 이 장난감이 자리마다 정답을 알아서 가능했어요. 실제 추론에는
   단계별 정답이 없어서 과정 보상 모델을 따로 학습해야 해요.
+</div>
+
+## 실험 6 — 백만 단위 사칙연산, 선생 4명 {#exp6-ko}
+
+**알고 싶은 것:** 실험 1~5 는 세 자리 덧셈·뺄셈이라 너무 단순하고 정답이 공짜라는
+한계가 있었어요. 문제를 백만 단위 사칙연산으로 키우고 연산별 선생 4명을 두면 MOPD
+가 다른 방법보다 확실히 앞설까요?<br>
+**설정:** dev GPU(H100 NVL 2장)에서 작업 61개를 약 3시간 40분 돌렸어요. 학생
+실행마다 10,000스텝, 시드 3개예요. 코드는 `big/bigsim.py` 하나예요(여기에는 싣지
+않았어요).
+
+| | 실험 1~5 | 실험 6 |
+| --- | --- | --- |
+| 수 | 0~999 | 0~999,999. 두 수의 자리 수를 1~6 에서 고르게 뽑아요 |
+| 연산 | + − | + − × ÷ (나눗셈은 몫과 나머지) |
+| 답 | 네 자리 + `$` | 12자리 + `$`. 덧셈·뺄셈·곱셈은 1의 자리부터, 나눗셈은 몫 → 나머지를 큰 자리부터(긴 나눗셈 순서) |
+| 학생 · 선생 | 10만 · 80만 파라미터 | 320만 · 1,070만 파라미터 |
+| 평가 | 문제 2,000개 | 연산 × 자리 수(1~6) 24칸 × 250문제 = 6,000문제 |
+
+### "정답이 공짜" 를 줄이려고 넣은 것
+
+- **정답 SFT 기준선:** 정답 풀이를 그대로 줄 수 있을 때의 결과예요. 다른 방법이
+  이걸 넘어야 의미가 있어요.
+- **RL 로 다듬은 선생:** 정답 SFT 를 10,000스텝만 하고 RLVR 을 20,000스텝 더 한
+  선생이에요. 실제 선생이 만들어지는 방식에 가까워요.
+- **체계적으로 틀리는 선생:** 1000의 자리로 가는 받아올림을 늘 빼먹는 덧셈
+  선생이에요. 무작위가 아니라 같은 실수를 반복해요.
+- **가끔 틀리는 채점기:** RL 에서 O/X 를 10% 확률로 뒤집어요.
+
+### 선생은 거의 완벽해요
+
+| 선생 | 정답률 % (자기 연산, 네 연산 선생은 + · − · × · ÷) | 자리 수별 % (1~6) | 학습 시간 |
+| --- | --- | --- | ---: |
+| 덧셈 (정답 SFT) | 100.0 | 100 · 100 · 100 · 100 · 100 · 100 | 35분 |
+| 뺄셈 (정답 SFT) | 100.0 | 100 · 100 · 100 · 100 · 100 · 100 | 35분 |
+| 곱셈 (정답 SFT) | 99.8 | 100 · 100 · 100 · 100 · 100 · 99 | 35분 |
+| 나눗셈 (정답 SFT) | 97.1 | 100 · 100 · 100 · 100 · 98 · 86 | 35분 |
+| 네 연산 선생 (학습량 4배) | 100.0 · 100.0 · 100.0 · 97.3 | — | 138분 |
+| 곱셈 (RL 로 다듬음) | 99.6 | 100 · 100 · 100 · 100 · 100 · 98 | 142분 |
+| 나눗셈 (RL 로 다듬음) | 90.5 | 100 · 100 · 99 · 95 · 84 · 65 | 69분 |
+| 덧셈 (받아올림 버그) | 80.4 | 100 · 100 · 80 · 70 · 71 · 61 | 36분 |
+
+1,070만 파라미터 선생이 6자리 × 6자리 곱셈을 풀이 없이 99.8% 맞혀요. 1의 자리부터
+쓰는 형식과 사실상 끝없는 문제 수 덕분으로 보여요. 네 연산을 다 배운 선생(학습량
+4배)도 덧셈·뺄셈·곱셈 100%, 나눗셈 97.3% 로 전문 선생만큼 잘해요. RL 로 다듬은
+선생은 RL 20,000스텝이 정답률을 올리지 못했어요(곱셈 99.9 → 99.6%, 나눗셈 91.8 →
+90.5%).
+
+출발 학생은 정답 SFT 1,000스텝이에요. 덧셈·뺄셈은 이미 99.9~100% 이고, 곱셈은
+28~32%, 나눗셈은 23~32% 에서 출발해요.
+
+### 결과 — 증류 방법끼리는 거의 같고, RL 은 거의 못 배워요
+
+| 방법 (10,000스텝) | 전체 정답률 (시드 범위) | 덧셈 · 뺄셈 % | 곱셈 · 나눗셈 % |
+| --- | ---: | --- | --- |
+| 출발 학생 | 64.3% (63.4~65.5) | 100.0 · 100.0 | 30.2 · 27.0 |
+| 정답 SFT (기준선) | 82.5% (80.6~83.6) | 99.9 · 99.9 | 57.7 · 72.3 |
+| SFT 증류 | 82.1% (80.6~83.6) | 100.0 · 100.0 | 58.2 · 70.3 |
+| MOPD | 81.2% (80.4~81.9) | 100.0 · 100.0 | 55.1 · 69.6 |
+| 선생 1명 OPD | 81.1% (79.8~81.9) | 100.0 · 99.9 | 58.4 · 66.1 |
+| MOPD → RL | 78.0% (77.4~78.9) | 100.0 · 100.0 | 48.1 · 63.8 |
+| Mix-RL | 65.6% (64.5~66.8) | 100.0 · 100.0 | 31.8 · 30.4 |
+| Cascade-RL | 50.8% (43.5~55.0) | 69.8 · 76.1 | 26.9 · 30.6 |
+
+<figure class="rl-chart" data-rl-bars="big"></figure>
+<p class="rl-caption">그림 6-1. 10,000스텝 뒤 학생의 곱셈·나눗셈 정답률(시드 3개 평균).</p>
+
+- **증류 네 가지가 정답 SFT 와 같아요.** 정답 SFT 82.5%, SFT 증류 82.1%, MOPD
+  81.2%, 선생 1명 OPD 81.1% 예요. 선생이 거의 완벽하니 선생 답을 따라 쓰나 정답을
+  따라 쓰나 같아요. MOPD 가 앞서지 않았어요.
+- **MOPD 가 앞서지 않은 이유:** 이 실험에선 네 연산을 다 배운 선생도 전문 선생만큼
+  잘해서, 과목마다 선생을 두는 이점이 없어요. 실험 4 에서 MOPD 가 이긴 건 덧셈
+  선생이 뺄셈을 전혀 몰랐기 때문이에요. 답도 13칸으로 짧아서, 학생이 자기 실수
+  뒤에서 이어 쓰는 법을 배우는 OPD 의 장점이 드러날 일이 적어요.
+- **천장은 학생이에요.** 선생은 곱셈 99.8% 인데 학생은 어떤 방법으로든 58%
+  근처예요. 큰 자리 곱셈에서 막혀요(아래 표). 증류 곡선은 마지막 2,000스텝에도
+  0.9~2.3%p 씩 오르고 있어서, 10,000스텝은 아직 수렴 전이에요.
+- **Mix-RL 은 거의 제자리예요.** 곱셈 30 → 32%, 나눗셈 27 → 30% 예요. 8장 중
+  일부만 맞아서 배울 거리가 있는 문제가 3% 안팎이에요. 13칸을 다 맞혀야 1점인데
+  학생이 큰 곱셈·나눗셈을 거의 못 맞혀서예요.
+- **Cascade-RL 은 앞 과목을 잊어요.** 덧셈 → 뺄셈 → 곱셈 → 나눗셈 순서로
+  2,500스텝씩 했더니, 덧셈이 100 → 69.8%, 뺄셈이 100 → 76.1% 로 내려갔어요.
+  곱셈·나눗셈은 출발점 근처예요.
+- **MOPD → RL 은 MOPD 만 하는 것보다 낮아요**(78.0 vs 81.2%). MOPD 5,000스텝 뒤에
+  RL 5,000스텝이 +1.0~1.4%p 를 더했는데, 같은 5,000스텝을 MOPD 로 계속하면
+  +4.0~4.9%p 였어요.
+
+| 자리 수별 정답률 % (두 수 중 긴 쪽 1~6자리) | 곱셈 | 나눗셈 |
+| --- | --- | --- |
+| 선생 (정답 SFT) | 100 · 100 · 100 · 100 · 100 · 99 | 100 · 100 · 100 · 100 · 98 · 86 |
+| 출발 학생 | 100 · 39 · 18 · 11 · 9 · 4 | 91 · 39 · 14 · 9 · 5 · 3 |
+| 정답 SFT (기준선) | 100 · 99 · 65 · 35 · 27 · 20 | 100 · 98 · 85 · 73 · 42 · 35 |
+| SFT 증류 | 100 · 99 · 66 · 38 · 26 · 20 | 100 · 98 · 85 · 67 · 40 · 32 |
+| MOPD | 100 · 93 · 60 · 36 · 25 · 17 | 100 · 98 · 85 · 65 · 40 · 29 |
+| 선생 1명 OPD | 100 · 94 · 69 · 41 · 27 · 20 | 100 · 97 · 80 · 58 · 35 · 26 |
+| MOPD → RL | 100 · 84 · 46 · 25 · 19 · 14 | 100 · 97 · 75 · 54 · 32 · 25 |
+| Mix-RL | 100 · 41 · 22 · 13 · 10 · 5 | 96 · 45 · 19 · 12 · 7 · 4 |
+| Cascade-RL | 95 · 33 · 15 · 9 · 6 · 3 | 97 · 45 · 19 · 12 · 6 · 4 |
+
+### 현실성 조건
+
+| 조건 | 방법 | 이 조건 (시드 범위) | 기준 조건 |
+| --- | --- | ---: | ---: |
+| RL 로 다듬은 선생 | MOPD | 82.2% (81.1~83.1) | 81.2% (80.4~81.9) |
+| | SFT 증류 | 82.0% (80.9~83.2) | 82.1% (80.6~83.6) |
+| | MOPD → RL | 78.8% (77.5~79.5) | 78.0% (77.4~78.9) |
+| 버그 선생 (덧셈만 봄) | MOPD | 덧셈 80.4% (80.4~80.4) | 덧셈 100.0% (99.9~100.0) |
+| | SFT 증류 | 덧셈 80.3% (80.1~80.4) | 덧셈 100.0% (99.9~100.0) |
+| | MOPD → RL | 덧셈 86.9% (80.4~100.0), 시드별 80.4 · 100.0 · 80.4 | 덧셈 100.0% (100.0~100.0) |
+| 10% 틀리는 채점기 | Mix-RL | 63.1% (62.0~64.1) | 65.6% (64.5~66.8) |
+| | Cascade-RL | 18.4% (10.8~29.3) | 50.8% (43.5~55.0) |
+| | MOPD → RL | 77.1% (76.5~77.8) | 78.0% (77.4~78.9) |
+
+<figure class="rl-chart" data-rl-bars="real"></figure>
+<p class="rl-caption">그림 6-2. 기준 조건과 버그 선생(덧셈 정답률), 10% 틀리는 채점기(전체 정답률) 비교. 시드 3개 평균이에요.</p>
+
+- **RL 로 다듬은 선생 — 학생 결과는 같아요.** 선생 나눗셈이 90.5% 로 정답 SFT
+  선생(97.1%)보다 낮지만, 학생 나눗셈은 70% 근처라 선생 차이가 학생 천장
+  위에서만 생겼어요.
+- **버그 선생 — 증류는 실수를 그대로 옮겨요.** 출발 학생은 덧셈 99.9~100% 였는데,
+  MOPD 와 SFT 증류 모두 덧셈이 80.4% 로 내려갔어요. 버그 선생의 점수 그대로예요.
+  학생이 원래 알던 걸 선생의 실수로 덮어썼어요.
+- **버그 선생 + RL — 세 시드 중 하나만 고쳐졌어요.** 시드 1 은 RL 을 시작하고
+  1,000스텝 만에 덧셈이 99.8% 로 돌아왔고 끝에는 100% 였지만, 시드 0·2 는 끝까지
+  80.4% 였어요. 학생이 버그 답을 자신 있게 써서 8장이 다 똑같이 틀리면 신호가
+  없어요. 우연히 받아올림을 맞게 쓴 답안이 나와야 고쳐져요. 실험 2·5 와 같은
+  이유예요.
+- **가끔 틀리는 채점기 — Cascade-RL 이 무너졌어요.** 덧셈·뺄셈 단계(이미 ~100%)에서
+  "배울 거리가 있는 문제" 가 57% 로 보였어요. 깨끗한 채점기에선 0.7~2.1% 였으니
+  거의 전부 가짜 신호예요. 곱셈 단계로 넘어가면 대부분 틀린 답안 중 하나가 O 로
+  뒤집혀 +2.47 로 크게 밀리면서, 5,250~6,000스텝에 덧셈까지 50% 아래로
+  무너졌어요. Mix-RL 은 무너지지 않았지만 곱셈·나눗셈이 출발점보다 낮아졌고, MOPD →
+  RL 은 OPD 로 배운 게 있어서 거의 버텼어요.
+
+### RL 학습률 — 3e-4 면 모델이 망가져요
+
+처음엔 OPD 와 같은 학습률 3e-4 로 RL 을 돌렸어요. 그랬더니 SFT 로 99.9% 였던 곱셈
+선생이 RL 1,000스텝 만에 80% 대로 떨어졌어요. 배울 거리가 있는 문제가 몇 % 뿐이라
+RL 기울기는 작고 잡음이 큰데, Adam 은 파라미터마다 걸음 크기를 맞춰서 그 잡음도
+3e-4 크기의 걸음으로 만들어요. OPD 는 글자마다 신호가 촘촘해서 같은 학습률로도
+괜찮았어요.
+
+<figure class="rl-chart" data-rl-bars="lr"></figure>
+<p class="rl-caption">그림 6-3. RL 학습률 3e-4 와 3e-5 의 결과. 선생: SFT 10,000스텝 뒤 RL 20,000스텝을 한 정답률(SFT 끝은 곱셈 99.9%, 나눗셈 91.8%). 학생: 시드 0.</p>
+
+| 정답률 % | RL 학습률 3e-4 | RL 학습률 3e-5 |
+| --- | --- | --- |
+| 곱셈 선생: SFT 끝 → RL 20,000스텝 뒤 | 99.9 → 77.5 | 99.9 → 99.6 |
+| 나눗셈 선생: SFT 끝 → RL 20,000스텝 뒤 | 91.8 → 58.3 | 91.8 → 90.5 |
+| Mix-RL 학생 (시드 0): 곱셈 · 나눗셈 | 14.9 · 18.3 | 32.3 · 35.0 |
+| Cascade-RL 학생 (시드 0): 덧셈 · 뺄셈 | 0.1 · 2.3 | 75.3 · 82.8 |
+| 짧은 탐색: Mix-RL 1,200스텝 뒤 곱셈 (출발 30.3) | 16.3 (1e-4: 26.9) | 29.5 (1e-5: 30.5) |
+
+<p class="rl-caption">마지막 줄은 <code>big/rl_lr_test.py</code> 로그 값이에요(시드 0 출발 학생, 1,200스텝).</p>
+
+학습률만 3e-5 로 낮추니 무너지지 않았어요. 위 결과(실험 6 의 RL 이 들어간 실행
+전부)는 모두 3e-5 로 다시 돌린 거예요. 실제 LLM 의 RL 학습률이 1e-6 안팎으로 SFT
+보다 훨씬 작은 이유와 같아요.
+
+<div class="rl-callout is-decision" markdown="1">
+<span class="rl-callout__title">MOPD 가 훨씬 높아질까? — 이 설정에선 아니었어요</span>
+MOPD 의 이점은 세 조건에서 커져요. ① 선생 한 명이 모든 과목을 잘하지 못할 때(실험
+4, 실제로는 수학·코드·에이전트처럼 과목별로 RL 한 선생들의 강점이 다를 때), ② 답이
+길어서 학생의 실수가 뒤로 번질 때, ③ 학생이 커서 선생에 가까이 갈 수 있을 때예요.
+실험 6 은 세 조건이 모두 약했어요. 다음으로 키울 곳은 풀이 과정(CoT)을 쓰게 해서
+답을 길게 만들거나, 학생을 키우거나, 네 연산 선생의 크기를 줄여 과목끼리 부딪히게
+만드는 거예요.
+</div>
+
+<div class="rl-callout is-warn" markdown="1">
+<span class="rl-callout__title">이 실험의 한계</span>
+- 학생이 작고(320만) 10,000스텝이라 수렴 전이에요. 더 오래 돌리면 방법끼리 차이가
+  커지거나 줄 수 있어요.
+- 답만 바로 쓰는 형식이에요. 풀이 과정이 없어서 실제 LLM 의 긴 추론과는 달라요.
+- 선생은 시드 1개로 한 번씩만 만들었어요. 학생 쪽만 시드 3개예요.
+- RL 이 들어간 실행은 처음에 3e-4 로 돌다가 중간에 3e-5 로 바꿔 다시 돌렸어요.
+  3e-4 결과는 위 학습률 비교에만 썼어요.
 </div>
 
 ## 실제 LLM 학습과 같은 점, 다른 점 {#real-ko}
@@ -3149,8 +3698,10 @@ python3 rlsim.py single --seeds 1 --steps 100
 
 `rlsim.py` 로 실험 1~4 가 재현되고, 결과는 `results/*.json` 에 쌓여요. 실험 5,
 자리별 정답률, 차트는 `rlsim.py` 위에 얹은 작은 보조 스크립트(`exp5.py`,
-`cold_digits.py`, `trace.py`, `summary.py`, `charts.py`)로 만들었고 여기에는 싣지
-않았어요. 실험 5 의 핵심은 위에 옮긴 `step_rlvr_variant` 함수예요. 명령줄의 기본값은
+`cold_digits.py`, `digit_order.py`, `trace.py`, `summary.py`, `charts.py`)로
+만들었고 여기에는 싣지 않았어요. 실험 5 의 핵심은 위에 옮긴 `step_rlvr_variant`
+함수예요. 실험 6 은 따로 만든 더 큰 스크립트(`big/bigsim.py`, `big/orchestrate.py`
+로 실행, H100 2장에 약 3시간 40분)라 역시 싣지 않았어요. 명령줄의 기본값은
 `--steps 500` 이라, 이 글의 실험처럼 1,000스텝으로 돌리려면 값을 넘겨야 해요.
 
 ---
