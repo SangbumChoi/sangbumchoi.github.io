@@ -1,0 +1,15 @@
+{% comment %} Load MathJax only on pages whose rendered content contains kramdown math. {% endcomment %}
+{% if content contains '\(' or content contains '\[' or page.math %}
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [["\\(", "\\)"]],
+      displayMath: [["\\[", "\\]"]],
+      processEscapes: true
+    },
+    options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"] },
+    chtml: { matchFontHeight: false }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js" defer></script>
+{% endif %}
