@@ -29,6 +29,12 @@
     return block && block.getAttribute("lang") === "ko" ? "ko" : "en";
   }
   function fmt(n) { return Math.round(n).toLocaleString("en-US"); }
+  function fmtW(w) { return w < 10 ? String(Math.round(w * 10) / 10) : fmt(w); }
+  // Korean copula after a noun: 이에요 after a final consonant, 예요 otherwise.
+  function copula(word) {
+    var c = word.charCodeAt(word.length - 1);
+    return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? "이에요" : "예요";
+  }
 
   // ---- geometry, ported line for line from tests/evaluator.py ----
   function cross(o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); }
@@ -121,6 +127,12 @@
       allSame: function (n, h) { return "all " + n + " trucks at " + h.toFixed(2) + " h"; },
       dotTip: function (v, h, kg, n) { return "<b>Vehicle " + v + "</b><br>" + h.toFixed(2) + " h · " + fmt(kg) + " kg · " + n + " stops"; },
       costAxis: "Cost in the evaluator (lower is better)", parts: ["Total time", "Balance × 90", "Intrusions × 600", "Crossings × 1,800"],
+      wPresets: ["This customer", "Driving time only", "Territories only"],
+      wNames: ["Balance: per second of spread", "Intrusion: seconds each", "Crossing: seconds each"],
+      wUnit: [function (w) { return "×" + fmtW(w); }, function (w) { return fmtW(w) + " s"; }, function (w) { return fmtW(w) + " s"; }],
+      wAxis: "Cost under these weights (lower is better)", wParts: ["Driving time", "Balance", "Intrusions", "Crossings"],
+      wRank: function (k) { return ["1st", "2nd", "3rd", "4th"][k - 1] || k + "th"; },
+      wSum: function (win, isRef, rank, n) { return isRef ? "Winner: the FDE plan." : "Winner: " + win + ". The FDE plan ranks " + T.en.wRank(rank) + " of " + n + "."; },
       ksX: "Share of non-defaulters passed (riskiest first)", ksY: "Share of defaulters caught", ksAt: "KS", diag: "random ordering",
       ksTip: function (name, f, t) { return "<b>" + name + "</b><br>non-defaulters " + (f * 100).toFixed(1) + "% · defaulters " + (t * 100).toFixed(1) + "% · gap " + ((t - f) * 100).toFixed(1) + "%p"; }
     },
@@ -138,6 +150,12 @@
       allSame: function (n, h) { return n + "대 모두 " + h.toFixed(2) + "시간"; },
       dotTip: function (v, h, kg, n) { return "<b>" + v + "번 차</b><br>" + h.toFixed(2) + "시간 · " + fmt(kg) + " kg · 정차 " + n + "곳"; },
       costAxis: "채점기의 비용 (낮을수록 좋아요)", parts: ["총 시간", "균등 × 90", "침범 × 600", "교차 × 1,800"],
+      wPresets: ["이 고객", "주행 시간만", "구역만"],
+      wNames: ["균등: 시간 차이 1초에", "침범: 1회에 몇 초", "교차: 1회에 몇 초"],
+      wUnit: [function (w) { return "×" + fmtW(w); }, function (w) { return fmtW(w) + "초"; }, function (w) { return fmtW(w) + "초"; }],
+      wAxis: "이 가중치에서의 비용 (낮을수록 좋아요)", wParts: ["주행 시간", "균등", "침범", "교차"],
+      wRank: function (k) { return k + "위"; },
+      wSum: function (win, isRef, rank, n) { return isRef ? "1위는 FDE 정답이에요." : "1위는 " + win + copula(win) + ". FDE 정답은 " + n + "개 중 " + rank + "위예요."; },
       ksX: "통과시킨 정상 고객 비율 (위험한 사람부터)", ksY: "잡아낸 부도 고객 비율", ksAt: "KS", diag: "무작위 순서",
       ksTip: function (name, f, t) { return "<b>" + name + "</b><br>정상 " + (f * 100).toFixed(1) + "% · 부도 " + (t * 100).toFixed(1) + "% · 차이 " + ((t - f) * 100).toFixed(1) + "%p"; }
     }
@@ -422,7 +440,110 @@
     });
   }
 
-  // ---- 7. case 031 KS curves ----
+  // ---- 7. the same plans priced by another company ----
+  // The evaluator's cost is a price list: driving seconds × 1 + spread seconds × balance + intrusions × a + crossings × b.
+  // Re-pricing the four plans shows that the winner depends on the list, not on the plans alone.
+  function weightsFigure(box, L, data) {
+    var t = T[L], colors = [C.s1, C.s2, C.s3, C.s4];
+    var PRESETS = [[90, 600, 1800], [0, 0, 0], [0, 600, 1800]], MAX = [200, 3000, 6000];
+    var w = PRESETS[0].slice();
+    // Driving time absorbs the rounding left in the stored terms, so the customer's prices reproduce figure 6 exactly.
+    var plans = data.variants.map(function (v) {
+      return { v: v, q: [v.cost.total - v.cost.balance - v.cost.intrusion - v.cost.crossing, v.cost.balance / 90, v.counts.intrusions, v.counts.crossings] };
+    });
+    var bar = html("div", "fde-tabs", box);
+    var presetButtons = PRESETS.map(function (p, i) {
+      var b = html("button", "", bar, t.wPresets[i]);
+      b.type = "button";
+      b.addEventListener("click", function () { w = p.slice(); sync(); draw(); });
+      return b;
+    });
+    var form = html("div", "fde-weights", box);
+    // Sliders are squared so that small weights (the interesting ones near 1) are easy to reach.
+    function toWeight(i, pos) { var x = pos / 100, v = x * x * MAX[i]; return v < 10 ? Math.round(v * 10) / 10 : Math.round(v); }
+    function toPos(i, v) { return Math.round(Math.sqrt(v / MAX[i]) * 100); }
+    var sliders = t.wNames.map(function (name, i) {
+      var row = html("label", "", form);
+      html("span", "fde-weights__name", row, name);
+      var input = html("input", "", row);
+      input.type = "range"; input.min = 0; input.max = 100; input.step = 1;
+      var out = html("b", "fde-weights__val", row);
+      input.addEventListener("input", function () { w[i] = toWeight(i, +input.value); sync(true); schedule(); });
+      return { input: input, out: out };
+    });
+    var sum = html("p", "fde-weights__sum", box);
+    sum.setAttribute("aria-live", "polite");
+    html("div", "fde-axis-label", box, t.wAxis);
+    var legend = html("div", "fde-demo__legend", box);
+    legend.innerHTML = t.wParts.map(function (p, i) { return '<span><i class="fde-key is-bar" style="background:' + colors[i] + '"></i>' + p + "</span>"; }).join("");
+    var holder = html("div", "fde-plot", box), tip = tooltip(holder);
+    var narrow = holder.clientWidth < 560;
+    var rowH = narrow ? 62 : 46, left = narrow ? 8 : 210, right = narrow ? 16 : 150, W = narrow ? holder.clientWidth : 760;
+    var top = narrow ? 26 : 12, H = plans.length * rowH + top + 18;
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, "class": "fde-svg" }, holder);
+    svg.setAttribute("role", "img");
+
+    function sync(fromSlider) {
+      sliders.forEach(function (s, i) {
+        if (!fromSlider) s.input.value = toPos(i, w[i]);
+        s.out.textContent = t.wUnit[i](w[i]);
+      });
+      presetButtons.forEach(function (b, i) {
+        b.setAttribute("aria-pressed", String(PRESETS[i].every(function (v, k) { return v === w[k]; })));
+      });
+    }
+    var pending = false;
+    function schedule() {
+      if (pending) return;
+      pending = true;
+      requestAnimationFrame(function () { pending = false; draw(); });
+    }
+    function niceStep(max) {
+      var raw = max / 5, mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10)), n = raw / mag;
+      return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
+    }
+    function tick(g, step) { return g === 0 ? "0" : step >= 1e6 ? (g / 1e6) + "M" : (g / 1e3) + "k"; }
+    function draw() {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      var rows = plans.map(function (p) {
+        var parts = [p.q[0], w[0] * p.q[1], w[1] * p.q[2], w[2] * p.q[3]];
+        return { p: p, parts: parts, total: parts.reduce(function (a, b) { return a + b; }, 0) };
+      });
+      var ref = rows.filter(function (r) { return r.p.v.key === "reference"; })[0];
+      var order = rows.slice().sort(function (a, b) { return a.total - b.total; });
+      rows.forEach(function (r) { r.rank = order.indexOf(r) + 1; r.score = ref.total / r.total; });
+      var step = niceStep(order[order.length - 1].total), xMax = Math.ceil(order[order.length - 1].total / step) * step, pw = W - left - right;
+      function sx(c) { return left + c / xMax * pw; }
+      for (var g = 0; g <= xMax + 1; g += step) {
+        el("line", { x1: sx(g), x2: sx(g), y1: 4, y2: H - 24, "class": "fde-grid" }, svg);
+        el("text", { x: sx(g), y: H - 6, "text-anchor": "middle", "class": "fde-tick" }, svg).textContent = tick(g, step);
+      }
+      rows.forEach(function (r, k) {
+        var v = r.p.v, y = top + k * rowH, x = 0, end = fmt(r.total) + " → " + r.score.toFixed(3) + " · " + t.wRank(r.rank);
+        el("text", narrow ? { x: left, y: y - 8, "class": "fde-rowlabel" + (r.rank === 1 ? " is-winner" : "") } : { x: left - 14, y: y + 15, "text-anchor": "end", "class": "fde-rowlabel" + (r.rank === 1 ? " is-winner" : "") }, svg).textContent =
+          narrow ? v[L] + " · " + end : v[L];
+        r.parts.forEach(function (val, i) {
+          if (!val) return;
+          var bw = Math.max(1, sx(x + val) - sx(x) - 2);
+          var rect = el("rect", { x: sx(x) + (x ? 2 : 0), y: y, width: bw, height: 22, fill: colors[i] }, svg);
+          rect.addEventListener("pointerenter", function (ev) {
+            var rr = holder.getBoundingClientRect();
+            tip.show(ev.clientX - rr.left, ev.clientY - rr.top, "<b>" + v[L] + "</b><br>" + t.wParts[i] + ": " + fmt(val) + " (" + (val / r.total * 100).toFixed(0) + "%)");
+          });
+          rect.addEventListener("pointerleave", tip.hide);
+          x += val;
+        });
+        if (!narrow) el("text", { x: sx(r.total) + 10, y: y + 15, "class": "fde-endlabel" + (r.rank === 1 ? " is-winner" : "") }, svg).textContent = end;
+      });
+      var win = order[0];
+      sum.textContent = t.wSum(win.p.v[L], win === ref, ref.rank, rows.length);
+      svg.setAttribute("aria-label", sum.textContent);
+    }
+    sync();
+    draw();
+  }
+
+  // ---- 8. case 031 KS curves ----
   function ksFigure(box, L, d) {
     var t = T[L];
     var series = [
@@ -496,6 +617,7 @@
         else if (kind === "pairs") pairFigure(box, L, data, box.getAttribute("data-variant") || "greedy");
         else if (kind === "hours") hoursFigure(box, L, data);
         else if (kind === "cost") costFigure(box, L, data);
+        else if (kind === "weights") weightsFigure(box, L, data);
         else if (kind === "ks") ksFigure(box, L, data);
       });
     }

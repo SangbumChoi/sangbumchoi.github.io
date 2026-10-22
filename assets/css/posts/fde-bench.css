@@ -63,6 +63,15 @@
 .content-body .fde-tip { position: absolute; z-index: 3; display: none; padding: 8px 12px; border: 1px solid var(--line-strong); background: var(--ink); color: var(--text-body); font: 500 13px/1.6 var(--font-ui); font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; }
 .content-body .fde-tip b { color: var(--text); }
 .content-body .fde-bad { color: var(--accent); }
+.content-body .fde-rowlabel.is-winner, .content-body .fde-endlabel.is-winner { fill: var(--text); font-weight: 800; }
+
+/* Price-list figure: one row per weight, name · slider · value */
+.content-body .fde-weights { display: grid; gap: 4px; margin: 4px 0 12px; }
+.content-body .fde-weights label { display: grid; grid-template-columns: 15em minmax(0, 1fr) 6.5em; grid-template-areas: "name range val"; gap: 4px 14px; align-items: center; color: var(--text-2); font: 600 13px/1.4 var(--font-ui); }
+.content-body .fde-weights__name { grid-area: name; }
+.content-body .fde-weights input[type="range"] { grid-area: range; width: 100%; margin: 6px 0; accent-color: var(--accent); }
+.content-body .fde-weights__val { grid-area: val; color: var(--text); font: 800 13px/1.4 var(--font-ui); font-variant-numeric: tabular-nums; text-align: right; }
+.content-body .fde-weights__sum { max-width: none; margin: 0 0 12px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--text); font: 800 15px/1.5 var(--font-ui); }
 
 /* Trap matrix and callouts */
 .content-body .fde-trap td, .content-body .fde-trap th { text-align: center; }
@@ -79,6 +88,7 @@
 
 @media (max-width: 760px) {
   .content-body .fde-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .content-body .fde-weights label { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name val" "range range"; }
   .content-body .fde-note { font-size: 22px; }
   .content-body .fde-xmark { font-size: 34px; }
   .content-body .fde-xmark.is-small { font-size: 26px; }
