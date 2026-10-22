@@ -24,6 +24,7 @@ redirect_from:
   <article class="research-entry">
     <div class="research-entry__meta">
       <time datetime="{{ post.date | date_to_xmlschema }}"><span class="i18n" lang="en">{{ post.date | date: "%B %d, %Y" }}</span><span class="i18n" lang="ko">{{ post.date | date: "%Y년 %-m월 %-d일" }}</span></time>
+      {% include reading-time.html content=post.content langs=true %}
       <span>{{ post.eyebrow | default: "PAPER NOTE" }}</span>
     </div>
     <h2>

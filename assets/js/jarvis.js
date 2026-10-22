@@ -1,12 +1,12 @@
-import { detectPortraitFeatures } from "./portrait-landmarks.js?v=42";
-import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=42";
-import { createPortraitThreeAnimator } from "./portrait-three.js?v=42";
+import { detectPortraitFeatures } from "./portrait-landmarks.js?v=43";
+import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=43";
+import { createPortraitThreeAnimator } from "./portrait-three.js?v=43";
 import {
   chooseRuntimePolicy,
   formatWeightSize,
   modelResidencyCoordinator,
   probeRuntimeCapabilities,
-} from "./runtime-policy.mjs?v=42";
+} from "./runtime-policy.mjs?v=43";
 import {
   buildEntityAnswer,
   buildExternalEvidenceAnswer,
@@ -17,9 +17,9 @@ import {
   fetchWikipediaEvidence,
   privateInformationResponse,
   profileWorkClarificationResponse,
-} from "./knowledge-router.mjs?v=42";
+} from "./knowledge-router.mjs?v=43";
 
-const ASSET_VERSION = new URL(import.meta.url).searchParams.get("v") || "42";
+const ASSET_VERSION = new URL(import.meta.url).searchParams.get("v") || "43";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 const ENTITY_KNOWLEDGE_URL = `/assets/data/daniel-entity-knowledge.json?v=${ASSET_VERSION}`;
 
@@ -991,6 +991,13 @@ function resizeComposer() {
 function initWaveform() {
   const ctx = els.canvas.getContext("2d");
   let phase = 0;
+  // Bars use the theme's ink and accent; re-read them when the theme changes.
+  const readColors = () => {
+    const css = getComputedStyle(document.documentElement);
+    return { idle: css.getPropertyValue("--text").trim() || "#0a0a0a", listening: css.getPropertyValue("--accent").trim() || "#d50c19" };
+  };
+  let colors = readColors();
+  document.addEventListener("daniel:themechange", () => { colors = readColors(); });
   function draw() {
     const rect = els.canvas.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -1005,7 +1012,7 @@ function initWaveform() {
     const amplitude = active === "speaking" ? 0.78 : active === "listening" ? 0.58 : active === "thinking" ? 0.28 : 0.12;
     const bars = Math.max(28, Math.floor(rect.width / 9));
     const gap = width / bars;
-    ctx.fillStyle = active === "listening" ? "#ff6b57" : "#b7f24a";
+    ctx.fillStyle = active === "listening" ? colors.listening : colors.idle;
     for (let i = 0; i < bars; i += 1) {
       const envelope = 0.25 + Math.sin((i / bars) * Math.PI) * 0.75;
       const wave = Math.abs(Math.sin(i * 0.52 + phase) * Math.cos(i * 0.17 - phase * 0.7));

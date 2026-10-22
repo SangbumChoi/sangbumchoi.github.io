@@ -7,10 +7,12 @@ layout: compress
   <head>
     <meta charset="utf-8">
     {% include jarvis-lang-init.html %}
+    {% include jarvis-theme-init.html %}
     {% include seo.html %}
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#0b0d0f">
+    {% include jarvis-fonts.html %}
     <link rel="stylesheet" href="{{ base_path }}/assets/css/jarvis.css?v={{ site.jarvis_asset_version }}">
+    <script src="{{ base_path }}/assets/js/reader.js?v={{ site.jarvis_asset_version }}" defer></script>
   </head>
   <body class="jarvis-page jarvis-content-page">
     <a class="skip-link" href="#content">Skip to content</a>
@@ -33,6 +35,7 @@ layout: compress
           <p class="content-hero__meta">
             <time datetime="{{ page.date | date_to_xmlschema }}"><span class="i18n" lang="en">{{ page.date | date: "%B %d, %Y" }}</span><span class="i18n" lang="ko">{{ page.date | date: "%Y년 %-m월 %-d일" }}</span></time>
             {% if page.venue %}<span>{{ page.venue }}</span>{% endif %}
+            {% if page.collection == 'posts' %}{% include reading-time.html content=content sections=true %}{% endif %}
           </p>
         {% endif %}
       </header>
