@@ -1,0 +1,65 @@
+/* FDE-Bench field note: interactive demos, case 002 map, charts. */
+.content-body .fde-fig { margin: 26px 0 6px; padding: 14px 16px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.content-body .fde-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: none; }
+.content-body .fde-svg.is-map { max-height: 620px; background: #0d1012; border-radius: 4px; }
+.content-body .fde-plot { position: relative; }
+.content-body .fde-plot.is-square { max-width: 520px; margin: 0 auto; }
+.content-body .fde-caption { margin: 6px 0 26px; color: var(--muted); font: 400 10px/1.5 var(--mono); text-align: center; }
+
+.content-body .fde-demo__head { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; margin-bottom: 8px; font-size: 13px; line-height: 1.5; }
+.content-body .fde-demo__hint { color: var(--signal); font: 500 11px/1.8 var(--mono); text-transform: uppercase; }
+.content-body .fde-demo__count { color: #c5c9c8; }
+.content-body .fde-demo__count b { color: var(--text); }
+.content-body .fde-demo__legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 2px; color: #c5c9c8; font-size: 12px; }
+.content-body .fde-key { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 50%; vertical-align: middle; }
+.content-body .fde-key.is-hollow { border: 2px solid #c5c9c8; background: transparent; }
+.content-body .fde-key.is-square { border-radius: 1px; background: #f2f0e9; }
+.content-body .fde-ring { display: inline-block; width: 12px; height: 12px; margin-right: 6px; border: 2px solid #e66767; border-radius: 50%; vertical-align: middle; }
+.content-body .fde-ring.is-gray { border-color: #9ca4a7; border-style: dashed; }
+.content-body .fde-dash { display: inline-block; width: 18px; margin-right: 6px; border-top: 2px dashed #6b7478; vertical-align: middle; }
+.content-body .fde-x { margin-right: 6px; color: #e66767; font-size: 16px; line-height: 1; }
+.content-body .fde-xmark { font: 700 22px/1 var(--sans); pointer-events: none; }
+.content-body .fde-xmark.is-small { font-size: 15px; }
+.content-body .fde-note { font: 400 11px var(--mono); }
+.content-body .fde-maplabel { fill: #dde0dc; font: 600 15px var(--mono); paint-order: stroke; stroke: #0d1012; stroke-width: 4px; pointer-events: none; }
+.content-body .fde-maplabel.is-depot { font-size: 12px; text-anchor: start; }
+
+.content-body .fde-tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.content-body .fde-tabs button { padding: 5px 10px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--muted); font: 500 11px/1.4 var(--mono); cursor: pointer; }
+.content-body .fde-tabs button:hover { color: var(--text); border-color: #687176; }
+.content-body .fde-tabs button[aria-pressed="true"] { border-color: transparent; background: var(--signal-dark); color: var(--signal); }
+.content-body .fde-rank { color: var(--muted); font: 400 11px var(--mono); }
+.content-body .fde-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+.content-body .fde-stats div { padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: #0d1012; }
+.content-body .fde-stats span { display: block; color: var(--muted); font: 400 10px/1.4 var(--mono); text-transform: uppercase; }
+.content-body .fde-stats b { color: var(--text); font: 600 16px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
+.content-body .fde-layers { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 8px; color: #c5c9c8; font-size: 12px; }
+.content-body .fde-layers input { margin-right: 6px; accent-color: #b7f24a; }
+
+.content-body .fde-axis-label { margin-bottom: 6px; color: var(--muted); font: 400 10px/1.4 var(--mono); }
+.content-body .fde-grid { stroke: #22282c; stroke-width: 1; }
+.content-body .fde-tick { fill: var(--muted); font: 400 11px var(--mono); }
+.content-body .fde-rowlabel { fill: #c5c9c8; font: 400 12px var(--sans); }
+.content-body .fde-endlabel { fill: #dde0dc; font: 500 11px var(--mono); }
+.content-body .fde-tip { position: absolute; z-index: 3; display: none; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-raised); color: #dde0dc; font-size: 12px; line-height: 1.6; white-space: nowrap; pointer-events: none; }
+.content-body .fde-tip b { color: var(--text); }
+.content-body .fde-bad { color: #e66767; }
+
+/* Trap matrix and callouts */
+.content-body .fde-trap td, .content-body .fde-trap th { text-align: center; }
+.content-body .fde-trap td:first-child, .content-body .fde-trap th:first-child { text-align: left; }
+.content-body .fde-fail { color: #e66767; font-weight: 600; }
+.content-body .fde-pass { color: #9ca4a7; }
+.content-body .fde-callout { margin: 24px 0; padding: 14px 18px; border: 1px solid var(--line); border-left: 3px solid var(--signal); border-radius: var(--radius); background: var(--panel); }
+.content-body .fde-callout > :last-child { margin-bottom: 0; }
+.content-body .fde-callout__title { display: block; margin-bottom: 6px; color: var(--text); font: 500 11px/1.4 var(--mono); text-transform: uppercase; }
+
+@media (max-width: 760px) {
+  .content-body .fde-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .content-body .fde-fig { padding: 12px 10px 10px; }
+  .content-body .fde-note { font-size: 19px; }
+  .content-body .fde-xmark { font-size: 34px; }
+  .content-body .fde-xmark.is-small { font-size: 26px; }
+  .content-body .fde-maplabel { font-size: 30px; stroke-width: 6px; }
+  .content-body .fde-maplabel.is-depot { font-size: 24px; }
+}
