@@ -1,0 +1,54 @@
+{% comment %}
+  Reading time worked out at build time (GitHub Pages runs no plugins).
+  English: words / 230 a minute. Korean: characters without spaces / 500 a minute.
+  Code blocks and tables are left out. Each <h2> in a language block counts as a section.
+  Usage: {% include reading-time.html content=content sections=true %}
+         {% include reading-time.html content=post.content langs=true %}
+{% endcomment %}
+{%- assign rt_src = include.content | default: '' -%}
+{%- assign rt_en_parts = rt_src | split: '<div class="lang-block" lang="en"' -%}
+{%- assign rt_ko_parts = rt_src | split: '<div class="lang-block" lang="ko"' -%}
+{%- assign rt_en = '' -%}{%- assign rt_ko = '' -%}
+{%- if rt_en_parts.size > 1 -%}{%- assign rt_en = rt_en_parts[1] | split: '<div class="lang-block" lang="ko"' | first -%}{%- endif -%}
+{%- if rt_ko_parts.size > 1 -%}{%- assign rt_ko = rt_ko_parts[1] | split: '<div class="lang-block" lang="en"' | first -%}{%- endif -%}
+{%- assign rt_both = false -%}
+{%- if rt_en != '' and rt_ko != '' -%}{%- assign rt_both = true -%}{%- endif -%}
+{%- assign rt_blocks = true -%}
+{%- if rt_en == '' and rt_ko == '' -%}{%- assign rt_en = rt_src -%}{%- assign rt_blocks = false -%}{%- endif -%}
+
+{%- assign rt_texts = '' | split: '' | push: rt_en | push: rt_ko -%}
+{%- assign rt_minutes = '' | split: '' -%}
+{%- assign rt_sections = '' | split: '' -%}
+{%- for rt_text in rt_texts -%}
+  {%- assign rt_kept = '' -%}
+  {%- assign rt_pre = rt_text | split: '<pre' -%}
+  {%- for rt_chunk in rt_pre -%}
+    {%- if forloop.first -%}{%- assign rt_kept = rt_kept | append: rt_chunk -%}{%- else -%}
+      {%- assign rt_after = rt_chunk | split: '</pre>' -%}
+      {%- if rt_after.size > 1 -%}{%- assign rt_kept = rt_kept | append: rt_after[1] -%}{%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {%- assign rt_table = rt_kept | split: '<table' -%}
+  {%- assign rt_kept = '' -%}
+  {%- for rt_chunk in rt_table -%}
+    {%- if forloop.first -%}{%- assign rt_kept = rt_kept | append: rt_chunk -%}{%- else -%}
+      {%- assign rt_after = rt_chunk | split: '</table>' -%}
+      {%- if rt_after.size > 1 -%}{%- assign rt_kept = rt_kept | append: rt_after[1] -%}{%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {%- if forloop.first -%}
+    {%- assign rt_n = rt_kept | strip_html | number_of_words | divided_by: 230.0 | round -%}
+  {%- else -%}
+    {%- assign rt_n = rt_kept | strip_html | strip_newlines | remove: ' ' | size | divided_by: 500.0 | round -%}
+  {%- endif -%}
+  {%- if rt_n < 1 -%}{%- assign rt_n = 1 -%}{%- endif -%}
+  {%- assign rt_h2 = rt_kept | split: '<h2' | size | minus: 1 -%}
+  {%- if rt_h2 < 0 -%}{%- assign rt_h2 = 0 -%}{%- endif -%}
+  {%- assign rt_minutes = rt_minutes | push: rt_n -%}
+  {%- assign rt_sections = rt_sections | push: rt_h2 -%}
+{%- endfor -%}
+
+{%- comment -%} A missing language falls back to the other one, the same way the page shows it. {%- endcomment -%}
+{%- if rt_en == '' -%}{%- assign rt_en_min = rt_minutes[1] -%}{%- assign rt_en_sec = rt_sections[1] -%}{%- else -%}{%- assign rt_en_min = rt_minutes[0] -%}{%- assign rt_en_sec = rt_sections[0] -%}{%- endif -%}
+{%- if rt_ko == '' -%}{%- assign rt_ko_min = rt_en_min -%}{%- assign rt_ko_sec = rt_en_sec -%}{%- else -%}{%- assign rt_ko_min = rt_minutes[1] -%}{%- assign rt_ko_sec = rt_sections[1] -%}{%- endif -%}
+<span class="reading-info"><span class="i18n" lang="en">about {{ rt_en_min }} min read{% if include.sections and rt_en_sec > 1 %} · {{ rt_en_sec }} sections{% endif %}{% if include.langs and rt_blocks %}{% if rt_both %} · English · 한국어{% elsif rt_ko != '' %} · Korean only{% else %} · English only{% endif %}{% endif %}</span><span class="i18n" lang="ko">읽는 데 약 {{ rt_ko_min }}분{% if include.sections and rt_ko_sec > 1 %} · 장 {{ rt_ko_sec }}개{% endif %}{% if include.langs and rt_blocks %}{% if rt_both %} · 한국어 · English{% elsif rt_ko != '' %} · 한국어만{% else %} · 영어만{% endif %}{% endif %}</span></span>

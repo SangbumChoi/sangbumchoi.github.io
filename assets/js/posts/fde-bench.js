@@ -2,11 +2,18 @@
 // Geometry mirrors case 002's evaluator: monotone-chain hull, on-edge counts as inside, strict segment crossing.
 (function () {
   var NS = "http://www.w3.org/2000/svg";
-  var C = { a: "#3987e5", b: "#199e70", bad: "#e66767", s1: "#3987e5", s2: "#d95926", s3: "#199e70", s4: "#c98500" };
+  // Theme colours (assets/css/jarvis.css and fde-bench.css). The captions call A blue, B green and violations red.
+  var C = { a: "var(--chart-1)", b: "var(--chart-3)", bad: "var(--accent)", s1: "var(--chart-1)", s2: "var(--chart-2)", s3: "var(--chart-3)", s4: "var(--chart-4)",
+    ink: "var(--ink)", text: "var(--text)", text2: "var(--text-2)", text3: "var(--text-3)",
+    route: "var(--fde-route)", hull: "var(--fde-hull)", store: "var(--fde-store)", dim: "var(--fde-dim)", range: "var(--fde-range)" };
 
   function el(tag, attrs, parent) {
     var e = document.createElementNS(NS, tag);
-    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    for (var k in attrs) {
+      // CSS variables only resolve as style properties, not as SVG presentation attributes.
+      if (typeof attrs[k] === "string" && attrs[k].indexOf("var(") === 0) e.style.setProperty(k, attrs[k]);
+      else e.setAttribute(k, attrs[k]);
+    }
     if (parent) parent.appendChild(e);
     return e;
   }
@@ -68,7 +75,7 @@
   function makeHandle(svg, color, start, bounds, onMove) {
     var g = el("g", {}, svg);
     var halo = el("circle", { r: 16, fill: color, "fill-opacity": 0.18 }, g);
-    var dot = el("circle", { r: 8, fill: color, stroke: "#f2f0e9", "stroke-width": 2 }, g);
+    var dot = el("circle", { r: 8, fill: color, stroke: C.ink, "stroke-width": 2 }, g);
     function place(p) { [halo, dot].forEach(function (c) { c.setAttribute("cx", p[0]); c.setAttribute("cy", p[1]); }); }
     place(start);
     draggable(svg, g, function (p) { place(p); onMove(p); }, bounds);
@@ -168,10 +175,10 @@
       });
       A.forEach(function (p) { el("circle", { cx: p[0], cy: p[1], r: 6, fill: C.a }, gPts); });
       B.forEach(function (p, i) { if (i < B.length - 1) el("circle", { cx: p[0], cy: p[1], r: 6, fill: C.b }, gPts); });
-      Cv.forEach(function (p) { el("circle", { cx: p[0], cy: p[1], r: 6, fill: "#111417", stroke: "#c5c9c8", "stroke-width": 2 }, gPts); });
-      el("line", { x1: Cv[0][0], y1: Cv[0][1], x2: Cv[1][0], y2: Cv[1][1], stroke: "#6b7478", "stroke-dasharray": "4 4" }, gPts);
-      el("text", { x: 108, y: 186, "class": "fde-note", fill: "#c5c9c8" }, gPts).textContent = t.onEdge;
-      el("text", { x: 56, y: 334, "class": "fde-note", fill: "#9ca4a7" }, gPts).textContent = names.C;
+      Cv.forEach(function (p) { el("circle", { cx: p[0], cy: p[1], r: 6, fill: C.ink, stroke: C.text2, "stroke-width": 2 }, gPts); });
+      el("line", { x1: Cv[0][0], y1: Cv[0][1], x2: Cv[1][0], y2: Cv[1][1], stroke: C.text3, "stroke-dasharray": "4 4" }, gPts);
+      el("text", { x: 108, y: 186, "class": "fde-note" }, gPts).textContent = t.onEdge;
+      el("text", { x: 56, y: 334, "class": "fde-note is-muted" }, gPts).textContent = names.C;
       head.innerHTML = '<span class="fde-demo__hint">' + t.hullTitle + '</span><span class="fde-demo__count"><b>' + t.intrusions + " " + (count.A + count.B) +
         "</b> = " + t.intrInto(names.A, count.A) + " + " + t.intrInto(names.B, count.B) + "</span>";
     }
@@ -201,7 +208,7 @@
         for (var j = i + 2; j < pa.length - 1; j++) {
           if (segX(pa[i], pa[i + 1], pa[j], pa[j + 1])) {
             var m = meet(pa[i], pa[i + 1], pa[j], pa[j + 1]);
-            el("circle", { cx: m[0], cy: m[1], r: 10, fill: "none", stroke: "#9ca4a7", "stroke-width": 2, "stroke-dasharray": "3 3" }, g);
+            el("circle", { cx: m[0], cy: m[1], r: 10, fill: "none", stroke: C.text3, "stroke-width": 2, "stroke-dasharray": "3 3" }, g);
           }
         }
         for (var k = 0; k < pb.length - 1; k++) {
@@ -214,8 +221,8 @@
       }
       A.forEach(function (p) { el("circle", { cx: p[0], cy: p[1], r: 6, fill: C.a }, g); });
       B.slice(0, -1).forEach(function (p) { el("circle", { cx: p[0], cy: p[1], r: 6, fill: C.b }, g); });
-      el("rect", { x: depot[0] - 9, y: depot[1] - 9, width: 18, height: 18, fill: "#f2f0e9" }, g);
-      el("text", { x: depot[0] + 16, y: depot[1] + 5, "class": "fde-note", fill: "#c5c9c8" }, g).textContent = t.depot;
+      el("rect", { x: depot[0] - 9, y: depot[1] - 9, width: 18, height: 18, fill: C.text }, g);
+      el("text", { x: depot[0] + 16, y: depot[1] + 5, "class": "fde-note" }, g).textContent = t.depot;
       head.innerHTML = '<span class="fde-demo__hint">' + t.crossTitle + '</span><span class="fde-demo__count"><b>' + t.crossings + " " + n + "</b></span>";
     }
     draw();
@@ -250,12 +257,12 @@
       var v = data.variants[st.v], S = data.stores;
       owner = new Array(S.length);
       v.routes.forEach(function (r, ri) { r.forEach(function (i) { owner[i] = ri; }); });
-      if (st.hulls) v.hulls.forEach(function (h) { if (h.length >= 3) el("polygon", { points: pts(h.map(function (i) { return S[i]; })), fill: "#f2f0e9", "fill-opacity": 0.035, stroke: "#7c868a", "stroke-width": 1.2 }, svg); });
+      if (st.hulls) v.hulls.forEach(function (h) { if (h.length >= 3) el("polygon", { points: pts(h.map(function (i) { return S[i]; })), fill: C.text, "fill-opacity": 0.04, stroke: C.hull, "stroke-width": 1.2 }, svg); });
       if (st.routes) v.routes.forEach(function (r) {
         if (!r.length) return;
-        el("polyline", { points: pts([data.depot].concat(r.map(function (i) { return S[i]; }), [data.depot])), fill: "none", stroke: "#566064", "stroke-width": 0.9 }, svg);
+        el("polyline", { points: pts([data.depot].concat(r.map(function (i) { return S[i]; }), [data.depot])), fill: "none", stroke: C.route, "stroke-width": 0.9 }, svg);
       });
-      S.forEach(function (p) { el("circle", { cx: p[0], cy: p[1], r: 2.1, fill: "#9ca4a7" }, svg); });
+      S.forEach(function (p) { el("circle", { cx: p[0], cy: p[1], r: 2.1, fill: C.store }, svg); });
       if (st.viol) {
         v.intrusions.forEach(function (x) { var p = S[x[0]]; el("circle", { cx: p[0], cy: p[1], r: 4.6, fill: "none", stroke: C.bad, "stroke-width": 1.4 }, svg); });
         v.crossings.forEach(function (c) { el("text", { x: c[0], y: c[1] + 5, "text-anchor": "middle", "class": "fde-xmark is-small", fill: C.bad }, svg).textContent = "×"; });
@@ -267,7 +274,7 @@
         cx /= v.routes[ri].length; cy /= v.routes[ri].length;
         el("text", { x: cx, y: cy + 5, "text-anchor": "middle", "class": "fde-maplabel" }, svg).textContent = ri + 1;
       });
-      el("rect", { x: data.depot[0] - 7, y: data.depot[1] - 7, width: 14, height: 14, fill: "#f2f0e9" }, svg);
+      el("rect", { x: data.depot[0] - 7, y: data.depot[1] - 7, width: 14, height: 14, fill: C.text }, svg);
       el("text", { x: data.depot[0] + 12, y: data.depot[1] + 5, "class": "fde-maplabel is-depot" }, svg).textContent = t.depot;
       var spread = Math.max.apply(null, v.hours) - Math.min.apply(null, v.hours);
       var total = v.hours.reduce(function (a, b) { return a + b; }, 0);
@@ -320,7 +327,7 @@
       svg.setAttribute("viewBox", [x0, y0, w, h].join(" "));
       svg.setAttribute("aria-label", t.pair(pr.a + 1, pr.b + 1, pr.i, pr.c));
       var k = w / 600;
-      S.forEach(function (p, i) { if (ra.indexOf(i) < 0 && rb.indexOf(i) < 0) el("circle", { cx: p[0], cy: p[1], r: 1.6 * k, fill: "#30363b" }, svg); });
+      S.forEach(function (p, i) { if (ra.indexOf(i) < 0 && rb.indexOf(i) < 0) el("circle", { cx: p[0], cy: p[1], r: 1.6 * k, fill: C.dim }, svg); });
       [[pr.a, C.a], [pr.b, C.b]].forEach(function (z) {
         var hull = v.hulls[z[0]].map(function (i) { return S[i]; });
         if (hull.length >= 3) el("polygon", { points: pts(hull), fill: z[1], "fill-opacity": 0.1, stroke: z[1], "stroke-width": 1.4 * k }, svg);
@@ -337,7 +344,7 @@
         tx.style.fontSize = (18 * k) + "px";
         tx.textContent = "×";
       });
-      el("rect", { x: data.depot[0] - 7 * k, y: data.depot[1] - 7 * k, width: 14 * k, height: 14 * k, fill: "#f2f0e9" }, svg);
+      el("rect", { x: data.depot[0] - 7 * k, y: data.depot[1] - 7 * k, width: 14 * k, height: 14 * k, fill: C.text }, svg);
       rank.textContent = t.pairRank(idx + 1, pairs.length);
       cap.innerHTML = '<span class="fde-demo__count"><b>' + t.pair(pr.a + 1, pr.b + 1, pr.i, pr.c) + "</b></span>";
       legend.innerHTML = '<span><i class="fde-key" style="background:' + C.a + '"></i>' + t.vehicle + " " + (pr.a + 1) + '</span><span><i class="fde-key" style="background:' + C.b + '"></i>' +
@@ -365,9 +372,9 @@
       var y = top + r * rowH, lo = Math.min.apply(null, v.hours), hi = Math.max.apply(null, v.hours);
       var label = narrow ? t.spread + " " + (hi - lo).toFixed(2) + " " + t.hours : null;
       el("text", narrow ? { x: left, y: y - 16, "class": "fde-rowlabel" } : { x: left - 14, y: y + 4, "text-anchor": "end", "class": "fde-rowlabel" }, svg).textContent = narrow ? v[L] + " · " + label : v[L];
-      el("line", { x1: sx(lo), x2: sx(hi), y1: y, y2: y, stroke: "#566064", "stroke-width": 6, "stroke-linecap": "round" }, svg);
+      el("line", { x1: sx(lo), x2: sx(hi), y1: y, y2: y, stroke: C.range, "stroke-width": 6 }, svg);
       v.hours.forEach(function (h, i) {
-        var dot = el("circle", { cx: sx(h), cy: y, r: 5, fill: v.key === "reference" ? C.s3 : C.s1, stroke: "#111417", "stroke-width": 2 }, svg);
+        var dot = el("circle", { cx: sx(h), cy: y, r: 5, fill: v.key === "reference" ? C.s3 : C.s1, stroke: C.ink, "stroke-width": 2 }, svg);
         dot.addEventListener("pointerenter", function (ev) {
           var rr = holder.getBoundingClientRect();
           tip.show(ev.clientX - rr.left, ev.clientY - rr.top, t.dotTip(i + 1, h, v.loads[i], v.routes[i].length));
@@ -383,7 +390,7 @@
     var t = T[L], keys = ["time", "balance", "intrusion", "crossing"], colors = [C.s1, C.s2, C.s3, C.s4];
     html("div", "fde-axis-label", box, t.costAxis);
     var legend = html("div", "fde-demo__legend", box);
-    legend.innerHTML = t.parts.map(function (p, i) { return '<span><i class="fde-key" style="background:' + colors[i] + '"></i>' + p + "</span>"; }).join("");
+    legend.innerHTML = t.parts.map(function (p, i) { return '<span><i class="fde-key is-bar" style="background:' + colors[i] + '"></i>' + p + "</span>"; }).join("");
     var holder = html("div", "fde-plot", box), tip = tooltip(holder);
     var narrow = holder.clientWidth < 560, rows = data.variants;
     var rowH = narrow ? 62 : 46, left = narrow ? 8 : 210, right = narrow ? 16 : 120, W = narrow ? holder.clientWidth : 760;
@@ -403,7 +410,7 @@
         var val = v.cost[k];
         if (!val) return;
         var w = Math.max(1, sx(x + val) - sx(x) - 2);
-        var rect = el("rect", { x: sx(x) + (x ? 2 : 0), y: y, width: w, height: 22, rx: 3, fill: colors[i] }, svg);
+        var rect = el("rect", { x: sx(x) + (x ? 2 : 0), y: y, width: w, height: 22, fill: colors[i] }, svg);
         rect.addEventListener("pointerenter", function (ev) {
           var rr = holder.getBoundingClientRect();
           tip.show(ev.clientX - rr.left, ev.clientY - rr.top, "<b>" + v[L] + "</b><br>" + t.parts[i] + ": " + fmt(val) + " (" + (val / v.cost.total * 100).toFixed(0) + "%)");
@@ -439,16 +446,16 @@
     el("text", { x: sx(0.5), y: H - 8, "text-anchor": "middle", "class": "fde-tick" }, svg).textContent = t.ksX;
     var yl = el("text", { x: 14, y: sy(0.5), "text-anchor": "middle", "class": "fde-tick", transform: "rotate(-90 14 " + sy(0.5) + ")" }, svg);
     yl.textContent = t.ksY;
-    el("line", { x1: sx(0), y1: sy(0), x2: sx(1), y2: sy(1), stroke: "#6b7478", "stroke-dasharray": "4 4" }, svg);
+    el("line", { x1: sx(0), y1: sy(0), x2: sx(1), y2: sy(1), stroke: C.text3, "stroke-dasharray": "4 4" }, svg);
     series.forEach(function (s, i) {
       var c = d.curves[s.key];
       el("polyline", { points: c.points.map(function (p) { return sx(p[0]) + "," + sy(p[1]); }).join(" "), fill: "none", stroke: s.color, "stroke-width": 2 }, svg);
-      c.points.forEach(function (p, k) { if (s.key === "banded" && k > 0) el("circle", { cx: sx(p[0]), cy: sy(p[1]), r: 4, fill: s.color, stroke: "#111417", "stroke-width": 2 }, svg); });
+      c.points.forEach(function (p, k) { if (s.key === "banded" && k > 0) el("circle", { cx: sx(p[0]), cy: sy(p[1]), r: 4, fill: s.color, stroke: C.ink, "stroke-width": 2 }, svg); });
       var a = c.ksAt;
       el("line", { x1: sx(a[0]), x2: sx(a[0]), y1: sy(a[0]), y2: sy(a[1]), stroke: s.color, "stroke-width": 3, "stroke-opacity": 0.55 }, svg);
       el("text", { x: sx(a[0]) + 6, y: sy(a[0]) + 14, "class": "fde-endlabel" }, svg).textContent = t.ksAt + " " + c.ks.toFixed(2);
     });
-    var dot = el("circle", { r: 5, fill: "none", stroke: "#f2f0e9", "stroke-width": 2, visibility: "hidden" }, svg);
+    var dot = el("circle", { r: 5, fill: "none", stroke: C.text, "stroke-width": 2, visibility: "hidden" }, svg);
     svg.addEventListener("pointermove", function (ev) {
       var p = svgPoint(svg, ev), best = null, bd = 400;
       series.forEach(function (s) {

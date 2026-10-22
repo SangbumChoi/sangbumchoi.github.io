@@ -31,8 +31,16 @@
       <span class="jarvis-nav__label"><span class="i18n" lang="en">Email</span><span class="i18n" lang="ko">이메일</span></span>
     </a>
   </nav>
-  <div class="lang-switch" role="group" aria-label="Language / 언어">
-    <button type="button" data-set-lang="en" aria-pressed="true" lang="en">EN</button>
-    <button type="button" data-set-lang="ko" aria-pressed="false" lang="ko">KO</button>
+  <div class="header-tools">
+    <button class="theme-switch" type="button" data-theme-toggle>
+      <svg class="theme-switch__icon is-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6Z"/></svg>
+      <svg class="theme-switch__icon is-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7 7 17M17 7l1.7-1.7"/></svg>
+      <span class="sr-only is-to-dark"><span class="i18n" lang="en">Switch to dark</span><span class="i18n" lang="ko">어두운 화면으로</span></span>
+      <span class="sr-only is-to-light"><span class="i18n" lang="en">Switch to light</span><span class="i18n" lang="ko">밝은 화면으로</span></span>
+    </button>
+    <div class="lang-switch" role="group" aria-label="Language / 언어">
+      <button type="button" data-set-lang="en" aria-pressed="true" lang="en">EN</button>
+      <button type="button" data-set-lang="ko" aria-pressed="false" lang="ko">KO</button>
+    </div>
   </div>
 </header>
