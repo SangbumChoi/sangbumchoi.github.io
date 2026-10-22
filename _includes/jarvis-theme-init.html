@@ -1,4 +1,4 @@
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#f2f1ef">
 <script>
   (function () {
     var theme;
@@ -7,7 +7,7 @@
       theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     }
     document.documentElement.setAttribute("data-theme", theme);
-    if (theme === "dark") document.querySelector('meta[name="theme-color"]').setAttribute("content", "#0b0b0b");
+    if (theme === "dark") document.querySelector('meta[name="theme-color"]').setAttribute("content", "#1a1815");
   })();
 </script>
 <script src="{{ base_path }}/assets/js/theme.js?v={{ site.jarvis_asset_version }}" defer></script>

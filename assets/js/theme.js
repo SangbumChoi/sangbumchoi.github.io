@@ -2,7 +2,7 @@
 // (jarvis-theme-init.html) so the page never flashes the wrong colours.
 (function () {
   var STORAGE_KEY = "daniel-os:theme";
-  var COLORS = { light: "#ffffff", dark: "#0b0b0b" };
+  var COLORS = { light: "#f2f1ef", dark: "#1a1815" };
   var root = document.documentElement;
   var system = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 
