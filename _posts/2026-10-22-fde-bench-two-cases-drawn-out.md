@@ -186,6 +186,60 @@ rule means 0, the wrong balance metric caps the score near 0.14, and messy
 geometry pushes it lower. Even E is a decent piece of engineering, but it answers
 a slightly different question from the one the grader asks.
 
+## Ask why, not only what {#why}
+
+All seven hidden rules say *what* to count. None of them says *why*. Two "why"
+questions would take an FDE further than any one of the seven.
+
+**Why are crossings penalized at all?** The request only says areas shouldn't
+overlap. The evaluator prices one crossing at 1,800 s, the same as 30 minutes of
+extra driving, and one intrusion at 10 minutes. The case files never give the
+reason. Common reasons in delivery are drivers who know their own area, two trucks
+not working the same streets, and simpler dispatch. That's my guess, though, not
+the customer's answer. The answer matters because it tells you how much driving you
+may trade for clean territories, and whether one crossing is a disaster or a
+nuisance.
+
+**Why does the accepted plan look like a fan?** All 12 routes leave from and
+return to one depot in the corner of the map. If no truck may reach into another
+truck's polygon and no two routes may cross, the clean way to split the map is
+into wedges around the depot. So the fan comes from the geometry rules, not from
+taste. The balance rule then sets each wedge's width: wedges that reach far get
+fewer stores (2.7 t versus 7.1 t). Ask this first and you know the shape of the
+answer before you optimize anything. E already had the shape and only got the
+widths wrong.
+
+### Change the price list, change the winner {#weights}
+
+The cost formula is a price list. One second of driving costs 1, and one second
+between the busiest and the idlest truck costs 90. An intrusion costs 600 and a
+crossing 1,800. Another company would write a different list, and a different plan
+would win. Pick a company or move the sliders to see the ranking change.
+
+<figure class="fde-fig" data-fde="weights" data-src="{{ '/assets/data/posts/fde-bench-002.json' | relative_url }}"></figure>
+<p class="fde-caption">Figure 7. The same four plans priced with different weights. Each bar is a plan's cost split into the four terms. The score is the FDE plan's cost divided by that plan's cost under the same weights.</p>
+
+- **Driving time only:** B wins because it drives the least. The FDE plan drives
+  8.7% more and comes last.
+- **Territories only:** E wins with 1.059. Its fan is clean, and it drives 6% less
+  than the FDE plan.
+- **This customer:** the FDE plan wins. A balance weight of 1 would already be
+  enough, since it passes E above 0.8. At 90, balance decides everything.
+
+These are four fixed plans. Under another price list the best plan itself would
+look different. A time-only company has no reason to draw a fan, and a
+territory-only company has no reason to equalize hours. That's why the price list
+is the first thing to learn, and "why" is the question that reveals it.
+
+<div class="fde-callout" markdown="1">
+<span class="fde-callout__title">Same lesson, another case</span>
+Case 044 predicts a siting score for bank branches and grades by mean absolute
+error. Under that metric, a model trained on absolute error wins (9.34 versus
+9.68). Graded by root-mean-square error, the squared-error model would win
+instead (14.09 versus 14.15). Even the best single guess flips: the median wins on
+absolute error (11.01 versus 11.53), the mean on squared error (16.44 versus 17.01).
+</div>
+
 ## Case 031: a credit default scorecard {#case-031}
 
 A consumer lender wants a default-probability model for new applicants, "with
@@ -212,7 +266,7 @@ outright. The case is literally called "scorecard", which nudges you toward it.
 Banding (E) hurts in a way you can see:
 
 <figure class="fde-fig" data-fde="ks" data-src="{{ '/assets/data/posts/fde-bench-031.json' | relative_url }}"></figure>
-<p class="fde-caption">Figure 7. Customers sorted riskiest first. Each curve shows how many defaulters are caught as non-defaulters are let through. KS is the widest vertical gap above the diagonal. Dots mark where E's 11 bands end.</p>
+<p class="fde-caption">Figure 8. Customers sorted riskiest first. Each curve shows how many defaulters are caught as non-defaulters are let through. KS is the widest vertical gap above the diagonal. Dots mark where E's 11 bands end.</p>
 
 With ties treated as one band, the evaluator can only cut between bands. E's
 curve becomes 11 straight chords, and the best cut it can find is lower (0.52
@@ -221,6 +275,24 @@ versus 0.59). Bands are normal in credit practice; here they cost points.
 This case has the opposite shape from 002. It has fewer hidden rules, and a plain
 model gets 0.85. The last 15% comes from modelling skill and, with 33 defaulters,
 from luck. The paper reports that no ML run reached the reference level.
+
+## How close is this to real work? {#limits}
+
+It's still a simplified world.
+
+- **The data has no noise.** Weights, coordinates and labels are taken as correct.
+  Nothing is mislabeled, and the messy parts are spelled out in the requirements.
+- **The customer is a simulation.** It answers from one fixed document. A real
+  customer forgets, contradicts themselves and changes their mind.
+- **The price list is fixed and hidden.** In a real project the weights come out of
+  meetings, and they move.
+
+Even so, it's a step closer to real agentic ability than tests like MMLU. MMLU asks
+multiple-choice questions with one right answer each. Here the agent gets an
+underspecified request, business data and a customer to question. It has to decide
+what to ask, build something, run it, check it, and deliver a file that a strict
+grader accepts, all within 12 hours. That's much closer to the job than picking A,
+B, C or D.
 
 ## Takeaways {#takeaways}
 
@@ -232,9 +304,13 @@ from luck. The paper reports that no ML run reached the reference level.
   with no weight, "12 trucks are available", "even" with no unit, "scorecard" with
   "probability" in the same sentence. Each one is a question an FDE would ask in
   the first meeting.
+- **"Why" shows the shape of the answer.** Asking why crossings are penalized, and
+  why the accepted plan is a fan, tells you to cut wedges around the depot before
+  you write any code.
 - **Even with every rule, the weights stay hidden.** Rule 7 gives an order, not
-  ×90. Getting to 1.0 means reading what the customer actually expects: here,
-  routes balanced to the second.
+  ×90. The weights are the customer's own design, and a different design crowns a
+  different plan ([figure 7](#weights)). Getting to 1.0 means reading what this
+  customer actually expects: here, routes balanced to the second.
 
 ---
 
@@ -404,6 +480,57 @@ E는 **무게**를 맞췄어요(트럭당 4.7~5.4t). 그래서 남동쪽 끝을 
 틀리면 0.14 근처가 천장이고, 기하가 지저분하면 거기서 더 떨어져요. E도 엔지니어링으로는
 괜찮은 솔루션이지만, 채점기가 묻는 것과 살짝 다른 질문에 답했어요.
 
+## '무엇을'보다 '왜'를 물어요 {#why-ko}
+
+숨은 규칙 7개는 전부 **무엇을** 셀지 말해요. **왜** 세는지는 하나도 말하지 않아요.
+FDE라면 7개 중 어느 것보다 "왜" 질문 두 개가 더 멀리 데려가 줘요.
+
+**교차는 왜 벌점일까요?** 요청서에는 구역이 겹치지 않게 해 달라고만 적혀 있어요.
+채점기는 교차 한 번을 1,800초로 매겨요. 30분을 더 달린 것과 같아요. 침범 한 번은
+10분이에요. 그런데 이유는 케이스 파일 어디에도 없어요. 배송에서 흔한 이유는 기사가
+자기 구역을 잘 안다는 점, 두 트럭이 같은 길을 돌지 않는다는 점, 배차가 단순해진다는
+점이에요. 다만 이건 제 추측이고, 고객의 답은 아니에요. 이 답이 중요한 건, 깔끔한
+구역을 위해 주행을 얼마나 더 해도 되는지 알려 주기 때문이에요. 교차 한 번이 큰일인지
+사소한 일인지도 알려 줘요.
+
+**정답은 왜 부채꼴로 그려질까요?** 12개 경로는 모두 지도 귀퉁이의 창고 하나에서
+나가고 돌아와요. 남의 다각형에 들어가면 안 되고 경로끼리 교차해도 안 되면, 지도를
+깔끔하게 나누는 방법은 창고를 중심으로 부채꼴을 자르는 거예요. 그래서 부채꼴은
+취향이 아니라 기하 규칙에서 나와요. 그다음 균등 규칙이 부채꼴마다 폭을 정해요. 멀리
+뻗는 부채꼴은 매장을 적게 맡아요(2.7t 대 7.1t). 이 질문을 먼저 하면, 최적화를
+시작하기 전에 답의 모양을 알 수 있어요. E는 모양은 맞혔고 폭만 틀렸어요.
+
+### 가격표가 바뀌면 이기는 답이 바뀌어요 {#weights-ko}
+
+비용 공식은 일종의 가격표예요. 주행 1초는 1, 가장 바쁜 트럭과 가장 한가한 트럭의
+시간 차이 1초는 90이에요. 침범 한 번은 600, 교차 한 번은 1,800이에요. 다른 회사라면
+다른 가격표를 쓸 거고, 그러면 다른 경로가 이겨요. 회사를 고르거나 슬라이더를 움직여서
+순위가 바뀌는 걸 확인해 보세요.
+
+<figure class="fde-fig" data-fde="weights" data-src="{{ '/assets/data/posts/fde-bench-002.json' | relative_url }}"></figure>
+<p class="fde-caption">그림 7. 같은 경로 네 개를 다른 가중치로 다시 매긴 비용이에요. 막대는 비용을 네 항으로 나눈 거예요. 점수는 같은 가중치에서 FDE 정답의 비용을 그 경로의 비용으로 나눈 값이에요.</p>
+
+- **주행 시간만 보는 회사:** B가 이겨요. 가장 적게 달려서예요. FDE 정답은 8.7% 더
+  달려서 꼴찌예요.
+- **구역만 보는 회사:** E가 1.059로 이겨요. 부채꼴이 깔끔하고, FDE 정답보다 6% 덜
+  달려요.
+- **이 고객:** FDE 정답이 이겨요. 균등 가중치는 1이어도 충분해요. 0.8을 넘으면 E를
+  앞서거든요. 90이면 균등 항이 모든 걸 정해요.
+
+이건 고정된 경로 네 개를 비교한 거예요. 가격표가 다르면 가장 좋은 경로의 모양부터
+달라져요. 주행 시간만 보는 회사는 부채꼴을 그릴 이유가 없고, 구역만 보는 회사는
+시간을 맞출 이유가 없어요. 그래서 가격표를 가장 먼저 알아내야 하고, 그걸 끌어내는
+질문이 "왜"예요.
+
+<div class="fde-callout" markdown="1">
+<span class="fde-callout__title">다른 케이스도 같아요</span>
+케이스 044는 은행 지점의 입지 점수를 예측하고, 평균 절대 오차(MAE)로 채점해요. 이
+기준에서는 절대 오차로 학습한 모델이 이겨요(9.34 대 9.68). 제곱 오차(RMSE)로
+채점했다면 제곱 오차로 학습한 모델이 이겼을 거예요(14.09 대 14.15). 숫자 하나로
+찍는 가장 좋은 답도 바뀌어요. 절대 오차에서는 중앙값(11.01 대 11.53), 제곱 오차에서는
+평균(16.44 대 17.01)이 이겨요.
+</div>
+
 ## 케이스 031: 신용 부도 스코어카드 {#case-031-ko}
 
 소비자 금융 회사가 새 신청자의 부도 확률 모델을 원해요. "부도 날 사람은 위로,
@@ -429,7 +556,7 @@ E는 **무게**를 맞췄어요(트럭당 4.7~5.4t). 그래서 남동쪽 끝을 
 등급으로 뭉치면(E) 손해가 눈에 보여요.
 
 <figure class="fde-fig" data-fde="ks" data-src="{{ '/assets/data/posts/fde-bench-031.json' | relative_url }}"></figure>
-<p class="fde-caption">그림 7. 위험한 사람부터 줄 세웠을 때, 정상 고객을 통과시키는 만큼 부도 고객을 얼마나 잡는지예요. KS는 대각선 위로 가장 크게 벌어진 세로 간격이에요. 점은 E의 11개 등급이 끝나는 곳이에요.</p>
+<p class="fde-caption">그림 8. 위험한 사람부터 줄 세웠을 때, 정상 고객을 통과시키는 만큼 부도 고객을 얼마나 잡는지예요. KS는 대각선 위로 가장 크게 벌어진 세로 간격이에요. 점은 E의 11개 등급이 끝나는 곳이에요.</p>
 
 같은 점수를 한 등급으로 치면 채점기는 등급 사이에서만 자를 수 있어요. E의 곡선은
 직선 11개로 바뀌고, 찾을 수 있는 가장 좋은 분할도 낮아져요(0.52 대 0.59). 실무에서
@@ -439,6 +566,23 @@ E는 **무게**를 맞췄어요(트럭당 4.7~5.4t). 그래서 남동쪽 끝을 
 15% 는 모델링 실력과, 부도 33명이라는 작은 표본에서 오는 운으로 채워야 해요. 논문은
 ML 케이스에서 정답 수준에 닿은 실행이 하나도 없었다고 보고했어요.
 
+## 실제 일과 얼마나 가까울까요? {#limits-ko}
+
+아직은 많이 단순한 세상이에요.
+
+- **데이터에 노이즈가 없어요.** 무게, 좌표, 정답 라벨은 맞다고 보고 시작해요. 잘못
+  붙은 라벨이 없고, 지저분한 부분은 요구사항에 다 적혀 있어요.
+- **고객은 시뮬레이션이에요.** 정해진 문서 하나를 보고 답해요. 실제 고객은 잊어버리고,
+  앞뒤가 다른 말을 하고, 마음도 바꿔요.
+- **가격표는 고정돼 있고 숨어 있어요.** 실제 프로젝트에서 가중치는 회의에서 정해지고,
+  계속 움직여요.
+
+그래도 MMLU 같은 시험보다는 실제 에이전트 능력에 한 걸음 더 다가갔어요. MMLU는 정답이
+하나인 객관식 문제를 내요. 여기서는 빠진 게 많은 요청서, 업무 데이터, 질문할 수 있는
+고객을 받아요. 무엇을 물을지 정하고, 만들고, 돌려 보고, 확인해야 해요. 그리고 까다로운
+채점기가 받아 줄 파일을 12시간 안에 내야 해요. 보기 넷 중 하나를 고르는 것보다 실제
+일에 훨씬 가까워요.
+
 ## 정리 {#takeaways-ko}
 
 - **0점은 대부분 계산이 아니라 규칙이에요.** 바로 무효가 된 제 제출물 네 개(002의
@@ -447,9 +591,13 @@ ML 케이스에서 정답 수준에 닿은 실행이 하나도 없었다고 보�
 - **첫 질문거리는 데이터와 문구에 보여요.** 무게가 빈 행, "12대가 나갈 수 있다",
   단위 없는 "균등", 한 문장에 같이 나오는 "스코어카드"와 "확률". 전부 FDE가 첫
   미팅에서 던질 질문이에요.
+- **"왜"를 물으면 답의 모양이 보여요.** 교차를 왜 벌점으로 매기는지, 정답이 왜
+  부채꼴인지 물어보세요. 그러면 코드를 쓰기 전에 창고 주위로 부채꼴을 자르면 된다는
+  걸 알 수 있어요.
 - **규칙을 다 알아도 가중치는 숨어 있어요.** 7번 규칙은 순서만 주지 ×90은 안
-  알려 줘요. 1.0에 닿으려면 고객이 진짜로 기대하는 것, 여기서는 초 단위까지 맞춘
-  균등을 읽어 내야 해요.
+  알려 줘요. 가중치는 고객이 직접 설계한 거라, 다르게 설계하면 다른 경로가
+  이겨요([그림 7](#weights-ko)). 1.0에 닿으려면 이 고객이 진짜로 기대하는 것, 여기서는
+  초 단위까지 맞춘 균등을 읽어 내야 해요.
 
 ---
 
