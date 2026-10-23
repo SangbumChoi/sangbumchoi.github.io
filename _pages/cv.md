@@ -13,7 +13,7 @@ redirect_from:
 
 Summary
 ======
-Former entrepreneur and research scientist with 6+ years of experience leading projects across multimodal AI, on-device inference, AI agents, and production ML systems. Co-founded a startup and served as CTO, led teams of up to eight people, and delivered projects from research through deployment. Extensive open-source contributor across the Hugging Face ecosystem and creator of OpenLocalAgent, OCR, and Absorbed.
+Machine-learning researcher and engineer specializing in multimodal pre-training, text-image alignment, post-training, model evaluation, and production systems. Led foundation-model projects and built distributed training and evaluation infrastructure across the model-development lifecycle.
 
 Resume downloads
 ======

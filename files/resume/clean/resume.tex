@@ -73,12 +73,12 @@
   \textbf{\Large Sangbum Daniel Choi} & Email : \href{mailto:danielsejong55@gmail.com}{danielsejong55@gmail.com}\\
   \href{https://www.linkedin.com/in/daniel-choi-86648216b/}{linkedin.com/in/daniel-choi-86648216b} & Mobile : +82-010-5913-2857 \\
   \href{https://github.com/SangbumChoi}{github.com/SangbumChoi} &
-  {Updated: 2026/10/20}\\
+  {Updated: 2026/10/23}\\
 \end{tabular*}
 
 %-----------SUMMARY-----------------
 \section{Summary}
-Former entrepreneur and research scientist with 6+ years of experience leading projects across multimodal AI, on-device inference, AI agents, and production ML systems. Co-founded a startup and served as CTO, led teams of up to eight people, and delivered projects from research through deployment. Extensive open-source contributor across the Hugging Face ecosystem and creator of OpenLocalAgent, OCR, and Absorbed.
+Machine-learning researcher and engineer specializing in multimodal pre-training, text-image alignment, post-training, model evaluation, and production systems. Led foundation-model projects and built distributed training and evaluation infrastructure across the model-development lifecycle.
 
 %-----------EXPERIENCE-----------------
 \section{Experience}
@@ -87,16 +87,16 @@ Former entrepreneur and research scientist with 6+ years of experience leading p
       {Toss Bank}{Seoul, South Korea}
       {Data Scientist}{Jan 2026 - Present}
       \resumeItemListStart
-        \resumeItem{[Lead] AI Authentication}
-          {Developed a mobile ID-card recognition and facial verification model for real-time on-device inference. Validated deployment across numerous mobile devices; combined face anti-spoofing, multitask depth/normal/keypoint estimation, and face-embedding similarity using ONNX models and WebGPU.}
-        \resumeItem{Language Model Evaluation}
-          {Built an in-house benchmark aligned with public evaluation protocols and scoring heuristics to compare Qwen3.5-397B, Qwen3.8, GLM-5.3, and DeepSeek V4 Flash 0731, focusing on agentic capability and Korean-language understanding.}
-        \resumeItem{On-premise AI Answering Agent}
-          {Built a Qwen3-0.6B tool-calling agent as an internal Slack bot, routing requests to direct answers or internal tools. Integrated it with the LLM gateway and automated session refresh.}
-        \resumeItem{On-premise AI Coding Agent}
-          {Built coding-agent workflows with GLM-5.3 and Qwen3.5-397B across Claude Code-assisted experimentation, OpenCode CLI/TUI, PVDI (Kubeflow), and notebooks. Designed planner/critic/executor orchestration with lean and heavy execution tiers, routing prompts to shell or Kubeflow tools for code and file operations and job submission, status, and cancellation.}
         \resumeItem{[Lead] End-to-End Document AI}
-          {Led the full research and production pipeline for document extraction, combining an approximately 1B-parameter vision-language model for multi-page classification, orientation, layout detection, and OCR/table understanding with a 35B-parameter MoE LLM (3B active parameters) for key-value extraction; post-trained the VLM, designed stage-level diagnostics, and reached 61\% exact-match accuracy for automation-ready outputs.}
+          {Led document extraction from research through production with a 1-billion-parameter vision-language model for multi-page classification, orientation, layout detection, optical character recognition, and table understanding, paired with a 35-billion-parameter mixture-of-experts language model (3 billion active parameters) for key-value extraction. Post-trained the vision-language model, built stage-level diagnostics, and reached 61\% exact-match accuracy.}
+        \resumeItem{Language Model Evaluation}
+          {Built a benchmark using public evaluation protocols and scoring criteria to compare Qwen3.5-397B, Qwen3.8, GLM-5.3, and DeepSeek V4 Flash 0731. Measured agentic capability and Korean-language understanding.}
+        \resumeItem{[Lead] AI Authentication}
+          {Developed an identity-card recognition and facial-verification model for real-time mobile inference. Validated on-device performance using Open Neural Network Exchange (ONNX) and WebGPU.}
+        \resumeItem{Enterprise AI Answering Agent}
+          {Built an internal Slack answering agent using Qwen3-0.6B and tool calling. Curated fine-tuning data from internal knowledge notes, Slack threads, team knowledge bases, and code and runbooks in 31 GitHub repositories, removing personally identifiable information. Tracked source region, topic, task type and complexity, token count, data origin, and whether answers came from ground truth or a teacher model; built segmented loss analysis to surface training issues. Added a demo bot that routes between hosted large language models and a fine-tuned model running locally on Mac; recorded thumbs-up and thumbs-down feedback to guide later fine-tuning.}
+        \resumeItem{On-premise AI Coding Agent}
+          {Designed planner/critic/executor orchestration for coding agents using GLM-5.3 and Qwen3.5-397B. A task router selects a small-model executor for simple tool calls, including Kubeflow jobs, or a large-model executor for complex coding. Three critics review results and vote by majority to resolve disagreements and decide when to loop for revisions. Added persistent-memory knowledge agents for internal domain questions the isolated environment could not answer through web search, plus specialist agents for translation, MLflow, and pull-request review; integrated OpenCode command-line and text interfaces with Kubeflow.}
       \resumeItemListEnd
 
     \resumeSubheading
@@ -104,33 +104,34 @@ Former entrepreneur and research scientist with 6+ years of experience leading p
       {Machine Learning Engineer}{Sep 2021 - Jan 2026}
       \resumeItemListStart
         \resumeItem{[Lead] Multimodal Foundation Model}
-          {Held approximately one year of team-leadership responsibility, leading two ML engineers through multimodal pre-training and staged text/image alignment for a visual-grounding model; curated 1.1M images, then drove evaluation and deployment.}
-        \resumeItem{CVPR 2025 Competitions}
-          {Won 2nd place in IOD and 4th place in FSOD challenges, validating the model on open evaluation benchmarks.}
-        \resumeItem{[Lead] ML Training \& Serving Platform}
-          {Built reusable distributed multi-GPU training, evaluation, and deployment infrastructure with PyTorch and AWS Batch; optimized production serving with TensorRT/Triton, improving throughput by 5x and delivering 1,100+ models and 60+ customer endpoints in one year.}
+          {Led two machine-learning engineers through multimodal pre-training and staged text-image alignment for a visual-grounding model; curated 1.1 million images and led evaluation and deployment.}
         \resumeItem{Post-training and Efficiency}
-          {Applied LoRA, Adapter, and LST methods and memory-efficient training, reducing GPU memory by 65.6\% and training time by 44.3\% while preserving model performance.}
+          {Applied low-rank adaptation and adapter tuning with memory-efficient training, reducing graphics processing unit (GPU) memory use by 65.6\% and training time by 44.3\% while maintaining model performance.}
+        \resumeItem{[Lead] Machine Learning Training and Serving Platform}
+          {Built distributed graphics processing unit (GPU) training, evaluation, and deployment infrastructure with PyTorch and AWS Batch. Improved TensorRT and Triton serving throughput fivefold and delivered more than 1,100 models to over 60 customer endpoints in one year.}
+        \resumeItem{Computer Vision and Pattern Recognition 2025 Challenges}
+          {Placed second and fourth in two object-detection challenges; evaluated the model on public benchmarks.}
         \resumeItem{Interactive Segmentation}
-          {Built browser, hybrid, and cloud-based segmentation tools using RepViT-SAM, FocalClick, SAM, and SAM2, increasing segmentation labeling speed by 25x.}
+          {Built browser, hybrid, and cloud-based segmentation tools using RepViT-SAM, FocalClick, and Segment Anything models, increasing labeling speed twenty-fivefold.}
       \resumeItemListEnd
 
     \resumeSubheading
       {Kakao Enterprise}{Pangyo, South Korea}
       {Machine Learning Engineer Intern}{Feb 2021 - Aug 2021}
       \resumeItemListStart
-        \resumeItem{AutoML}
-          {Fixed AutoGluon NeuralNetFastAI scaling issue and developed a Flask-based training/inference AutoML framework with a simple front-end.}
+        \resumeItem{Automated Machine Learning}
+          {Fixed a scaling issue in AutoGluon NeuralNetFastAI and developed a Flask-based model-training and inference framework.}
       \resumeItemListEnd
 
-    \resumeSubheading
+    \newpage
+        \resumeSubheading
       {Team ISLAND}{Seoul, South Korea}
       {Chief Technology Officer}{Mar 2019 - Oct 2020}
       \resumeItemListStart
         \resumeItem{Startup}
-          {Co-founded the company as CTO, raised approximately \$290K, and managed a five-developer core team across Android, Unity, and deep learning; across leadership roles, led up to eight people simultaneously.}
-        \resumeItem{Mobile ML}
-          {Built \MYhref{https://www.venturesquare.net/821623}{ZZAZZ}, a mobile video editor using detection/segmentation, 3D mapping, and tracking; deployed lightweight vision models through TensorFlow Lite.}
+          {Co-founded the company as Chief Technology Officer, raised \$290,000, and managed a five-developer core team across Android, Unity, and deep learning; led teams of up to eight people.}
+        \resumeItem{Mobile Machine Learning}
+          {Built \MYhref{https://www.venturesquare.net/821623}{ZZAZZ}, a mobile video editor using detection, segmentation, three-dimensional mapping, and tracking; deployed lightweight vision models through TensorFlow Lite.}
       \resumeItemListEnd
   \resumeSubHeadingListEnd
 
@@ -138,15 +139,15 @@ Former entrepreneur and research scientist with 6+ years of experience leading p
 \section{Open Source}
   \resumeSubHeadingListStart
     \resumeSubItem{\MYhref{https://github.com/SangbumChoi/OpenLocalAgent}{OpenLocalAgent}}
-      {Building small tool-calling agents from scratch in pure PyTorch using open data, with pretraining, midtraining, post-training, and evaluation across ten public agent benchmarks.}
-    \resumeSubItem{\MYhref{https://github.com/SangbumChoi/OCR}{OCR}}
-      {Building a reproducible evaluation and improvement framework for sub-1B document VLMs, covering accuracy, calibration, robustness, and LoRA adaptation.}
+      {Building tool-calling agents from scratch in PyTorch using open data, with pre-training, mid-training, post-training, and evaluation across ten public agent benchmarks.}
+    \resumeSubItem{\MYhref{https://github.com/SangbumChoi/OCR}{Optical Character Recognition}}
+      {Building a reproducible evaluation and improvement framework for document vision-language models with fewer than one billion parameters, covering accuracy, calibration, robustness, and low-rank adaptation.}
     \resumeSubItem{\MYhref{https://github.com/SangbumChoi/Absorbed}{Absorbed}}
       {Developing an open-source SwiftUI roguelike with turn-based combat, branching expeditions, spirit capture, persistent progression, and English/Korean localization.}
     \resumeSubItem{\MYhref{https://github.com/huggingface/transformers/pulls?q=is\%3Apr+SangbumChoi}{Hugging Face Transformers}}
-      {Contributed 40+ pull requests to a large production codebase across multimodal and vision models, independently shipping model architectures, processors, conversion scripts, distributed training fixes, tests, and documentation.}
-    \resumeSubItem{\MYhref{https://github.com/huggingface/transformers/pull/32317}{Hugging Face Transformers - SAM2}}
-      {Led the addition of Segment Anything 2 support to Transformers, including model integration, image/video processors, conversion flow, documentation, and tests; credited in the official \MYhref{https://huggingface.co/docs/transformers/model_doc/sam2}{SAM2 docs}.}
+      {Contributed more than 40 pull requests to the Transformers codebase across multimodal and vision models, shipping model architectures, processors, conversion scripts, distributed-training fixes, tests, and documentation.}
+    \resumeSubItem{\MYhref{https://github.com/huggingface/transformers/pull/32317}{Hugging Face Transformers - Segment Anything 2}}
+      {Led the integration of Segment Anything 2 into Transformers, including model support, image and video processors, conversion tools, documentation, and tests; credited in the official model documentation.}
     \resumeSubItem{\MYhref{https://github.com/huggingface/transformers/pull/43451}{Hugging Face Transformers - Molmo2}}
       {Opened Molmo2 support for Transformers and published \MYhref{https://huggingface.co/danelcsb/Molmo2-4B}{danelcsb/Molmo2-4B} on the Hugging Face Hub.}
   \resumeSubHeadingListEnd
@@ -171,26 +172,26 @@ Former entrepreneur and research scientist with 6+ years of experience leading p
   \resumeSubHeadingListStart
     \resumeSubheading
       {KAIST (Korea Advanced Institute of Science and Technology)}{Daejeon, South Korea}
-      {Professional Master in Electrical Engineering; GPA: 3.55/4.3}{Feb. 2020 -- Aug. 2021}
+      {Professional Master in Electrical Engineering; Grade Point Average: 3.55/4.3}{Feb. 2020 -- Aug. 2021}
     \resumeSubheading
       {POSTECH (Pohang University of Science and Technology)}{Pohang, South Korea}
-      {Bachelor in Electrical Engineering; GPA: 3.4/4.3}{Mar. 2015 -- Feb. 2020}
+      {Bachelor in Electrical Engineering; Grade Point Average: 3.4/4.3}{Mar. 2015 -- Feb. 2020}
     \resumeSubheading
       {UIUC (University of Illinois Urbana-Champaign)}{Illinois, United States}
-      {Exchange Student; GPA: 3.6/4.0}{Jan. 2018 -- Dec. 2018}
+      {Exchange Student; Grade Point Average: 3.6/4.0}{Jan. 2018 -- Dec. 2018}
   \resumeSubHeadingListEnd
 
 %--------PROGRAMMING SKILLS------------
-\section{Programming Skills}
+\section{Technical Skills}
  \resumeSubHeadingListStart
    \item{
-     \textbf{Research}{: Python, PyTorch, Transformers, multimodal pre/post-training, LoRA, contrastive alignment, evaluation}
+     \textbf{Model Development}{: Python, PyTorch, Transformers, multimodal pre-training, text-image alignment, post-training, low-rank adaptation, adapter tuning, evaluation}
    }
    \item{
-     \textbf{Systems}{: Linux, AWS Batch, multi-GPU training, MLflow, TensorRT, Triton, ONNX, TensorFlow Lite, Git}
+     \textbf{Systems}{: Linux, AWS Batch, distributed model training, MLflow, TensorRT, Triton, ONNX, TensorFlow Lite, Git}
    }
    \item{
-     \textbf{Agents}{: LangChain, Langfuse, Claude Code, Codex, opencode}
+     \textbf{Agents}{: LangChain, Langfuse, Claude Code, Codex, OpenCode}
    }
    \item{
      \textbf{Languages}{: Korean (native), English (professional)}
