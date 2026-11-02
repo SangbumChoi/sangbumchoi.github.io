@@ -1,12 +1,10 @@
-import { detectPortraitFeatures } from "./portrait-landmarks.js?v=45";
-import { createPortraitMeshAnimator } from "./portrait-mesh.js?v=45";
-import { createPortraitThreeAnimator } from "./portrait-three.js?v=45";
+import { ConversationCollector, followUpFor } from "./conversation-feedback.mjs?v=48";
 import {
   chooseRuntimePolicy,
   formatWeightSize,
   modelResidencyCoordinator,
   probeRuntimeCapabilities,
-} from "./runtime-policy.mjs?v=45";
+} from "./runtime-policy.mjs?v=48";
 import {
   buildEntityAnswer,
   buildExternalEvidenceAnswer,
@@ -17,9 +15,9 @@ import {
   fetchWikipediaEvidence,
   privateInformationResponse,
   profileWorkClarificationResponse,
-} from "./knowledge-router.mjs?v=45";
+} from "./knowledge-router.mjs?v=48";
 
-const ASSET_VERSION = new URL(import.meta.url).searchParams.get("v") || "45";
+const ASSET_VERSION = new URL(import.meta.url).searchParams.get("v") || "48";
 const PROFILE_URL = `/assets/data/daniel-profile.json?v=${ASSET_VERSION}`;
 const ENTITY_KNOWLEDGE_URL = `/assets/data/daniel-entity-knowledge.json?v=${ASSET_VERSION}`;
 
@@ -92,12 +90,75 @@ const state = {
   portraitResizeObserver: null,
 };
 
+const collector = new ConversationCollector({
+  endpoint: document.body.dataset.conversationEndpoint || "",
+  onStatus: (text) => {
+    const status = document.querySelector("#sharing-status");
+    if (status) status.textContent = text;
+  },
+});
+
+function finishAnswer(node, answer, source) {
+  if (!node || node.dataset.turnId) return;
+  const question = [...state.conversation].reverse().find(message => message.role === "user")?.content;
+  const id = collector.record({ question, answer, source, runtime: source === "personalized-lfm2" ? state.backend : "evidence-router", appVersion: ASSET_VERSION });
+  if (!id) return;
+  node.dataset.turnId = id;
+  const actions = document.createElement("div");
+  actions.className = "message-actions";
+  for (const [rating, icon, label] of [["helpful", "thumbs-up", "Helpful"], ["not_helpful", "thumbs-down", "Not helpful"], ["copy", "copy", "Copy answer"]]) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.title = label;
+    button.setAttribute("aria-label", label);
+    button.innerHTML = `<i data-lucide="${icon}" aria-hidden="true"></i>`;
+    if (rating !== "copy") button.setAttribute("aria-pressed", "false");
+    button.addEventListener("click", async () => {
+      if (rating === "copy") {
+        try {
+          await navigator.clipboard.writeText(answer);
+          button.title = "Copied";
+          button.setAttribute("aria-label", "Copied");
+        } catch (_) { button.title = "Copy unavailable"; button.setAttribute("aria-label", "Copy unavailable"); }
+        return;
+      }
+      const next = button.getAttribute("aria-pressed") === "true" ? null : rating;
+      actions.querySelectorAll("[aria-pressed]").forEach(item => item.setAttribute("aria-pressed", String(item === button && next !== null)));
+      collector.rate(id, next);
+      if (!collector.consent) {
+        document.querySelector(".sharing-settings").open = true;
+        document.querySelector("#sharing-status").textContent = "Choose sharing to send this rating.";
+        document.querySelector("#share-conversation").focus();
+      }
+    });
+    actions.appendChild(button);
+  }
+  const followUp = followUpFor(question);
+  const link = document.createElement("a");
+  link.href = followUp.href;
+  link.textContent = `${followUp.link} ↗`;
+  actions.appendChild(link);
+  node.appendChild(actions);
+  document.querySelectorAll(".answer-follow-up").forEach(item => item.remove());
+  const next = document.createElement("button");
+  next.type = "button";
+  next.className = "answer-follow-up";
+  next.textContent = `${followUp.label} →`;
+  next.addEventListener("click", () => submitPrompt(followUp.prompt));
+  node.appendChild(next);
+  initializeIcons();
+  els.chatLog.scrollTop = els.chatLog.scrollHeight;
+}
+
 function initializeIcons() {
   if (window.lucide) window.lucide.createIcons();
   else window.setTimeout(initializeIcons, 100);
 }
 
 function setPortraitState(next, label) {
+  const status = document.querySelector("#conversation-status");
+  if (status) status.textContent = { idle: "Ready", thinking: "Thinking...", listening: "Listening...", speaking: "Speaking..." }[next] || "Ready";
+  if (!els.portrait) return;
   els.portrait.dataset.state = next;
   els.portraitState.textContent = label || next.toUpperCase();
   state.portraitAnimator?.setState(next);
@@ -105,6 +166,7 @@ function setPortraitState(next, label) {
 }
 
 function setMouthViseme(viseme = "rest") {
+  if (!els.portrait) return;
   els.portrait.dataset.viseme = viseme;
   state.portraitAnimator?.setViseme(viseme);
 }
@@ -125,6 +187,7 @@ function wordVisemes(word) {
 }
 
 function animateWordVisemes(text, charIndex) {
+  if (!els.portrait) return;
   clearLipTimers();
   state.lastLipBoundaryAt = performance.now();
   const remainder = text.slice(Number.isFinite(charIndex) ? charIndex : 0);
@@ -137,6 +200,7 @@ function animateWordVisemes(text, charIndex) {
 }
 
 function startLipSync() {
+  if (!els.portrait) return;
   clearLipTimers();
   window.clearInterval(state.lipFallbackTimer);
   state.lastLipBoundaryAt = 0;
@@ -224,6 +288,11 @@ function initAvatarPanel() {
 
 async function initPortraitLandmarks() {
   if (!els.portraitImage || !els.portraitMesh || !els.portrait3d || !els.portraitAvatar) return;
+  const [{ detectPortraitFeatures }, { createPortraitMeshAnimator }, { createPortraitThreeAnimator }] = await Promise.all([
+    import("./portrait-landmarks.js?v=48"),
+    import("./portrait-mesh.js?v=48"),
+    import("./portrait-three.js?v=48"),
+  ]);
   els.portrait.dataset.landmarks = "loading";
   els.portrait.dataset.mesh = "loading";
   try {
@@ -354,7 +423,7 @@ function createMessage(role, text = "") {
   article.className = `message message--${role}`;
   const now = new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit" }).format(new Date());
   article.innerHTML = `
-    <div class="message__meta"><span>${role === "assistant" ? "DANIEL AI" : "VISITOR"}</span><time>${now}</time></div>
+    <div class="message__meta"><span>${role === "assistant" ? "Daniel's assistant" : "You"}</span><time>${now}</time></div>
     <div class="message__body"></div>
   `;
   const body = article.querySelector(".message__body");
@@ -457,6 +526,7 @@ function deliverGroundedAnswer(answer, options = {}) {
   const node = createMessage("assistant", answer);
   node.dataset.source = source;
   state.conversation.push({ role: "assistant", content: answer });
+  finishAnswer(node, answer, source);
   els.latency.textContent = `${label} · grounded`;
   setPortraitState("idle", state.modelReady ? "LOCAL MODEL READY" : "PROFILE INDEX READY");
   if (els.voiceOutput.checked) speak(answer);
@@ -728,11 +798,16 @@ function handleModelError(message) {
     const fallback = mockSynthesisAnswer(state.pendingPrompt || "");
     renderMessage(loadingNotice.querySelector(".message__body"), fallback);
     state.conversation.push({ role: "assistant", content: fallback });
+    finishAnswer(loadingNotice, fallback, "model-unavailable");
     state.pendingPrompt = null;
   }
   if (state.assistantNode) {
     state.assistantNode.classList.remove("is-streaming");
-    renderMessage(state.assistantNode.querySelector(".message__body"), "The local model could not start in this browser. Profile links and deterministic answers remain available.");
+    const answer = "The local model could not start in this browser. Verified profile answers and links remain available.";
+    renderMessage(state.assistantNode.querySelector(".message__body"), answer);
+    state.conversation.push({ role: "assistant", content: answer });
+    finishAnswer(state.assistantNode, answer, "generation-error");
+    state.assistantNode = null;
   }
 }
 
@@ -793,6 +868,8 @@ function completeGeneration(data) {
   }
   state.conversation.push({ role: "assistant", content: answer });
   els.latency.textContent = `LLM: ${data.runtime.toUpperCase()} · ${(data.elapsed / 1000).toFixed(1)}s · local`;
+  finishAnswer(state.assistantNode, answer, "personalized-lfm2");
+  state.assistantNode = null;
   if (state.runtimeDiagnostics) state.runtimeDiagnostics.session.lastGenerationElapsed = data.elapsed;
   setPortraitState("idle", "LOCAL MODEL READY");
   if (els.voiceOutput.checked) speak(answer);
@@ -818,6 +895,8 @@ async function completeModelRequestedSearch(term, data) {
     renderMessage(state.assistantNode.querySelector(".message__body"), result.answer);
   }
   state.conversation.push({ role: "assistant", content: result.answer });
+  finishAnswer(state.assistantNode, result.answer, result.source);
+  state.assistantNode = null;
   state.searching = false;
   els.sendButton.disabled = false;
   els.latency.textContent = `${result.label} · model-routed · ${(data.elapsed / 1000).toFixed(1)}s`;
@@ -834,7 +913,7 @@ function guardModelIdentity(text) {
 
 async function submitPrompt(rawPrompt) {
   const prompt = rawPrompt.trim();
-  if (!prompt || state.generating || state.searching) return;
+  if (!prompt || state.generating || state.searching || state.pendingPrompt) return;
   if (routeCommand(prompt)) return;
   cancelSpeechOutput();
   createMessage("user", prompt);
@@ -896,10 +975,7 @@ function initSpeechRecognition() {
   state.recognition = new Recognition();
   state.recognition.continuous = true;
   state.recognition.interimResults = true;
-  state.recognition.lang = window.danielLang?.current() === "ko" ? "ko-KR" : "en-US";
-  document.addEventListener("daniel:langchange", (event) => {
-    if (state.recognition) state.recognition.lang = event.detail.lang === "ko" ? "ko-KR" : "en-US";
-  });
+  state.recognition.lang = "en-US";
   state.recognition.onstart = () => {
     state.recognitionActive = true;
     state.listening = true;
@@ -991,13 +1067,6 @@ function resizeComposer() {
 function initWaveform() {
   const ctx = els.canvas.getContext("2d");
   let phase = 0;
-  // Bars use the theme's ink and accent; re-read them when the theme changes.
-  const readColors = () => {
-    const css = getComputedStyle(document.documentElement);
-    return { idle: css.getPropertyValue("--text").trim() || "#0a0a0a", listening: css.getPropertyValue("--accent").trim() || "#d50c19" };
-  };
-  let colors = readColors();
-  document.addEventListener("daniel:themechange", () => { colors = readColors(); });
   function draw() {
     const rect = els.canvas.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -1012,7 +1081,7 @@ function initWaveform() {
     const amplitude = active === "speaking" ? 0.78 : active === "listening" ? 0.58 : active === "thinking" ? 0.28 : 0.12;
     const bars = Math.max(28, Math.floor(rect.width / 9));
     const gap = width / bars;
-    ctx.fillStyle = active === "listening" ? colors.listening : colors.idle;
+    ctx.fillStyle = active === "listening" ? "#ff6b57" : "#b7f24a";
     for (let i = 0; i < bars; i += 1) {
       const envelope = 0.25 + Math.sin((i / bars) * Math.PI) * 0.75;
       const wave = Math.abs(Math.sin(i * 0.52 + phase) * Math.cos(i * 0.17 - phase * 0.7));
@@ -1028,6 +1097,12 @@ function initWaveform() {
 }
 
 function bindEvents() {
+  const sharing = document.querySelector("#share-conversation");
+  sharing.disabled = !collector.endpoint;
+  if (!collector.endpoint) document.querySelector("#sharing-status").textContent = "Sharing is not connected yet.";
+  sharing.addEventListener("change", () => collector.setConsent(sharing.checked));
+  document.querySelector("#retry-sharing").addEventListener("click", () => collector.sync());
+  window.addEventListener("online", () => collector.sync());
   els.loadButton.addEventListener("click", () => {
     if (!state.modelReady && !state.modelLoading) {
       state.fallbackAttempted = false;
@@ -1041,6 +1116,7 @@ function bindEvents() {
   });
   els.input.addEventListener("input", resizeComposer);
   els.input.addEventListener("keydown", (event) => {
+    if (event.isComposing) return;
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       submitPrompt(els.input.value);
@@ -1071,16 +1147,19 @@ function bindEvents() {
     startSpeechRecognitionSession();
   });
   els.clearButton.addEventListener("click", () => {
+    if (state.generating || state.searching || state.pendingPrompt) return;
     state.conversation = [];
+    collector.reset();
+    document.querySelector("#share-conversation").checked = false;
+    els.input.value = "";
+    resizeComposer();
+    els.input.focus();
     cancelSpeechOutput();
     els.chatLog.querySelectorAll(".message:not(:first-child)").forEach((node) => node.remove());
     setPortraitState("idle", state.modelReady ? "LOCAL MODEL READY" : "STANDING BY");
   });
   document.querySelectorAll("[data-prompt]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const korean = window.danielLang?.current() === "ko" && button.dataset.promptKo;
-      submitPrompt(korean ? button.dataset.promptKo : button.dataset.prompt);
-    });
+    button.addEventListener("click", () => submitPrompt(button.dataset.prompt));
   });
   els.voiceOutput.addEventListener("change", () => {
     if (els.voiceOutput.checked) return;
@@ -1091,13 +1170,8 @@ function bindEvents() {
 
 async function boot() {
   initializeIcons();
-  initAvatarPanel();
-  updateClock();
-  window.setInterval(updateClock, 30_000);
-  initWaveform();
   initSpeechRecognition();
   bindEvents();
-  window.setTimeout(initPortraitLandmarks, 250);
 
   state.runtimeCapabilities = await probeRuntimeCapabilities();
   state.runtimePolicy = chooseRuntimePolicy(state.runtimeCapabilities);

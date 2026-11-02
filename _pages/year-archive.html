@@ -1,41 +1,31 @@
 ---
 layout: jarvis-content
 permalink: /year-archive/
-title: "Field Notes"
-title_ko: "노트"
+title: "Writing"
 eyebrow: "DANIEL OS / ENGINEERING NOTES"
 dek: "Implementation details, model delivery decisions, and research notes."
-dek_ko: "구현 과정, 모델 배포에 관한 결정, 그리고 연구 노트."
 author_profile: false
+reading_languages: true
 redirect_from:
   - /wordpress/blog-posts/
 ---
 
 {% include base_path %}
-{% assign written_year = '' %}
+<p class="translation-note" data-writing-language="ko" lang="ko" hidden>한국어 버전이 있는 글은 한국어로 표시됩니다. 나머지 글은 영어 원문으로 제공됩니다.</p>
+{% capture written_year %}'None'{% endcapture %}
 {% for post in site.posts %}
-  {% assign year = post.date | date: '%Y' %}
+  {% capture year %}{{ post.date | date: '%Y' }}{% endcapture %}
   {% if year != written_year %}
-    {% unless forloop.first %}</div>{% endunless %}
-    <h2 class="archive__subtitle">{{ year }}</h2>
-    <div class="research-index">
-    {% assign written_year = year %}
+    <h2 id="{{ year | slugify }}" class="archive__subtitle">{{ year }}</h2>
+    {% capture written_year %}{{ year }}{% endcapture %}
   {% endif %}
-  <article class="research-entry">
-    <div class="research-entry__meta">
-      <time datetime="{{ post.date | date_to_xmlschema }}"><span class="i18n" lang="en">{{ post.date | date: "%B %d, %Y" }}</span><span class="i18n" lang="ko">{{ post.date | date: "%Y년 %-m월 %-d일" }}</span></time>
-      {% include reading-time.html content=post.content langs=true %}
+  {% if post.english_translation %}{% capture reading_content %}{% include translations/{{ post.english_translation }} %}{% endcapture %}{% else %}{% assign reading_content = post.content %}{% endif %}
+  <article class="note-entry">
+    <div class="note-entry__meta"><time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: '%b %d' }}</time><span>{{ reading_content | number_of_words | divided_by: 200 | plus: 1 }} min read</span></div>
+    <div>
+      <h2><a href="{{ base_path }}{{ post.url }}">{% if post.title_ko %}<span data-writing-language="en" lang="en">{{ post.title }}</span><span data-writing-language="ko" lang="ko" hidden>{{ post.title_ko }}</span>{% else %}{{ post.title }}{% endif %}</a></h2>
+      {% if post.title_ko %}<p data-writing-language="en" lang="en">{{ post.dek | default: post.excerpt | strip_html | truncatewords: 35 }}</p><p data-writing-language="ko" lang="ko" hidden>{{ post.dek_ko }}</p>{% elsif post.excerpt %}<p>{{ post.excerpt | markdownify | strip_html | truncatewords: 35 }}</p>{% endif %}
     </div>
-    <h2>
-      <a href="{{ base_path }}{{ post.url }}">
-        {% if post.title_ko %}<span class="i18n" lang="en">{{ post.title }}</span><span class="i18n" lang="ko">{{ post.title_ko }}</span>{% else %}{{ post.title }}{% endif %}
-      </a>
-    </h2>
-    {% if post.dek and post.dek_ko %}
-      <p><span class="i18n" lang="en">{{ post.dek }}</span><span class="i18n" lang="ko">{{ post.dek_ko }}</span></p>
-    {% elsif post.dek %}
-      <p>{{ post.dek }}</p>
-    {% endif %}
+    <a class="note-entry__arrow" href="{{ base_path }}{{ post.url }}" aria-label="Read {{ post.title | escape }}">&#8599;</a>
   </article>
-  {% if forloop.last %}</div>{% endif %}
 {% endfor %}

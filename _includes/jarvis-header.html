@@ -1,35 +1,13 @@
 {% include base_path %}
 <header class="jarvis-header">
-  <a class="wordmark" href="{{ base_path }}/" aria-label="Daniel OS home">
-    <span class="wordmark__mark" aria-hidden="true">D</span>
-    <span class="wordmark__text">DANIEL.OS</span>
+  <a class="wordmark" href="{{ base_path }}/" aria-label="Sangbum Daniel Choi, home">
+    <span class="wordmark__text">Sangbum Daniel Choi</span>
   </a>
-  {% if include.interactive %}
-    <div class="runtime-pill" id="runtime-pill" aria-live="polite">
-      <span class="runtime-pill__light" aria-hidden="true"></span>
-      <span id="runtime-label">Starting local runtime</span>
-    </div>
-  {% else %}
-    <div class="runtime-pill is-ready">
-      <span class="runtime-pill__light" aria-hidden="true"></span>
-      <span>PROFILE / ONLINE</span>
-    </div>
-  {% endif %}
   <nav class="jarvis-nav" aria-label="Primary navigation">
-    <a href="{{ base_path }}/files/resume/daniel_choi_resume_clean.pdf"><span class="i18n" lang="en">Resume</span><span class="i18n" lang="ko">이력서</span></a>
-    <a href="{{ base_path }}/year-archive/"{% if page.url == '/year-archive/' or page.collection == 'posts' %} aria-current="page"{% endif %}><span class="i18n" lang="en">Field Notes</span><span class="i18n" lang="ko">노트</span></a>
-    <a href="{{ base_path }}/github/"{% if page.url == '/github/' %} aria-current="page"{% endif %}><span class="i18n" lang="en">Open source</span><span class="i18n" lang="ko">오픈소스</span></a>
+    <a href="{{ base_path }}/cv/"{% if page.url == '/cv/' %} aria-current="page"{% endif %}>CV</a>
+    <a href="{{ base_path }}/publications/"{% if page.url == '/publications/' or page.collection == 'publications' %} aria-current="page"{% endif %}>Research</a>
+    <a href="{{ base_path }}/year-archive/"{% if page.url == '/year-archive/' or page.collection == 'posts' %} aria-current="page"{% endif %}>Writing</a>
+    <a href="{{ base_path }}/github/"{% if page.url == '/github/' %} aria-current="page"{% endif %}>Open source</a>
+    {% if include.interactive %}<button class="icon-button" id="clear-chat" type="button" title="New conversation" aria-label="Clear conversation"><i data-lucide="square-pen" aria-hidden="true"></i></button>{% else %}<a class="nav-chat-link" href="{{ base_path }}/">Ask Daniel</a>{% endif %}
   </nav>
-  <div class="header-tools">
-    <button class="theme-switch" type="button" data-theme-toggle>
-      <svg class="theme-switch__icon is-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6Z"/></svg>
-      <svg class="theme-switch__icon is-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7 7 17M17 7l1.7-1.7"/></svg>
-      <span class="sr-only is-to-dark"><span class="i18n" lang="en">Switch to dark</span><span class="i18n" lang="ko">어두운 화면으로</span></span>
-      <span class="sr-only is-to-light"><span class="i18n" lang="en">Switch to light</span><span class="i18n" lang="ko">밝은 화면으로</span></span>
-    </button>
-    <div class="lang-switch" role="group" aria-label="Language / 언어">
-      <button type="button" data-set-lang="en" aria-pressed="true" lang="en">EN</button>
-      <button type="button" data-set-lang="ko" aria-pressed="false" lang="ko">KO</button>
-    </div>
-  </div>
 </header>

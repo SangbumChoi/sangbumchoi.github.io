@@ -6,125 +6,69 @@ layout: compress
 <html lang="{{ site.locale | slice: 0,2 }}" class="jarvis-js">
   <head>
     <meta charset="utf-8">
-    {% include jarvis-lang-init.html %}
-    {% include jarvis-theme-init.html %}
     {% include seo.html %}
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="description" content="Talk with Sangbum Daniel Choi's local-first, browser-native AI portfolio.">
-    {% include jarvis-fonts.html %}
+    <meta name="theme-color" content="#f8fafb">
+    <meta name="description" content="A conversation with Sangbum Daniel Choi's research, work, and open-source contributions.">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://media.githubusercontent.com" crossorigin>
     <link rel="stylesheet" href="{{ base_path }}/assets/css/jarvis.css?v={{ site.jarvis_asset_version }}">
+    <link rel="stylesheet" href="{{ base_path }}/assets/css/editorial.css?v={{ site.jarvis_asset_version }}">
+    <link rel="stylesheet" href="{{ base_path }}/assets/css/conversation.css?v={{ site.jarvis_asset_version }}">
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
     <script type="module" src="{{ base_path }}/assets/js/jarvis.js?v={{ site.jarvis_asset_version }}"></script>
   </head>
-  <body class="jarvis-page jarvis-home" data-auto-load-model="{{ site.jarvis_auto_load_model }}">
+  <body class="jarvis-page jarvis-home chat-home" data-auto-load-model="{{ site.jarvis_auto_load_model }}" data-conversation-endpoint="{{ site.conversation_endpoint | escape }}">
+    {% include conversation-backdrop.html %}
     <a class="skip-link" href="#conversation">Skip to conversation</a>
     {% include jarvis-header.html interactive=true %}
-
-    <main class="jarvis-shell" id="jarvis-shell" data-avatar="auto">
-      <section class="identity-panel" id="identity-panel" aria-labelledby="identity-title">
-        <h1 class="sr-only" id="identity-title">Sangbum Daniel Choi</h1>
-        <div class="identity-panel__topline">
-          <span class="identity-panel__label">PERSONAL AI / SEOUL</span>
-          <span class="identity-panel__time" id="local-time">--:-- KST</span>
-          <button class="icon-button panel-toggle" id="avatar-toggle" type="button" aria-controls="identity-panel" aria-expanded="true" aria-label="Minimize avatar panel" title="Minimize avatar panel">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg>
-          </button>
-        </div>
-
-        <figure class="portrait" id="portrait" data-state="idle">
-          <div class="portrait__media">
-            <div class="portrait__avatar">
-              <img
-                id="portrait-image"
-                src="https://avatars.githubusercontent.com/u/34004152?v=4"
-                crossorigin="anonymous"
-                alt="Illustrated portrait of Sangbum Daniel Choi"
-                width="460"
-                height="460"
-                fetchpriority="high"
-              >
-              <canvas id="portrait-mesh" class="portrait__mesh" aria-hidden="true"></canvas>
-              <canvas id="portrait-3d" class="portrait__mesh portrait__mesh--3d" aria-hidden="true"></canvas>
-            </div>
-            <div class="portrait__focus portrait__focus--top" aria-hidden="true"></div>
-            <div class="portrait__focus portrait__focus--bottom" aria-hidden="true"></div>
-          </div>
-          <canvas id="voice-wave" class="portrait__wave" width="640" height="72" aria-hidden="true"></canvas>
-          <figcaption>
-            <span class="portrait__state" id="portrait-state">STANDING BY</span>
-            <span><span class="i18n" lang="en">Voice-reactive avatar / local session</span><span class="i18n" lang="ko">음성 반응 아바타 / 로컬 세션</span></span>
-          </figcaption>
-        </figure>
-      </section>
-
-      <section class="console-panel" id="conversation" aria-labelledby="console-title">
-        <div class="console-heading">
-          <div>
-            <p class="eyebrow">LOCAL INFERENCE CONSOLE</p>
-            <h2 id="console-title"><span class="i18n" lang="en">Ask Daniel</span><span class="i18n" lang="ko">Daniel에게 묻기</span></h2>
-          </div>
-          <button class="icon-button" id="clear-chat" type="button" title="Clear conversation" aria-label="Clear conversation">
-            <i data-lucide="rotate-ccw" aria-hidden="true"></i>
-          </button>
-        </div>
-
-        <div class="model-loader" id="model-loader">
-          <div class="model-loader__row">
-            <div>
-              <strong id="model-status">Preparing personalized LFM2</strong>
-              <span id="model-detail">q4 model downloads once, then stays in browser cache</span>
-            </div>
-            <button class="load-button" id="load-model" type="button">
-              <i data-lucide="loader-circle" aria-hidden="true"></i>
-              <span>Starting</span>
-            </button>
-          </div>
-          <div class="progress-track" role="progressbar" aria-label="Model download progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-            <span id="model-progress"></span>
-          </div>
-        </div>
-
+    <main class="jarvis-shell" id="jarvis-shell">
+      <section class="console-panel" id="conversation" aria-label="Conversation with Daniel's portfolio assistant">
         <div class="chat-log" id="chat-log" aria-live="polite" aria-relevant="additions text">
-          <article class="message message--assistant">
-            <div class="message__meta"><span>DANIEL AI</span><time>NOW</time></div>
-            <div class="message__body"><span class="i18n" lang="en">Hi, I am Daniel's browser-native portfolio assistant. Ask about AI authentication, on-premise document agents, or my open-source projects: OpenLocalAgent, OCR, and Absorbed. Known facts stay local; uncached general lookups show their public source.</span><span class="i18n" lang="ko">안녕하세요, 브라우저에서 동작하는 Daniel의 포트폴리오 assistant입니다. AI 인증, 온프레미스 문서 agent, 또는 제 오픈소스 프로젝트(OpenLocalAgent, OCR, Absorbed)에 대해 물어보세요. 알려진 정보는 로컬에서 답하고, 캐시되지 않은 일반 검색은 공개 출처를 함께 보여드립니다.</span></div>
+          <article class="message message--assistant message--welcome">
+            <h1>What would you like to know?</h1>
+            <div class="message__body">Explore Daniel's research, work, and open source.</div>
           </article>
         </div>
-
         <div class="prompt-shelf" aria-label="Suggested questions">
-          <button type="button" data-prompt="What are Daniel's strongest open-source contributions?" data-prompt-ko="Daniel의 대표적인 오픈소스 기여는 무엇인가요?"><span class="i18n" lang="en">Open source</span><span class="i18n" lang="ko">오픈소스</span></button>
-          <button type="button" data-prompt="Explain Daniel's multimodal and document AI experience." data-prompt-ko="Daniel의 멀티모달과 document AI 경험을 설명해 주세요."><span class="i18n" lang="en">Multimodal work</span><span class="i18n" lang="ko">멀티모달</span></button>
-          <button type="button" data-prompt="Why does Daniel contribute to open source?" data-prompt-ko="Daniel은 왜 오픈소스에 기여하나요?"><span class="i18n" lang="en">Philosophy</span><span class="i18n" lang="ko">철학</span></button>
-          <button type="button" data-prompt="What links can I open?" data-prompt-ko="어떤 링크를 열어볼 수 있나요?"><span class="i18n" lang="en">Links</span><span class="i18n" lang="ko">링크</span></button>
+          <button type="button" data-prompt="What are Daniel's strongest open-source contributions?">Open source <i data-lucide="arrow-up-right" aria-hidden="true"></i></button>
+          <button type="button" data-prompt="What does Daniel work on at Toss Bank?">At Toss Bank <i data-lucide="arrow-up-right" aria-hidden="true"></i></button>
+          <button type="button" data-prompt="Explain Daniel's multimodal and document AI experience.">Research <i data-lucide="arrow-up-right" aria-hidden="true"></i></button>
+          <button type="button" data-prompt="Tell me about Daniel's background and education.">Background <i data-lucide="arrow-up-right" aria-hidden="true"></i></button>
         </div>
-
         <form class="composer" id="prompt-form">
           <label class="sr-only" for="prompt-input">Ask Daniel a question</label>
-          <textarea id="prompt-input" rows="1" maxlength="2000" placeholder="Ask about Daniel or a topic in his portfolio…" data-placeholder-en="Ask about Daniel or a topic in his portfolio…" data-placeholder-ko="Daniel이나 포트폴리오 관련 주제를 물어보세요…"></textarea>
+          <textarea id="prompt-input" rows="1" maxlength="2000" placeholder="Ask anything about Daniel..."></textarea>
           <div class="composer__actions">
-            <button class="icon-button icon-button--mic" id="mic-button" type="button" title="Start voice input; click again to stop and send" aria-label="Start voice input" aria-pressed="false">
-              <i data-lucide="mic" aria-hidden="true"></i>
-            </button>
-            <button class="icon-button icon-button--send" id="send-button" type="submit" title="Send question" aria-label="Send question">
-              <i data-lucide="arrow-up" aria-hidden="true"></i>
-            </button>
+            <button class="icon-button icon-button--mic" id="mic-button" type="button" title="Start voice input; click again to stop and send" aria-label="Start voice input" aria-pressed="false"><i data-lucide="mic" aria-hidden="true"></i></button>
+            <button class="icon-button icon-button--send" id="send-button" type="submit" title="Send question" aria-label="Send question"><i data-lucide="arrow-up" aria-hidden="true"></i></button>
           </div>
         </form>
-
         <div class="console-footer">
-          <label class="voice-toggle" for="voice-output" title="TTS: browser or operating-system SpeechSynthesis voice; not WebGPU">
-            <input id="voice-output" type="checkbox" checked>
-            <span aria-hidden="true"></span>
-            <span class="i18n" lang="en">Read replies aloud</span><span class="i18n" lang="ko">답변 읽어주기</span>
-          </label>
-          <span id="latency-label">DEMO · grounded · local-first</span>
+          <label class="voice-toggle" for="voice-output" title="Read replies using your browser's voice"><input id="voice-output" type="checkbox"><span aria-hidden="true"></span>Read aloud</label>
+          <details class="sharing-settings">
+            <summary>Share conversation</summary>
+            <div class="sharing-panel">
+              <label><input type="checkbox" id="share-conversation"> Share this conversation with Daniel</label>
+              <p>Questions, replies, and ratings are saved to improve this assistant. Please leave out personal information. Turning this off stops future sharing; earlier submissions remain saved.</p>
+              <div class="sharing-panel__status"><span id="sharing-status" role="status">Not shared</span><button type="button" id="retry-sharing" title="Retry sharing" aria-label="Retry sharing"><i data-lucide="refresh-cw" aria-hidden="true"></i></button></div>
+            </div>
+          </details>
+          <span id="conversation-status" role="status">Ready</span>
+          <span class="sr-only" id="latency-label">Ready</span>
+          <details class="runtime-settings">
+            <summary title="Model settings" aria-label="Model settings"><i data-lucide="sliders-horizontal" aria-hidden="true"></i><span class="runtime-pill" id="runtime-pill"><span class="runtime-pill__light" aria-hidden="true"></span><span class="sr-only" id="runtime-label">Starting local runtime</span></span></summary>
+            <div class="model-loader" id="model-loader">
+              <div class="model-loader__row">
+                <div><strong id="model-status">Preparing personalized LFM2</strong><span id="model-detail">The model downloads once and stays in your browser cache.</span></div>
+                <button class="load-button" id="load-model" type="button"><i data-lucide="loader-circle" aria-hidden="true"></i><span>Starting</span></button>
+              </div>
+              <div class="progress-track" role="progressbar" aria-label="Model download progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="model-progress"></span></div>
+            </div>
+          </details>
         </div>
       </section>
     </main>
-
-    {% include jarvis-footer.html %}
-
-    <noscript>This interactive portfolio requires JavaScript. You can still view the <a href="{{ base_path }}/cv/">standard CV</a>.</noscript>
+    <noscript>This conversation requires JavaScript. You can view the <a href="{{ base_path }}/cv/">CV</a> instead.</noscript>
   </body>
 </html>

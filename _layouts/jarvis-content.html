@@ -6,46 +6,45 @@ layout: compress
 <html lang="{{ site.locale | slice: 0,2 }}" class="jarvis-js">
   <head>
     <meta charset="utf-8">
-    {% include jarvis-lang-init.html %}
-    {% include jarvis-theme-init.html %}
     {% include seo.html %}
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    {% include jarvis-fonts.html %}
+    <meta name="theme-color" content="#f8fafb">
     <link rel="stylesheet" href="{{ base_path }}/assets/css/jarvis.css?v={{ site.jarvis_asset_version }}">
-    <script src="{{ base_path }}/assets/js/reader.js?v={{ site.jarvis_asset_version }}" defer></script>
+    <link rel="stylesheet" href="{{ base_path }}/assets/css/editorial.css?v={{ site.jarvis_asset_version }}">
+    {% if page.english_translation or page.reading_languages or page.title_ko %}<script type="module" src="{{ base_path }}/assets/js/writing-language.mjs?v={{ site.jarvis_asset_version }}"></script>{% endif %}
   </head>
-  <body class="jarvis-page jarvis-content-page">
+  <body class="jarvis-page jarvis-content-page{% if page.collection == 'posts' or page.collection == 'publications' %} is-article{% endif %}">
+    {% include conversation-backdrop.html %}
     <a class="skip-link" href="#content">Skip to content</a>
     {% include jarvis-header.html %}
 
     <main class="content-shell" id="content">
       <header class="content-hero">
-        {% if page.title_ko %}
-          <h1><span class="i18n" lang="en">{{ page.title }}</span><span class="i18n" lang="ko">{{ page.title_ko }}</span></h1>
-        {% else %}
-          <h1>{{ page.title }}</h1>
-        {% endif %}
-        {% if page.dek and page.dek_ko %}
-          <p class="content-hero__dek"><span class="i18n" lang="en">{{ page.dek }}</span><span class="i18n" lang="ko">{{ page.dek_ko }}</span></p>
-        {% elsif page.dek %}
-          <p class="content-hero__dek">{{ page.dek }}</p>
-        {% endif %}
+        <div class="content-topline">
+        <p class="eyebrow">{% if page.collection == 'posts' %}Writing{% elsif page.collection == 'publications' %}Publication{% elsif page.url == '/cv/' %}Experience & background{% elsif page.url == '/publications/' %}Selected publications{% elsif page.url == '/github/' %}Code & community{% else %}Notes & ideas{% endif %}</p>
+        {% if page.english_translation or page.reading_languages or page.title_ko %}{% include writing-language.html %}{% endif %}
+        </div>
+        <h1>{% if page.title_ko %}<span data-writing-language="en" lang="en">{{ page.title }}</span><span data-writing-language="ko" lang="ko" hidden>{{ page.title_ko }}</span>{% else %}{{ page.title }}{% endif %}</h1>
+        {% if page.dek %}<p class="content-hero__dek">{% if page.title_ko %}<span data-writing-language="en" lang="en">{{ page.dek }}</span><span data-writing-language="ko" lang="ko" hidden>{{ page.dek_ko | default: page.dek }}</span>{% else %}{{ page.dek }}{% endif %}</p>{% endif %}
         {% if page.date %}
           <p class="content-hero__meta">
-            <time datetime="{{ page.date | date_to_xmlschema }}"><span class="i18n" lang="en">{{ page.date | date: "%B %d, %Y" }}</span><span class="i18n" lang="ko">{{ page.date | date: "%Y년 %-m월 %-d일" }}</span></time>
+            <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%B %d, %Y" }}</time>
             {% if page.venue %}<span>{{ page.venue }}</span>{% endif %}
-            {% if page.collection == 'posts' %}{% include reading-time.html content=content sections=true %}{% endif %}
           </p>
         {% endif %}
       </header>
-      <article class="content-body" itemscope itemtype="http://schema.org/CreativeWork">
+      <article class="content-body"{% if page.title_ko %} data-bilingual-article{% endif %} itemscope itemtype="http://schema.org/CreativeWork">
         {% if page.collection == 'publications' %}
           <div class="publication-facts">
             {% if page.citation %}<p><strong>Citation</strong><br>{{ page.citation }}</p>{% endif %}
             {% if page.paperurl and page.paperurl != '' %}<a class="signal-link" href="{{ page.paperurl }}" target="_blank" rel="noopener">Open paper ↗</a>{% endif %}
           </div>
         {% endif %}
-        {{ content }}
+        {% if page.english_translation %}
+          {% capture english_content %}{% include translations/{{ page.english_translation }} %}{% endcapture %}
+          <div data-writing-language="en" lang="en">{{ english_content | markdownify }}</div>
+          <div data-writing-language="ko" lang="ko" hidden>{{ content }}</div>
+        {% else %}{{ content }}{% endif %}
       </article>
     </main>
 

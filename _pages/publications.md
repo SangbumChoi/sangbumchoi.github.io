@@ -19,7 +19,7 @@ author_profile: false
   <article class="research-entry">
     <div class="research-entry__meta">
       <span>{{ post.date | date: "%Y" }}</span>
-      <span>{{ post.venue }}</span>
+      {% if post.venue and post.venue != 'None' %}<span>{{ post.venue }}</span>{% endif %}
     </div>
     <h2><a href="{{ base_path }}{{ post.url }}">{{ post.title }}</a></h2>
     {% if post.excerpt %}<p>{{ post.excerpt }}</p>{% endif %}

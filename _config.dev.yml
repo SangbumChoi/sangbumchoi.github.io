@@ -2,6 +2,7 @@
 
 url: http://localhost:4000
 jarvis_auto_load_model: false
+conversation_endpoint: "http://127.0.0.1:8767/api/conversations"
 
 analytics:
   provider: false
