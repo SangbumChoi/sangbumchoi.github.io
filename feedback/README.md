@@ -38,6 +38,23 @@ exports before using them as evaluation/training data. Sharing does not imply
 the transcript is anonymous, and raw transcripts are not automatically uploaded
 to Hugging Face or committed to Git.
 
+## Hugging Face Space (experimental)
+
+The Dockerfile in `feedback/space/` uses `CONVERSATION_HF_REPO` to select a
+private dataset and `HF_TOKEN` as a server-side Space secret. Each explicitly
+shared turn is uploaded before the server confirms it, and a public dataset or
+an upload failure is rejected. The browser sends consent version 2, which
+discloses Hugging Face storage; older consent versions are rejected. The
+dataset is separate from the voice dataset. Revisions may remain in Hub history
+even after a file is changed or removed; stopping sharing does not erase them.
+Each upload creates a Hub commit, so rate limits and abuse controls matter.
+
+This adapter is not deployed: protect the public ingress with independent rate
+limits and request-size limits, configure retention and deletion, and verify
+private storage and live integration before setting the production endpoint.
+The in-process lock does not coordinate multiple Space instances. Use a single
+instance or a transactional service. Do not treat CORS as authentication.
+
 ## Production connection
 
 GitHub Pages cannot run this Python collector. Run it on the project server,

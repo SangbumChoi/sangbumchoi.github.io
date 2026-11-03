@@ -119,6 +119,8 @@ def handler_for(store, origins):
                 turn_id = store.save(json.loads(self.rfile.read(size)))
             except (ValueError, TypeError, json.JSONDecodeError):
                 return self.reply(400, {"error": "Invalid conversation payload"})
+            except Exception:
+                return self.reply(503, {"error": "Conversation storage unavailable"})
             self.reply(200, {"saved": True, "turn_id": turn_id})
     return Handler
 
@@ -130,7 +132,11 @@ def main():
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8767)
     args = parser.parse_args()
-    store = ConversationStore(args.db)
+    if os.environ.get("CONVERSATION_HF_REPO"):
+        from feedback.hub_store import HubStore
+        store = HubStore(os.environ["CONVERSATION_HF_REPO"])
+    else:
+        store = ConversationStore(args.db)
     if args.command == "export":
         for item in store.export():
             print(json.dumps(item, ensure_ascii=False))

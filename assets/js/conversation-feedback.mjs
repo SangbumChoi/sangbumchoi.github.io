@@ -20,7 +20,7 @@ export class ConversationCollector {
     if (!question?.trim() || !answer?.trim()) return null;
     const id = crypto.randomUUID();
     this.turns.set(id, {
-      payload: { schema_version: 1, consent: true, session_id: this.sessionId, turn_id: id,
+      payload: { schema_version: 1, consent: true, consent_version: 2, session_id: this.sessionId, turn_id: id,
         question, answer, source, runtime, app_version: appVersion, rating: null },
       revision: 1, savedRevision: 0,
     });
