@@ -18,7 +18,7 @@ teaser                   :  # filename of teaser fallback teaser image placed in
 breadcrumbs              : false # true, false (default)
 words_per_minute         : 160
 future                   : false
-jarvis_asset_version     : 49
+jarvis_asset_version     : 50
 conversation_endpoint   : "" # Set to your deployed HTTPS write-only collector URL.
 jarvis_auto_load_model   : true
 read_more                : "disabled" # if enabled, adds "Read more" links to excerpts
