@@ -1,0 +1,37 @@
+/* OCR row-repetition note: attention heatmap and P(EOS) chart. Colours are theme tokens. */
+/* Table headers here carry real labels, so keep them at the 12px reading floor. */
+.content-body th { font-size: 12px; }
+.content-body th code, .content-body td code { font-size: 12px; }
+.content-body .ocr-fig { margin: 32px 0 8px; padding-top: 14px; border-top: 2px solid var(--line-strong); }
+.content-body .ocr-controls { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.content-body .ocr-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.content-body .ocr-tabs button { padding: 6px 11px; border: 1px solid var(--line-strong); background: transparent; color: var(--text); font: 600 13px/1.4 var(--sans); cursor: pointer; }
+.content-body .ocr-tabs button:hover { border-color: var(--text); }
+.content-body .ocr-tabs button[aria-pressed="true"] { background: var(--text); border-color: var(--text); color: var(--ink); }
+
+.content-body .ocr-heat-wrap { max-width: 100%; overflow-x: auto; }
+.content-body table.ocr-heat { display: table; width: auto; max-width: none; margin: 0; border-collapse: separate; border-spacing: 3px; font: 600 13px/1 var(--sans); font-variant-numeric: tabular-nums; }
+.content-body .ocr-heat th,
+.content-body .ocr-heat td { min-width: 0; padding: 0; border: 0; text-align: center; vertical-align: middle; }
+.content-body .ocr-heat th { background: none; color: var(--text-2); font: 600 12px/1.3 var(--sans); text-transform: none; }
+.content-body .ocr-heat thead th { height: 28px; }
+.content-body .ocr-heat tbody th { width: 28px; }
+.content-body .ocr-heat td { width: 38px; height: 34px; color: var(--text); }
+.content-body .ocr-heat td.is-target { outline: 1.5px dotted var(--text-2); outline-offset: -3px; }
+.content-body .ocr-heat td.is-peak { font-weight: 800; outline: 2px solid var(--text); outline-offset: -2px; }
+
+.content-body .ocr-axis-label { margin-bottom: 4px; color: var(--text-2); font: 600 13px/1.4 var(--sans); }
+.content-body .ocr-plot { width: 100%; }
+.content-body .ocr-svg { display: block; overflow: visible; }
+.content-body .ocr-grid { stroke: var(--line); stroke-width: 1; }
+.content-body .ocr-tick { fill: var(--text-2); font: 500 12px var(--sans); font-variant-numeric: tabular-nums; }
+.content-body .ocr-tick.is-strong { fill: var(--text); font-weight: 700; }
+.content-body .ocr-readout { max-width: none; margin: 12px 0 4px; color: var(--text); font: 600 14px/1.6 var(--sans); font-variant-numeric: tabular-nums; }
+.content-body .ocr-legend { display: flex; flex-wrap: wrap; gap: 4px 18px; max-width: none; margin: 4px 0 0; color: var(--text-2); font: 500 13px/1.6 var(--sans); }
+.content-body .ocr-key { display: inline-block; width: 18px; height: 3px; margin-right: 6px; vertical-align: middle; }
+.content-body .ocr-caption { margin: 10px 0 28px; color: var(--text-2); font: 500 13px/1.6 var(--sans); }
+
+@media (max-width: 420px) {
+  .content-body .ocr-heat td { width: 32px; height: 30px; font-size: 12px; }
+  .content-body .ocr-heat tbody th { width: 20px; }
+}
