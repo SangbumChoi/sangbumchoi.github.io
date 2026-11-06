@@ -3,6 +3,9 @@ body.chat-home {
   --ink: #f8fafb; --text: #202930; --muted: #6c7780; --line: #e0e5e9; --signal: #365e72; --signal-dark: #eef4f7;
   background: var(--ink); color: var(--text); grid-template-rows: auto minmax(0, 1fr);
 }
+#water-surface { position: fixed; inset: 0; z-index: 0; isolation: isolate; pointer-events: none; }
+#water-surface canvas { z-index: 0 !important; }
+.chat-home.has-water #conversation-backdrop { visibility: hidden; }
 .chat-home .jarvis-header { display: flex; flex-wrap: wrap; justify-content: space-between; min-height: 72px; height: auto; padding: 16px 24px; gap: 12px 24px; border: 0; background: transparent; }
 .chat-home .wordmark { font: 500 14px/1.5 var(--sans); color: #34424c; }
 .chat-home .wordmark__text { display: block; }
