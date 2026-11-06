@@ -1,0 +1,15 @@
+---
+layout: null
+permalink: /assets/data/portfolio-search.json
+---
+[
+{% assign documents = site.posts | concat: site.publications | concat: site.teaching | concat: site.talks %}
+{% assign emitted = false %}
+{% for document in documents %}
+{% unless document.search_exclude or document.published == false %}
+{% if emitted %},{% endif %}
+{"title": {{ document.title | jsonify }}, "url": {{ document.url | relative_url | jsonify }}, "text": {{ document.content | markdownify | strip_html | normalize_whitespace | jsonify }}}
+{% assign emitted = true %}
+{% endunless %}
+{% endfor %}
+]
